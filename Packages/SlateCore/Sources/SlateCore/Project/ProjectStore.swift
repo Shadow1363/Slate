@@ -262,6 +262,17 @@ public final class ProjectStore {
 
     // MARK: - Manifest
 
+    /// Changes `project.json` (atomically, keeping unknown keys).
+    public func updateManifest(_ change: (inout ProjectManifest) -> Void) throws {
+        var updated = manifest
+        change(&updated)
+        guard updated != manifest else { return }
+        let data = try updated.encoded()
+        try CoordinatedFileIO.write(data, to: rootURL.appending(path: ProjectLayout.manifest), presenter: watcher.filePresenter)
+        lastManifestData = data
+        manifest = updated
+    }
+
     private func reloadManifestIfChanged() {
         let manifestURL = rootURL.appending(path: ProjectLayout.manifest)
         guard let data = try? CoordinatedFileIO.read(manifestURL, presenter: watcher.filePresenter) else {

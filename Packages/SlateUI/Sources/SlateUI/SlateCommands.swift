@@ -1,4 +1,5 @@
 import SlateCore
+import SlateExport
 import SwiftUI
 
 /// Menu bar commands: File › New / Open / Save and View › area shortcuts.
@@ -24,6 +25,12 @@ public struct SlateCommands: Commands {
                 }
             }
             .keyboardShortcut("o")
+            Button("Import Screenplay…") {
+                if let url = model.importScreenplay() {
+                    openWindow(id: SlateWindowID.project, value: url)
+                }
+            }
+            .keyboardShortcut("i", modifiers: [.command, .shift])
             Divider()
             Button("Project Library") {
                 openWindow(id: SlateWindowID.home)
@@ -35,7 +42,25 @@ public struct SlateCommands: Commands {
                 .keyboardShortcut("s")
                 .disabled(actions == nil)
         }
+        CommandGroup(replacing: .printItem) {
+            // ⌘P is Quick Open (Milestone 4), so Print uses ⌥⌘P.
+            Button("Print Script…") { actions?.printScript() }
+                .keyboardShortcut("p", modifiers: [.command, .option])
+                .disabled(actions == nil)
+        }
         CommandMenu("Script") {
+            Button("Toggle Page View") { actions?.togglePageView() }
+                .keyboardShortcut("\\", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Menu("Publish") {
+                Button("PDF") { actions?.publish(.pdf) }
+                    .keyboardShortcut("e", modifiers: [.command, .shift])
+                ForEach(ExportFormat.allCases.filter { $0.isAvailable && $0 != .pdf }) { format in
+                    Button(format.title) { actions?.publish(format) }
+                }
+            }
+            .disabled(actions == nil)
+            Divider()
             Button("Jump to Scene…") { actions?.jumpToScene() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(actions == nil)

@@ -65,3 +65,4 @@ schemes:
       targets:
         - package: SlateCore/SlateCoreTests
         - package: SlateUI/SlateUITests
+        - package: SlateExport/SlateExportTests

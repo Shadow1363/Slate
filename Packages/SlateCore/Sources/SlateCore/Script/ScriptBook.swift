@@ -32,18 +32,27 @@ public struct ScriptBook: Sendable, Equatable {
     public let times: [String]
     public let totalLines: Int
     public let wordCount: Int
+    /// The page layout the eighths and page count came from, if any. Without
+    /// it they are estimates from line counts.
+    public let paginated: PaginatedScript?
+
+    public var isExact: Bool { paginated != nil }
 
     public var sceneIDs: Set<String> { Set(scenes.compactMap(\.scene.sceneID)) }
     public var totalEighths: Int { scenes.reduce(0) { $0 + $1.eighths } }
     public var totalDuration: TimeInterval { scenes.reduce(0) { $0 + $1.duration } }
-    /// Approximate pages, from `ScriptEstimate.linesPerPage`.
-    public var pageCount: Double { Double(totalLines) / Double(ScriptEstimate.linesPerPage) }
-
-    public init(texts: [(path: String, text: String)]) {
-        self.init(parsed: texts.map { ($0.path, ScriptParser.parse($0.text)) })
+    /// Printed pages, or an estimate from `ScriptEstimate.linesPerPage`.
+    public var pageCount: Double {
+        paginated.map { Double($0.pageCount) } ?? Double(totalLines) / Double(ScriptEstimate.linesPerPage)
     }
 
-    public init(parsed: [(path: String, parsed: ParsedScript)]) {
+    public init(texts: [(path: String, text: String)], paginator: Paginator? = nil) {
+        let parsed = texts.map { (path: $0.path, parsed: ScriptParser.parse($0.text)) }
+        self.init(parsed: parsed, paginated: paginator?.paginate(parsed.map(\.parsed)))
+    }
+
+    /// - Parameter paginated: The layout of these same files, for exact eighths.
+    public init(parsed: [(path: String, parsed: ParsedScript)], paginated: PaginatedScript? = nil) {
         files = parsed.map { File(path: $0.path, parsed: $0.parsed) }
         var scenes: [Scene] = []
         var characterCounts: [String: Int] = [:]
@@ -61,8 +70,14 @@ public struct ScriptBook: Sendable, Equatable {
                 let parts = SceneHeading.parse(file.parsed.lines[scene.headingLine].text).parts
                 if !parts.location.isEmpty { locationCounts[parts.location.uppercased(), default: 0] += 1 }
                 if let time = parts.time { timeCounts[time.uppercased(), default: 0] += 1 }
-                let lines = scene.lines.reduce(0) { $0 + ScriptEstimate.lines(for: file.parsed.lines[$1]) }
-                let eighths = ScriptEstimate.eighths(forLines: lines)
+                let index = scenes.count
+                let eighths: Int
+                if let paginated, index < paginated.sceneEighths.count {
+                    eighths = paginated.sceneEighths[index]
+                } else {
+                    let lines = scene.lines.reduce(0) { $0 + ScriptEstimate.lines(for: file.parsed.lines[$1]) }
+                    eighths = ScriptEstimate.eighths(forLines: lines)
+                }
                 scenes.append(Scene(
                     file: file.path,
                     scene: scene,
@@ -73,6 +88,7 @@ public struct ScriptBook: Sendable, Equatable {
             }
         }
         self.scenes = scenes
+        self.paginated = paginated.flatMap { $0.sceneEighths.count == scenes.count ? $0 : nil }
         self.totalLines = totalLines
         self.wordCount = words
         func ranked(_ counts: [String: Int]) -> [String] {

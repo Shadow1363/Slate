@@ -44,6 +44,7 @@ The fastest way to run the tests:
 ```sh
 swift test --package-path Packages/SlateCore   # models, files, parser, editing rules
 swift test --package-path Packages/SlateUI     # the script editor, driven by keystrokes
+swift test --package-path Packages/SlateExport # PDF, Fountain, FDX, page breaks vs reference PDFs
 ```
 
 The same tests can also run through the Xcode scheme, with ⌘U in Xcode or:
@@ -52,13 +53,7 @@ The same tests can also run through the Xcode scheme, with ⌘U in Xcode or:
 xcodebuild -project Slate.xcodeproj -scheme Slate -destination 'platform=macOS' test
 ```
 
-To check that the export package compiles on its own:
-
-```sh
-swift build --package-path Packages/SlateExport
-```
-
-Tests use Swift Testing and work on temp copies of the sample project in `Fixtures/SampleProject/`. The SlateUI tests type into the real editor without a window, and include a speed check (under 16 ms per keystroke on a 10-page script).
+Tests use Swift Testing and work on temp copies of the sample project in `Fixtures/SampleProject/`. The SlateUI tests type into the real editor without a window, and include a speed check (under 16 ms per keystroke on a 10-page script). The SlateExport tests compare Slate's page breaks with the reference PDFs in `Fixtures/Fountain/` and the layout with a snapshot in `Fixtures/Snapshots/`. If you change the layout on purpose, regenerate the snapshot with `SLATE_UPDATE_SNAPSHOTS=1 swift test --package-path Packages/SlateExport`.
 
 ## Try it by hand
 
@@ -82,6 +77,16 @@ Scripts are plain Fountain text in `script/`. Act files (`01-act-one.md`, …) j
 
 Scene IDs such as `{#s014}` are added when you finish typing a heading. They show as a small grey tag.
 
+## Publishing
+
+- **Page view** (⇧⌘\\ or the Draft/Page switch) shows the script exactly as it will print. You edit in Draft view, and the pages catch up a moment after you stop typing.
+- **Script › Publish** writes PDF (⇧⌘E), Final Draft (.fdx), Fountain or Markdown into the project's `exports/` folder.
+- **Print Script…** (⌥⌘P) uses the same renderer. ⌘P is kept for Quick Open.
+- **Publish settings** (the sliders button in the Script toolbar): page size, scene numbers, automatic (CONT'D), and bold/italic/underline. They're saved in `project.json`.
+- **Import Screenplay…** (⇧⌘I, or Import on the home screen) makes a new project from a `.fountain`, `.fdx`, `.txt` or `.md` file. Fountain `# Sections` become act files.
+
+Publish always uses Courier Prime 12 pt and the industry layout, whatever the editor theme. Courier Prime is bundled under the SIL Open Font License (`Packages/SlateExport/Sources/SlateExport/Resources/Fonts/OFL.txt`).
+
 ## Layout
 
 ```
@@ -90,8 +95,10 @@ App/                    App entry point (SlateApp.swift)
 Packages/
   SlateCore/            Models, file I/O, watcher, themes. No UI. Unit-tested.
   SlateUI/              SwiftUI and AppKit views
-  SlateExport/          PDF, Fountain, FDX and animatic export (from Milestone 3)
+  SlateExport/          PDF renderer, Fountain/FDX/Markdown import and export, Courier Prime
 Fixtures/SampleProject  Sample project used by tests
+Fixtures/Fountain       Reference scripts and PDFs from fountain.io
+Fixtures/Snapshots      Golden page layouts
 ```
 
 ## Keyboard shortcuts
@@ -105,4 +112,8 @@ Fixtures/SampleProject  Sample project used by tests
 | ⌘1 – ⌘4 | Universe, Script, Storyboard, Dictionary |
 | ⇧⌘O | Jump to scene |
 | ⌃⌘↑ / ⌃⌘↓ | Move the current scene up / down |
+| ⇧⌘\\ | Draft / Page view |
+| ⇧⌘E | Publish PDF |
+| ⌥⌘P | Print script |
+| ⇧⌘I | Import a screenplay |
 | ⌘, | Settings (appearance and themes) |

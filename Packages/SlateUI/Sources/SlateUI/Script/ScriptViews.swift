@@ -18,7 +18,7 @@ struct ScriptNavigator: View {
                         .foregroundStyle(workspace.currentFile == file.path && !workspace.showingTitlePage ? .primary : .secondary)
                         .tag("file:" + file.path)
                     ForEach(book.scenes.filter { $0.file == file.path }) { scene in
-                        SceneRow(scene: scene, isCurrent: current?.id == scene.id)
+                        SceneRow(scene: scene, isCurrent: current?.id == scene.id, isExact: book.isExact)
                             .tag(ScriptWorkspace.row(for: scene))
                     }
                     .onMove { offsets, destination in
@@ -60,6 +60,7 @@ struct ScriptNavigator: View {
 struct SceneRow: View {
     let scene: ScriptBook.Scene
     let isCurrent: Bool
+    var isExact = true
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -71,7 +72,7 @@ struct SceneRow: View {
                 Text(scene.scene.heading.isEmpty ? "Untitled scene" : scene.scene.heading)
                     .lineLimit(2)
                     .fontWeight(isCurrent ? .semibold : .regular)
-                Text("\(ScriptEstimate.formatEighths(scene.eighths)) pg · \(ScriptEstimate.formatDuration(scene.duration))")
+                Text("\(isExact ? "" : "~")\(ScriptEstimate.formatEighths(scene.eighths)) pg · \(ScriptEstimate.formatDuration(scene.duration))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -88,14 +89,20 @@ struct ScriptTotals: View {
         HStack {
             Text("\(book.scenes.count) scenes")
             Spacer()
-            Text("~\(Int(book.pageCount.rounded(.up))) pp · ~\(ScriptEstimate.formatDuration(book.totalDuration))")
+            Text(totals)
         }
         .font(.caption)
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.bar)
-        .help("Estimated from line counts. Milestone 3 replaces this with real pagination.")
+        .help(book.isExact ? "From the printed page layout." : "Estimated while you type; exact a moment after you stop.")
+    }
+
+    private var totals: String {
+        let mark = book.isExact ? "" : "~"
+        let pages = book.isExact ? Int(book.pageCount) : Int(book.pageCount.rounded(.up))
+        return "\(mark)\(pages) pp · \(mark)\(ScriptEstimate.formatDuration(book.totalDuration))"
     }
 }
 
@@ -107,9 +114,13 @@ struct ScriptDetail: View {
         if workspace.showingTitlePage {
             DocumentPane(store: workspace.store, relativePath: ScriptWorkspace.titlePagePath, close: {})
                 .id(ScriptWorkspace.titlePagePath)
+        } else if workspace.showingPages {
+            PageView(workspace: workspace)
+                .toolbar { ScriptToolbar(workspace: workspace) }
         } else if let path = workspace.currentFile, let document = workspace.store.documents[path] {
             ScriptEditorPane(workspace: workspace, document: document)
                 .id(path)
+                .toolbar { ScriptToolbar(workspace: workspace) }
         } else if let error = workspace.openError {
             ContentUnavailableView("Can't Open Script", systemImage: "exclamationmark.triangle", description: Text(error))
         } else {
@@ -154,12 +165,12 @@ struct ScriptStatusBar: View {
             }
             if let scene = workspace.currentScene {
                 Text("Scene \(scene.number) of \(book.scenes.count)")
-                Text("\(ScriptEstimate.formatEighths(scene.eighths)) pg · \(ScriptEstimate.formatDuration(scene.duration))")
+                Text("\(book.isExact ? "" : "~")\(ScriptEstimate.formatEighths(scene.eighths)) pg · \(ScriptEstimate.formatDuration(scene.duration))")
             }
             Spacer()
             Text("\(book.wordCount.formatted()) words")
-            Text("~\(Int(book.pageCount.rounded(.up))) pages")
-            Text("~\(ScriptEstimate.formatDuration(book.totalDuration))")
+            Text(book.isExact ? "\(Int(book.pageCount)) pages" : "~\(Int(book.pageCount.rounded(.up))) pages")
+            Text((book.isExact ? "" : "~") + ScriptEstimate.formatDuration(book.totalDuration))
             Text(document.isDirty ? "Edited" : "Saved").foregroundStyle(.tertiary)
         }
         .font(.caption)

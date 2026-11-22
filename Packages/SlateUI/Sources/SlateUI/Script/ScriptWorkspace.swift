@@ -1,6 +1,9 @@
+import AppKit
 import Foundation
 import Observation
+import PDFKit
 import SlateCore
+import SlateExport
 
 /// Where the editor should put the caret and scroll to.
 struct RevealRequest: Equatable {
@@ -35,9 +38,18 @@ final class ScriptWorkspace {
     private(set) var characterNoteNames: [String] = []
     private(set) var projectWords: [String] = []
     private(set) var openError: String?
+    /// Draft view (editable) or Page view (the printed pages).
+    var showingPages = false
+    /// The latest exact page layout, made 300 ms after typing stops.
+    private(set) var paginated: PaginatedScript?
+    /// Bumped whenever `paginated` changes, so Page view knows to redraw.
+    private(set) var paginationVersion = 0
 
     @ObservationIgnored private var parseCache: [String: (text: String, parsed: ParsedScript)] = [:]
-    @ObservationIgnored private var bookCache: (key: [String], book: ScriptBook)?
+    @ObservationIgnored private var bookCache: (key: [String], exact: Bool, book: ScriptBook)?
+    @ObservationIgnored private var paginatedKey: [String]?
+    @ObservationIgnored private var pendingKey: [String]?
+    @ObservationIgnored private var paginationTask: Task<Void, Never>?
     /// The row a reveal came from, so the navigator doesn't reveal it twice.
     @ObservationIgnored var lastRevealedRow: String?
 
@@ -85,22 +97,103 @@ final class ScriptWorkspace {
         projectWords = (try? store.readText(at: "dictionary/words.txt")).map(ScriptSpelling.words(fromWordList:)) ?? []
     }
 
-    /// The whole script, parsed. Cached per file text.
+    var publishSettings: PublishSettings { PublishSettings(manifest: store.manifest) }
+
+    /// The whole script, parsed. Cached per file text. Eighths and pages are
+    /// exact once the paginator has caught up with the latest text.
     var book: ScriptBook {
         let files = scriptFiles.map(\.relativePath)
         var texts: [String] = []
         for path in files { texts.append(store.documents[path]?.text ?? "") }
-        let key = zip(files, texts).flatMap { [$0, $1] }
-        if let bookCache, bookCache.key == key { return bookCache.book }
+        let key = zip(files, texts).flatMap { [$0, $1] } + [String(describing: publishSettings)]
+        let exact = paginated != nil && paginatedKey == key
+        if let bookCache, bookCache.key == key, bookCache.exact == exact { return bookCache.book }
         let parsed = zip(files, texts).map { path, text -> (String, ParsedScript) in
             if let cached = parseCache[path], cached.text == text { return (path, cached.parsed) }
             let result = ScriptParser.parse(text)
             parseCache[path] = (text, result)
             return (path, result)
         }
-        let book = ScriptBook(parsed: parsed.map { (path: $0.0, parsed: $0.1) })
-        bookCache = (key, book)
+        let book = ScriptBook(parsed: parsed.map { (path: $0.0, parsed: $0.1) }, paginated: exact ? paginated : nil)
+        bookCache = (key, exact, book)
+        if !exact { schedulePagination(key: key, parsed: parsed.map(\.1)) }
         return book
+    }
+
+    private func schedulePagination(key: [String], parsed: [ParsedScript]) {
+        guard pendingKey != key else { return }
+        pendingKey = key
+        paginationTask?.cancel()
+        let settings = publishSettings
+        paginationTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            let result = await Task.detached(priority: .userInitiated) {
+                Paginator(settings: settings).paginate(parsed)
+            }.value
+            guard !Task.isCancelled, let self else { return }
+            self.paginatedKey = key
+            self.paginated = result
+            self.paginationVersion += 1
+        }
+    }
+
+    // MARK: - Publish
+
+    /// What Publish reads: title page, act files in order, settings.
+    func scriptSource() -> ScriptSource {
+        ScriptSource(
+            projectName: store.manifest.name,
+            titlePage: (try? store.readText(at: Self.titlePagePath)) ?? "",
+            files: scriptFiles.map { ($0.name, store.documents[$0.relativePath]?.text ?? "") },
+            settings: publishSettings
+        )
+    }
+
+    /// Page view's page for the caret (counting the title page).
+    var caretPageIndex: Int? {
+        guard let caret, let paginated, let file = scriptFiles.firstIndex(where: { $0.relativePath == caret.file }),
+              let document = store.documents[caret.file] else { return nil }
+        let line = ScriptParser.parse(document.text).lineIndex(containing: caret.location)
+        guard let page = paginated.pageIndex(for: SourceRef(file: file, line: line)) else { return nil }
+        return page + (TitlePage.parse(scriptSource().titlePage).isEmpty ? 0 : 1)
+    }
+
+    /// Writes an export to `exports/` and returns where it went.
+    @discardableResult
+    func export(_ format: ExportFormat) throws -> URL {
+        store.saveAll()
+        let url = try Publisher.export(format, scriptSource(), projectRoot: store.rootURL)
+        store.rescan()
+        return url
+    }
+
+    /// Exports and shows the file in Finder.
+    func publish(_ format: ExportFormat) {
+        do {
+            NSWorkspace.shared.activateFileViewerSelecting([try export(format)])
+        } catch {
+            SlateAppModel.showError("Couldn't publish", error)
+        }
+    }
+
+    /// Prints with the same renderer as the PDF.
+    func printScript() {
+        guard let document = PDFDocument(data: Publisher.pdf(scriptSource())),
+              let operation = document.printOperation(for: .shared, scalingMode: .pageScaleNone, autoRotate: false)
+        else { return }
+        operation.jobTitle = store.manifest.name
+        operation.runModal(for: NSApp.keyWindow ?? NSWindow(), delegate: nil, didRun: nil, contextInfo: nil)
+    }
+
+    func updatePublishSettings(_ change: (inout PublishSettings) -> Void) {
+        var settings = publishSettings
+        change(&settings)
+        do {
+            try store.updateManifest { settings.apply(to: &$0) }
+        } catch {
+            SlateAppModel.showError("Couldn't save the setting", error)
+        }
     }
 
     /// Lets the editor share its fresh parse instead of parsing twice.

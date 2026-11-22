@@ -1,22 +1,118 @@
 import Foundation
 import SlateCore
 
-/// The outputs Publish will produce. Milestone 1 only declares them; the
-/// renderers arrive in Milestones 3 (PDF, Fountain, FDX, Markdown) and 10 (animatic).
-public enum ExportFormat: String, CaseIterable, Sendable {
+/// The outputs Publish produces. The animatic arrives in Milestone 10.
+public enum ExportFormat: String, CaseIterable, Sendable, Identifiable {
     case pdf
     case finalDraft = "fdx"
     case fountain
     case markdown = "md"
     case animatic = "mov"
 
+    public var id: String { rawValue }
     public var fileExtension: String { rawValue }
 
-    /// Whether an exporter for this format exists yet.
-    public var isAvailable: Bool { false }
+    public var title: String {
+        switch self {
+        case .pdf: "PDF"
+        case .finalDraft: "Final Draft (.fdx)"
+        case .fountain: "Fountain"
+        case .markdown: "Markdown"
+        case .animatic: "Animatic (.mov)"
+        }
+    }
 
-    /// Where Publish writes this format inside a project.
-    public func destinationFolder(in projectRoot: URL) -> URL {
-        projectRoot.appending(path: ProjectLayout.exports, directoryHint: .isDirectory)
+    public var isAvailable: Bool { self != .animatic }
+}
+
+/// Everything Publish needs from a project, read through `ProjectStore`.
+public struct ScriptSource: Sendable {
+    public var projectName: String
+    public var titlePage: String
+    /// Act files in order: (file name, text).
+    public var files: [(name: String, text: String)]
+    public var settings: PublishSettings
+
+    public init(projectName: String, titlePage: String, files: [(name: String, text: String)], settings: PublishSettings) {
+        self.projectName = projectName
+        self.titlePage = titlePage
+        self.files = files
+        self.settings = settings
+    }
+
+    public var paginated: PaginatedScript {
+        Paginator(settings: settings).paginate(files.map { ScriptParser.parse($0.text) })
+    }
+}
+
+public enum Publisher {
+    public static func pdf(_ source: ScriptSource) -> Data {
+        PDFRenderer(
+            paginated: source.paginated,
+            titlePage: TitlePage.parse(source.titlePage),
+            documentTitle: TitlePage.parse(source.titlePage).title.map { Emphasis.runs(in: $0).map(\.text).joined() } ?? source.projectName,
+            emphasis: source.settings.emphasis
+        ).render()
+    }
+
+    public static func data(for format: ExportFormat, _ source: ScriptSource) -> Data {
+        switch format {
+        case .pdf: pdf(source)
+        case .fountain: Data(FountainExporter.export(titlePage: source.titlePage, files: source.files).utf8)
+        case .finalDraft: Data(FDXExporter.export(titlePage: source.titlePage, files: source.files).utf8)
+        case .markdown: Data(MarkdownExporter.export(titlePage: source.titlePage, files: source.files).utf8)
+        case .animatic: Data()
+        }
+    }
+
+    /// `exports/<Project> – 2026-11-22.pdf`, adding ` 2`, ` 3`… rather than overwriting.
+    public static func destination(for format: ExportFormat, projectName: String, projectRoot: URL, date: Date = .now) -> URL {
+        let folder = projectRoot.appending(path: ProjectLayout.exports, directoryHint: .isDirectory)
+        let day = date.formatted(.iso8601.year().month().day())
+        let base = "\(ProjectCreator.folderName(for: projectName)) – \(day)"
+        var url = folder.appending(path: "\(base).\(format.fileExtension)")
+        var n = 2
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = folder.appending(path: "\(base) \(n).\(format.fileExtension)")
+            n += 1
+        }
+        return url
+    }
+
+    /// Writes an export into the project's `exports/` folder and returns its URL.
+    @discardableResult
+    public static func export(_ format: ExportFormat, _ source: ScriptSource, projectRoot: URL) throws -> URL {
+        let url = destination(for: format, projectName: source.projectName, projectRoot: projectRoot)
+        try CoordinatedFileIO.write(data(for: format, source), to: url)
+        return url
+    }
+
+    /// Reads a screenplay file for Import: Fountain, plain text, Markdown or Final Draft.
+    public static func importScript(at url: URL) throws -> ImportedScript {
+        let data = try CoordinatedFileIO.read(url)
+        if url.pathExtension.lowercased() == "fdx" {
+            return try FDXImporter.convert(data)
+        }
+        guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) else {
+            throw FileIOError.notUTF8(url.lastPathComponent)
+        }
+        return FountainImporter.convert(text)
+    }
+
+    /// Creates a project from an imported screenplay in `parent` and returns its folder.
+    public static func createProject(from url: URL, in parent: URL) throws -> URL {
+        let imported = try importScript(at: url)
+        let title = TitlePage.parse(imported.titlePage).title.map { Emphasis.runs(in: $0).map(\.text).joined() }
+            ?? url.deletingPathExtension().lastPathComponent
+        try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        var name = title
+        var n = 2
+        while FileManager.default.fileExists(atPath: parent.appending(path: ProjectCreator.folderName(for: name)).path) {
+            name = "\(title) \(n)"
+            n += 1
+        }
+        let root = try ProjectCreator.create(title: name, template: .feature, in: parent)
+        try imported.write(into: root)
+        return root
     }
 }

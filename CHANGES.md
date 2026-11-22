@@ -1,5 +1,68 @@
 # Changes
 
+## Milestone 3 — Pagination and Publish (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 148 pass: 115 in SlateCore, 17 in SlateUI and 16 in the new SlateExport target. The scheme runs all three.
+**Done when:** on both fountain.io reference scripts, the page count matches and every page starts within 2 lines of the reference.
+- *Brick & Steel* (4 pages): all page breaks exact.
+- *The Last Birthday Card* (20 pages, 19 breaks): 14 exact, 4 off by 2 lines and 1 off by 1.
+
+### What works
+- **Page engine** (`Paginator`, SlateCore) lays out the joined act files on Letter (54 lines) or A4 (58).
+  - Element positions follow the Publish table, checked against the reference PDF: heading and action at 1.5" (61 characters), cue at 3.5", parenthetical at 2.9", dialogue at 2.5" (35 characters), transitions right-aligned at 7.1".
+  - Spacing comes from the elements (two blank lines before headings, one before everything else), not from blank lines in the file.
+  - Break rules:
+    - A heading moves with at least 2 lines of what follows.
+    - A speech splits only at a sentence end with 2+ lines each side, adding `(MORE)` and `NAME (CONT'D)`.
+    - A cue or parenthetical is never left at the bottom of a page.
+    - Action splits only at a sentence or line end.
+    - `===` forces a new page.
+  - Dual dialogue (`^`) prints side by side; centred text (`>…<`) and lyrics are supported.
+  - Boneyard, synopses, scene tags and `[[link]]` brackets are left out of the printed page.
+- **Automatic (CONT'D)**, **scene numbers** in both margins, and **emphasis** (`*italic*`, `**bold**`, `***both***`, `_underline_`, `\` escapes) are all on by default. Each can be switched off per project in `project.json` › `settings.publish`.
+- **Exact timings:** eighths per scene (counted per page, at least 1/8) and the page count come from the same engine as the PDF.
+  - The navigator and status bar show `~` estimates while you type.
+  - They switch to exact numbers 300 ms after typing stops. Layout runs off the main thread and takes about 2.4 ms for 12 pages.
+- **PDF** (Core Text, bundled Courier Prime):
+  - Title page from `title-page.md`: title, credit, authors, source and draft date centred; contact bottom-left.
+  - Page numbers top right, 0.5" from the top, with no number on page 1.
+  - The PDF title comes from the title page.
+- **Page view:** Draft/Page switch in the Script toolbar, or ⇧⌘\\. It shows the rendered PDF, read-only, follows the caret's page and keeps your place when it refreshes.
+- **Publish menu:** PDF (⇧⌘E), Final Draft, Fountain and Markdown go to `exports/<Project> – <date>.<ext>`. An existing file is never overwritten, and the new file is shown in Finder.
+- **Print Script…** (⌥⌘P) uses the same renderer.
+- **Fountain import:**
+  - The title page becomes `title-page.md`.
+  - Top-level `# Sections` become numbered act files; deeper sections become `/* ## … */`.
+  - `.HEADING` becomes `# HEADING`, and Fountain `[[notes]]` become `/* note: … */`.
+  - Scene IDs are made unique across all act files.
+- **Fountain export:** one file. Act files become `# Sections`, headings print as `INT. …` or `.FORCED`, and tags and link brackets are removed. A round trip keeps elements, acts and the title page.
+- **FDX export and import** (Foundation XML, no dependency):
+  - Element types, emphasis styles, dual dialogue, centred text, forced page breaks, scene numbers and the title page all map both ways.
+  - Slate scene IDs travel in a `SlateSceneID` attribute, so an FDX round trip keeps them and paginates identically.
+  - FDX scene numbers are kept as `{#s001 number=14}`.
+- **Import Screenplay…** (⇧⌘I, and an Import button on the home screen) creates a new project in `~/Documents/Slate` from a `.fountain`, `.fdx`, `.txt` or `.md` file and opens it.
+- **Publish settings** popover in the Script toolbar: page size, scene numbers, automatic (CONT'D), emphasis.
+- Courier Prime is registered at launch, so the editor themes' "Courier Prime" now resolves too.
+
+### Stubbed or not yet done
+- **Page view is read-only.** Typing happens in Draft view.
+- A transition that doesn't fit at the bottom of a page moves to the next page alone, rather than taking the line above with it.
+- Production features are left for Milestone 11:
+  - locked scene numbers, A-scenes and A-pages,
+  - revision colours and marks,
+  - reports and sides.
+
+  The `number=` attribute from FDX is kept but not printed yet.
+- Smart quotes aren't applied in Publish; quotes print as typed.
+- Importing a Slate folder or `.zip`, or a Markdown folder (Obsidian vault), is Milestone 12.
+- FDX boneyard and synopsis lines aren't exported (Final Draft has no plain equivalent).
+
+### How to check the "done when"
+1. Run `swift test --package-path Packages/SlateExport --filter Reference` to see the page-break offsets printed.
+2. In the app, use **Import Screenplay…** on `Fixtures/Fountain/Brick-and-Steel.fountain`. Switch to Page view, then publish a PDF and compare it side by side with `Fixtures/Fountain/Brick-and-Steel.pdf`.
+3. If you have Final Draft or Highland, open the exported `.fdx` and compare its page count.
+
 ## Milestone 2 — Script editor (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

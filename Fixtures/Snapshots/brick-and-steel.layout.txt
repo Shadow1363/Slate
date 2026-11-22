@@ -1,0 +1,109 @@
+p1 r00 x1.50 L EXT. BRICK'S PATIO - DAY #1
+p1 r02 x1.50 L A gorgeous day.  The sun is shining.  But BRICK BRADDOCK,
+p1 r03 x1.50 L retired police detective, is sitting quietly, contemplating --
+p1 r04 x1.50 L something.
+p1 r06 x1.50 L The SCREEN DOOR slides open and DICK STEEL, his former
+p1 r07 x1.50 L partner and fellow retiree, emerges with two cold beers.
+p1 r09 x3.50 L STEEL
+p1 r10 x2.50 L Beer's ready!
+p1 r12 x3.50 L BRICK
+p1 r13 x2.50 L Are they cold?
+p1 r15 x3.50 L STEEL
+p1 r16 x2.50 L Does a bear crap in the woods?
+p1 r18 x1.50 L Steel sits.  They laugh at the dumb joke.
+p1 r20 x3.50 L STEEL (CONT'D)
+p1 r21 x2.90 L (beer raised)
+p1 r22 x2.50 L To retirement.
+p1 r24 x3.50 L BRICK
+p1 r25 x2.50 L To retirement.
+p1 r27 x1.50 L They drink long and well from the beers.
+p1 r29 x1.50 L And then there's a long beat.
+p1 r30 x1.50 L Longer than is funny.
+p1 r31 x1.50 L Long enough to be depressing.
+p1 r33 x1.50 L The men look at each other.
+p1 r35 x2.70 L STEEL
+p1 r35 x5.80 L BRICK
+p1 r36 x1.50 L Screw retirement.
+p1 r36 x4.60 L Screw retirement.
+p1 r38 x7.10 R SMASH CUT TO:
+p1 r41 x1.50 L INT. TRAILER HOME - DAY #2
+p1 r43 x1.50 L This is the home of THE BOY BAND, AKA DAN and JACK.  They too
+p1 r44 x1.50 L are drinking beer, and counting the take from their last
+p1 r45 x1.50 L smash-and-grab.  Money, drugs, and ridiculous props are
+p1 r46 x1.50 L strewn about the table.
+p1 r48 x3.50 L JACK
+p1 r49 x2.90 L (in Vietnamese, subtitled)
+p1 r50 x2.50 L Did you know Brick and Steel are
+p1 r51 x2.50 L retired?
+p2 r00 x3.50 L DAN
+p2 r01 x2.50 L Then let's retire them.
+p2 r02 x2.50 L Permanently.
+p2 r04 x1.50 L Jack begins to argue vociferously in Vietnamese (?), But
+p2 r05 x1.50 L mercifully we...
+p2 r07 x7.10 R CUT TO:
+p2 r10 x1.50 L EXT. BRICK'S POOL - DAY #3
+p2 r12 x1.50 L Steel, in the middle of a heated phone call:
+p2 r14 x3.50 L STEEL
+p2 r15 x2.50 L They're coming out of the woodwork!
+p2 r16 x2.90 L (pause)
+p2 r17 x2.50 L No, everybody we've put away!
+p2 r18 x2.90 L (pause)
+p2 r19 x2.50 L Point Blank Sniper?
+p2 r22 x1.50 L SNIPER SCOPE POV #4
+p2 r24 x1.50 L From what seems like only INCHES AWAY.  Steel's face FILLS
+p2 r25 x1.50 L the Leupold Mark 4 scope.
+p2 r27 x3.50 L STEEL
+p2 r28 x2.50 L The man's a myth!
+p2 r30 x1.50 L Steel turns and looks straight into the cross-hairs.
+p2 r32 x3.50 L STEEL (CONT'D)
+p2 r33 x2.90 L (oh crap)
+p2 r34 x2.50 L Hello...
+p2 r36 x7.10 R CUT TO:
+p2 r39 x1.50 L OPENING TITLES #5
+p2 r41 x4.50 C BRICK BRADDOCK
+p2 r42 x4.50 C & DICK STEEL IN
+p2 r44 x4.50 C BRICK & STEEL
+p2 r45 x4.50 C FULL RETIRED
+p2 r47 x7.10 R SMASH CUT TO:
+p2 r50 x1.50 L EXT. WOODEN SHACK - DAY #6
+p2 r52 x1.50 L COGNITO, the criminal mastermind, is SLAMMED against the
+p2 r53 x1.50 L wall.
+p3 r00 x3.50 L COGNITO
+p3 r01 x2.50 L Woah woah woah, Brick and Steel!
+p3 r03 x1.50 L Sure enough, it's Brick and Steel, roughing up their favorite
+p3 r04 x1.50 L usual suspect.
+p3 r06 x3.50 L COGNITO (CONT'D)
+p3 r07 x2.50 L What is it you want with me, DICK?
+p3 r09 x1.50 L Steel SMACKS him.
+p3 r11 x3.50 L STEEL
+p3 r12 x2.50 L Who's coming after us?
+p3 r14 x3.50 L COGNITO
+p3 r15 x2.50 L Everyone's coming after you mate!
+p3 r16 x2.50 L Scorpio, The Boy Band, Sparrow,
+p3 r17 x2.50 L Point Blank Sniper...
+p3 r19 x1.50 L As he rattles off the long list, Brick and Steel share a
+p3 r20 x1.50 L look.  This is going to be BAD.
+p3 r22 x7.10 R CUT TO:
+p3 r25 x1.50 L INT. GARAGE - DAY #7
+p3 r27 x1.50 L BRICK and STEEL get into Mom's PORSCHE, Steel at the wheel.
+p3 r28 x1.50 L They pause for a beat, the gravity of the situation catching
+p3 r29 x1.50 L up with them.
+p3 r31 x3.50 L BRICK
+p3 r32 x2.50 L This is everybody we've ever put
+p3 r33 x2.50 L away.
+p3 r35 x3.50 L STEEL
+p3 r36 x2.90 L (starting the engine)
+p3 r37 x2.50 L So much for retirement!
+p3 r39 x1.50 L They speed off.  To destiny!
+p3 r41 x7.10 R CUT TO:
+p3 r44 x1.50 L EXT. PALATIAL MANSION - DAY #8
+p3 r46 x1.50 L An EXTREMELY HANDSOME MAN drinks a beer.  Shirtless,
+p3 r47 x1.50 L unfortunately.
+p3 r49 x1.50 L His minion approaches offscreen:
+p3 r51 x3.50 L MINION
+p3 r52 x2.50 L We found Brick and Steel!
+p4 r00 x3.50 L HANDSOME MAN
+p4 r01 x2.50 L I want them dead.  DEAD!
+p4 r03 x1.50 L Beer flies.
+p4 r05 x7.10 R BURN TO PINK.
+p4 r07 x4.50 C THE END

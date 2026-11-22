@@ -1,7 +1,9 @@
 import AppKit
 import Observation
 import SlateCore
+import SlateExport
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// App-wide state shared by every window: the project library and themes.
 @MainActor
@@ -22,6 +24,7 @@ public final class SlateAppModel {
     }
 
     public init() {
+        SlateFonts.register()
         let support = Self.applicationSupport
         library = ProjectLibrary(directory: support, defaultWatchedFolder: Self.defaultProjectsFolder)
         themes = ThemeEngine(userThemesDirectory: support.appending(path: "Themes", directoryHint: .isDirectory))
@@ -43,6 +46,27 @@ public final class SlateAppModel {
             return url
         } catch {
             Self.showError("Can't open this folder", error)
+            return nil
+        }
+    }
+
+    /// Asks for a Fountain, Final Draft, text or Markdown screenplay, makes a
+    /// new project from it in `~/Documents/Slate`, and returns the project folder.
+    public func importScreenplay() -> URL? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = ["fountain", "fdx", "txt", "md", "markdown"].compactMap { UTType(filenameExtension: $0) }
+        panel.prompt = "Import"
+        panel.message = "Choose a screenplay: Fountain, Final Draft (.fdx), plain text or Markdown."
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        do {
+            let root = try Publisher.createProject(from: url, in: Self.defaultProjectsFolder)
+            let entry = try library.add(root)
+            library.markOpened(entry.id)
+            return root
+        } catch {
+            Self.showError("Couldn't import “\(url.lastPathComponent)”", error)
             return nil
         }
     }

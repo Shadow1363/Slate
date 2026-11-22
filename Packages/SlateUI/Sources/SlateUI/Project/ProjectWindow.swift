@@ -1,5 +1,6 @@
 import AppKit
 import SlateCore
+import SlateExport
 import SwiftUI
 
 /// Actions the menu bar can send to the focused project window.
@@ -8,6 +9,9 @@ public struct ProjectActions {
     public let save: @MainActor () -> Void
     public let jumpToScene: @MainActor () -> Void
     public let moveScene: @MainActor (Int) -> Void
+    public let publish: @MainActor (ExportFormat) -> Void
+    public let printScript: @MainActor () -> Void
+    public let togglePageView: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -131,6 +135,12 @@ struct ProjectContent: View {
             moveScene: { delta in
                 guard area == .script else { return }
                 script.moveCurrentScene(by: delta)
+            },
+            publish: { script.publish($0) },
+            printScript: { script.printScript() },
+            togglePageView: {
+                area = .script
+                script.showingPages.toggle()
             }
         ))
     }

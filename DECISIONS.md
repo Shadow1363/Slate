@@ -49,3 +49,27 @@ Every default in SPEC.md › Open decisions is kept: the name **Slate**; scene h
 | 33 | Eighths and timings are estimates until M3: lines wrap at 60/35/20 characters (action/dialogue/parenthetical), 55 lines per page, at least 1/8 per scene. They are shown with `~`. | Gives useful numbers now. M3's page engine replaces them. |
 | 34 | Character names for autocomplete and spelling also come from `universe/characters/*.md` frontmatter, read with a small line parser (`name:`, `aliases:`), not Yams. | Avoids adding a dependency before M4. The full YAML parser arrives with Universe notes. |
 | 35 | SlateUI gets its own test target, which drives `ScriptEditorController` with real keystrokes on a windowless `NSTextView`. | The editor's rules are where regressions would hurt most, and this tests them without UI automation. |
+
+## Milestone 3
+
+| # | Decision | Why |
+|---|---|---|
+| 36 | Courier Prime (SIL OFL 1.1) is bundled in SlateExport and loaded straight from its files for Publish. It's also registered for the app so editor themes can use it. | Your choice. Output is identical on every Mac, whatever fonts are installed. |
+| 37 | Layout widths are measured in characters (10 per inch): action and headings 61, dialogue 35, parenthetical 26, cue 38. A lone trailing `--` may hang one character past the edge. | Calibrated against the *Brick & Steel* reference PDF: 61-character action lines fit and 62 wrap, except for a hanging `--`. A 26-character parenthetical fits on one line. |
+| 38 | Positions: character 3.5", parenthetical 2.9", transition right edge 7.1", page number right edge 7.25" and 0.5" from the top. These replace SPEC.md's 3.7" and 3.1". | SPEC.md asked for these to be checked against real output in M3. The reference PDF (and Final Draft's defaults) use these. |
+| 39 | Two blank lines before scene headings and one before other elements. Spacing comes from elements, not the file's blank lines. A setting (`headingSpacing`) allows 1. | Matches *Brick & Steel* and Final Draft. *The Last Birthday Card* was made with 1, and its test uses that. |
+| 40 | Lines per page = (page height − 2") × 6: 54 on Letter, 58 on A4. | Both reference PDFs use 54 lines. |
+| 41 | Dialogue and action only split after a line that ends a sentence (or a source line), with at least 2 lines each side. | Final Draft's behaviour. The *Last Birthday Card* PDF splits action anywhere, which accounts for most of its 1–2 line differences. |
+| 42 | Automatic (CONT'D) is added when the same speaker resumes after action only, and resets at each scene heading. It isn't added to dual dialogue. | Final Draft's default, and you chose it on by default. |
+| 43 | Scene numbers in the margins are each scene's position in the script. Locked numbers are M11. | Simplest correct numbering until production mode. |
+| 44 | Eighths are counted per page per scene (including blank lines before the heading), each portion rounded and at least 1/8, then summed. | The industry convention for scene length. |
+| 45 | Exact eighths and pages are computed 300 ms after typing stops, off the main thread. Until then the UI shows `~` estimates. | Keeps typing fast (layout takes about 2–9 ms per run) while the numbers still match the PDF. |
+| 46 | Page view is a read-only PDFView of the real renderer's output. Editing stays in Draft view. | Guarantees Page view equals print. An editable paginated TextKit view would be a large separate project. |
+| 47 | Print is ⌥⌘P because SPEC.md gives ⌘P to Quick Open. Publish PDF is ⇧⌘E. | Avoids a shortcut clash. |
+| 48 | Exports go to `exports/<Project> – YYYY-MM-DD.<ext>`, adding ` 2`, ` 3`… instead of overwriting. | Nothing is ever deleted silently. |
+| 49 | On import, Fountain `[[notes]]` become `/* note: … */`. | Slate uses `[[…]]` for links. Turning notes into comments keeps their text without creating broken links. |
+| 50 | Fountain export writes act files as `# Sections` (titles from the file names) and `.FORCED` headings when needed. | Re-importing the export gives back the same act files. |
+| 51 | FDX: consecutive action or centred lines (single line breaks) become one paragraph with line breaks. Slate IDs are kept in a `SlateSceneID` attribute. Boneyard and synopsis aren't exported. | A round trip paginates the same. Final Draft ignores unknown attributes. |
+| 52 | The title page prints title, credit, authors, source and draft date centred from line 18, with contact bottom-left. | SPEC.md's layout. (The reference puts the draft date bottom-left. That's a style difference that doesn't affect pagination.) |
+| 53 | The reference fixtures are fountain.io's own sample scripts and PDFs. *Big Fish* is left out because it's a commercial screenplay. | Public Fountain samples, with attribution in `Fixtures/Fountain/README.md`. |
+| 54 | Quotes print as typed (no smart quotes in Publish). | Matches Final Draft's typewriter style. The file stays plain. |

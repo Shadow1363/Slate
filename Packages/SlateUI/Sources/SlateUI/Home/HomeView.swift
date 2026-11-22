@@ -55,6 +55,12 @@ public struct HomeView: View {
                     Label("Open Folder", systemImage: "folder.badge.plus")
                 }
                 .help("Open a project folder (⌘O)")
+                Button {
+                    if let url = model.importScreenplay() { openWindow(id: SlateWindowID.project, value: url) }
+                } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                }
+                .help("Import a Fountain, Final Draft, text or Markdown screenplay (⇧⌘I)")
             }
         }
         .sheet(isPresented: $model.showingNewProject) {

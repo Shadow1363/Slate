@@ -195,3 +195,21 @@ struct ProjectStoreTests {
         #expect(listed)
     }
 }
+
+@MainActor
+@Suite("ProjectStore manifest")
+struct ProjectStoreManifestTests {
+    @Test func updateManifestWritesAndKeepsUnknownKeys() throws {
+        let folder = try TempFolder()
+        let root = try Fixtures.copySampleProject(into: folder)
+        let store = try ProjectStore(rootURL: root, autosaveDelay: nil)
+        try store.updateManifest { PublishSettings(autoContd: false).apply(to: &$0) }
+        let reread = try ProjectManifest.decode(Data(contentsOf: root.appending(path: "project.json")))
+        #expect(PublishSettings(manifest: reread).autoContd == false)
+        #expect(reread.extra["studio"] != nil)
+        // The watcher sees our own write as no change.
+        store.handleExternalChanges(["project.json"])
+        #expect(store.manifestError == nil)
+        #expect(PublishSettings(manifest: store.manifest).autoContd == false)
+    }
+}

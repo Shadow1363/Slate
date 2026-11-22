@@ -11,6 +11,11 @@ let package = Package(
         .package(path: "../SlateCore"),
     ],
     targets: [
-        .target(name: "SlateExport", dependencies: ["SlateCore"]),
+        .target(
+            name: "SlateExport",
+            dependencies: ["SlateCore"],
+            resources: [.copy("Resources/Fonts")]
+        ),
+        .testTarget(name: "SlateExportTests", dependencies: ["SlateExport", "SlateCore"]),
     ]
 )
