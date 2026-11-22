@@ -142,6 +142,24 @@ public final class ProjectStore {
         return document
     }
 
+    /// Reads a file's current text: the open buffer if there is one, else the disk.
+    public func readText(at relativePath: String) throws -> String {
+        if let open = documents[relativePath] { return open.text }
+        return try CoordinatedFileIO.readText(try url(for: relativePath), presenter: watcher.filePresenter)
+    }
+
+    /// Creates a new text file. Fails if one already exists at that path.
+    @discardableResult
+    public func createTextFile(at relativePath: String, contents: String = "") throws -> TextDocument {
+        let url = try url(for: relativePath)
+        guard !FileManager.default.fileExists(atPath: url.path) else {
+            throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: url.path])
+        }
+        try CoordinatedFileIO.writeText(contents, to: url, presenter: watcher.filePresenter)
+        rescan()
+        return try document(at: relativePath)
+    }
+
     /// Saves if possible and forgets the document.
     public func closeDocument(_ document: TextDocument) {
         if document.diskState == .inSync, document.isDirty { save(document) }

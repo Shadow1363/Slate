@@ -6,6 +6,8 @@ import SwiftUI
 public struct ProjectActions {
     public let selectArea: @MainActor (ProjectArea) -> Void
     public let save: @MainActor () -> Void
+    public let jumpToScene: @MainActor () -> Void
+    public let moveScene: @MainActor (Int) -> Void
 }
 
 extension FocusedValues {
@@ -71,6 +73,13 @@ struct ProjectContent: View {
 
     @State private var area: ProjectArea? = .script
     @State private var selectedFile: String?
+    @State private var script: ScriptWorkspace
+    @State private var showingJump = false
+
+    init(store: ProjectStore) {
+        self.store = store
+        _script = State(initialValue: ScriptWorkspace(store: store))
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -81,10 +90,18 @@ struct ProjectContent: View {
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190)
         } content: {
-            AreaFileList(store: store, area: area ?? .script, selection: $selectedFile)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 240)
+            Group {
+                if area == .script {
+                    ScriptNavigator(workspace: script)
+                } else {
+                    AreaFileList(store: store, area: area ?? .script, selection: $selectedFile)
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 200, ideal: 260)
         } detail: {
-            if let selectedFile {
+            if area == .script {
+                ScriptDetail(workspace: script)
+            } else if let selectedFile {
                 DocumentPane(store: store, relativePath: selectedFile, close: { self.selectedFile = nil })
                     .id(selectedFile)
             } else {
@@ -97,9 +114,24 @@ struct ProjectContent: View {
             }
         }
         .onChange(of: area) { selectedFile = nil }
+        .onChange(of: store.files) {
+            script.refreshFiles()
+            script.refreshAuxiliary()
+        }
+        .sheet(isPresented: $showingJump) {
+            JumpToSceneSheet(workspace: script)
+        }
         .focusedSceneValue(\.projectActions, ProjectActions(
             selectArea: { area = $0 },
-            save: { store.saveAll() }
+            save: { store.saveAll() },
+            jumpToScene: {
+                area = .script
+                showingJump = true
+            },
+            moveScene: { delta in
+                guard area == .script else { return }
+                script.moveCurrentScene(by: delta)
+            }
         ))
     }
 }

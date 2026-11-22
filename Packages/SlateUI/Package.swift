@@ -12,5 +12,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "SlateUI", dependencies: ["SlateCore"]),
+        .testTarget(name: "SlateUITests", dependencies: ["SlateUI", "SlateCore"]),
     ]
 )

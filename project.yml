@@ -64,3 +64,4 @@ schemes:
       config: Debug
       targets:
         - package: SlateCore/SlateCoreTests
+        - package: SlateUI/SlateUITests

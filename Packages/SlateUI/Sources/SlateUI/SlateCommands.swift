@@ -35,6 +35,18 @@ public struct SlateCommands: Commands {
                 .keyboardShortcut("s")
                 .disabled(actions == nil)
         }
+        CommandMenu("Script") {
+            Button("Jump to Scene…") { actions?.jumpToScene() }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Divider()
+            Button("Move Scene Up") { actions?.moveScene(-1) }
+                .keyboardShortcut(.upArrow, modifiers: [.command, .control])
+                .disabled(actions == nil)
+            Button("Move Scene Down") { actions?.moveScene(1) }
+                .keyboardShortcut(.downArrow, modifiers: [.command, .control])
+                .disabled(actions == nil)
+        }
         CommandGroup(before: .sidebar) {
             ForEach(ProjectArea.allCases) { area in
                 Button(area.title) { actions?.selectArea(area) }

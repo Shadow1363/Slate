@@ -30,3 +30,22 @@ Every default in SPEC.md › Open decisions is kept: the name **Slate**; scene h
 | 19 | Tests use Swift Testing (`import Testing`). The sample project is in `Fixtures/SampleProject/`, and tests work on temp copies of it. | Built into Xcode, with parameterised tests. |
 | 20 | Until each area's real editor exists, every area shows a temporary file list and a plain-text editor. | Needed to show the M1 "done when" (outside edit → reload). |
 | 21 | Opening the same project twice focuses its window. `WindowGroup(for: URL.self)` handles this. | The simplest correct behaviour. |
+
+## Milestone 2
+
+| # | Decision | Why |
+|---|---|---|
+| 22 | Headings typed in the editor are written as `# INT. …`, even though `INT.` would be detected alone. | Every editor-made heading reads back as a heading, whatever its text (`# MONTAGE`). |
+| 23 | When Tab sets a line's kind and the text needs it, the editor adds the Fountain marker: `>` for a transition that doesn't end in `TO:`, `@` for a cue that isn't all caps, `!` for action that looks like a heading, cue or transition. | The file must read back as what the writer chose, in any Fountain app. |
+| 24 | The parser takes a "hint" for the caret's line, so an empty line or a cue with no dialogue yet shows as what you are typing. The hint is dropped when the caret leaves the line, and the file decides from then on. | Fountain can't express "empty character line", and the file should never carry editor state. |
+| 25 | Return follows Final Draft's defaults: Dialogue → Action, Transition → Heading. An empty cue, heading or transition plus Return turns back into Action. ⌥Return is a plain line break. Return in the middle of a line just breaks it. | Familiar to screenwriters and predictable. |
+| 26 | Paragraph breaks are real blank lines (Return inserts `\n\n` where Fountain needs a blank line). The theme's `spaceBefore` is not used in Draft view. | Fountain spacing is in the text. Adding theme spacing would double it. |
+| 27 | Scene IDs are `s` plus at least 3 digits, one more than the highest in the script. They are added when you press Return on a heading or leave it, not when a file is opened. | Opening a file never rewrites it. Typing a heading tags it straight away, as the spec says. |
+| 28 | The scene tag stays visible in the editor as a small chip-coloured tag rather than hidden. | Hiding characters in TextKit 2 makes caret movement and selection confusing. It can be revisited with Page view in M3. |
+| 29 | Cues, headings and transitions are upper-cased as you type, in the file itself. | Fountain needs capitals for cues, and NSTextView has no display-only text transform. |
+| 30 | Autocomplete is inline type-ahead (the selected remainder) rather than a pop-up list. | Fully keyboard-driven: keep typing, Tab/→/Return to accept, Esc to drop. |
+| 31 | The editor shows one act file at a time. The navigator and ⇧⌘O cover the whole script. | Editing joined files in one view would need cross-file edit mapping. This keeps every file write simple. |
+| 32 | Draft view layout: Courier-style 10 characters per inch, so 1 inch = 6 × the theme's action font size. The 6-inch column is centred. Character starts at 2.2", parenthetical at 1.6–3.6", dialogue at 1.0–4.5" from the column edge. | The Publish table in SPEC.md, measured from the 1.5" left margin. |
+| 33 | Eighths and timings are estimates until M3: lines wrap at 60/35/20 characters (action/dialogue/parenthetical), 55 lines per page, at least 1/8 per scene. They are shown with `~`. | Gives useful numbers now. M3's page engine replaces them. |
+| 34 | Character names for autocomplete and spelling also come from `universe/characters/*.md` frontmatter, read with a small line parser (`name:`, `aliases:`), not Yams. | Avoids adding a dependency before M4. The full YAML parser arrives with Universe notes. |
+| 35 | SlateUI gets its own test target, which drives `ScriptEditorController` with real keystrokes on a windowless `NSTextView`. | The editor's rules are where regressions would hurt most, and this tests them without UI automation. |

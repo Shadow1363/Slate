@@ -42,26 +42,7 @@ struct DocumentEditor: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            switch document.diskState {
-            case .inSync:
-                EmptyView()
-            case .changedOnDisk:
-                Banner(systemImage: "exclamationmark.triangle.fill", message: "“\(document.name)” changed on disk while you had unsaved edits.") {
-                    Button("Keep Mine") { store.keepMine(document) }
-                    Button("Load Theirs") { store.loadTheirs(document) }
-                }
-            case .deletedOnDisk:
-                Banner(systemImage: "trash", message: "“\(document.name)” was deleted, moved or renamed outside Slate.") {
-                    Button("Save Again") { store.keepMine(document) }
-                    Button("Close") {
-                        store.loadTheirs(document)
-                        close()
-                    }
-                }
-            }
-            if let error = document.lastError {
-                Banner(systemImage: "xmark.octagon.fill", message: error) {}
-            }
+            DiskStateBanners(store: store, document: document, close: close)
             PlainTextEditor(text: $document.text, theme: theme)
             Divider()
             HStack {
@@ -75,6 +56,36 @@ struct DocumentEditor: View {
             .padding(.vertical, 4)
         }
         .navigationTitle(document.name)
+    }
+}
+
+/// "Changed on disk" / "Deleted on disk" / save error banners for a document.
+struct DiskStateBanners: View {
+    let store: ProjectStore
+    let document: TextDocument
+    let close: () -> Void
+
+    var body: some View {
+        switch document.diskState {
+        case .inSync:
+            EmptyView()
+        case .changedOnDisk:
+            Banner(systemImage: "exclamationmark.triangle.fill", message: "“\(document.name)” changed on disk while you had unsaved edits.") {
+                Button("Keep Mine") { store.keepMine(document) }
+                Button("Load Theirs") { store.loadTheirs(document) }
+            }
+        case .deletedOnDisk:
+            Banner(systemImage: "trash", message: "“\(document.name)” was deleted, moved or renamed outside Slate.") {
+                Button("Save Again") { store.keepMine(document) }
+                Button("Close") {
+                    store.loadTheirs(document)
+                    close()
+                }
+            }
+        }
+        if let error = document.lastError {
+            Banner(systemImage: "xmark.octagon.fill", message: error) {}
+        }
     }
 }
 

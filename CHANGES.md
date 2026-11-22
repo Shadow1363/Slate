@@ -1,5 +1,53 @@
 # Changes
 
+## Milestone 2 — Script editor (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 103 pass: 89 in SlateCore and 14 in SlateUI. `swift test` for each package and `xcodebuild … test` both run them, and the scheme now includes SlateUI.
+
+### What works
+- **ScriptParser** (SlateCore): turns a script file into classified lines and scenes, following the Fountain rules.
+  - Scene headings: `#` lines, plus auto-detected `INT.`/`EXT.`/`INT./EXT.`/`I/E`/`EST.` after a blank line.
+  - Character cues with extensions and `^` dual dialogue, parentheticals, dialogue (including two-space blank lines), transitions ending `TO:`.
+  - Forced `!` `@` `>` `.` `~` `=`, centred `>…<`, `===`, and `/* boneyard */` spanning several lines.
+  - Scene tags `{#s014 dur=2:30}`. Handles CRLF, emoji and accents, with UTF-16 ranges for the editor.
+- **ScriptBook**: joins the act files in `script/` in name order (skipping the title page and `margin/`). It numbers scenes and collects characters, locations and times of day, most-used first. It also estimates eighths, duration (1 page ≈ 1 min, or `dur=`), pages and word count.
+- **Editor** (`NSTextView` on TextKit 2, Draft view): formatting updates live as you type. Each element gets its indents from the Publish table, in a centred 6-inch column, with theme fonts and colours. The text in the file stays plain.
+  - `#` and forced markers are dimmed.
+  - Scene tags show as a small chip-coloured tag.
+  - `[[links]]` are coloured.
+- **Tab / Return** work like Final Draft. See the table in the README.
+  - On an empty line, Tab chooses what the line will be before you type. Typed headings get `# ` and transitions `>`, so the file reads back the same.
+  - Cues, headings and transitions are typed in capitals.
+  - Tab on an empty dialogue line makes `()` with the caret inside, and Return steps past the `)`.
+  - Undo works across all of it.
+- **Scene IDs:** a heading gets the next free `sNNN` (across all act files) when you press Return on it or move off it. A pasted duplicate ID gets a new one.
+- **Autocomplete:** the rest of a match appears selected after the caret. It covers:
+  - cue names from the script and from `universe/characters/*.md` (`name:` and `aliases:`),
+  - `(V.O.)`, `(O.S.)`, `(O.C.)` and `(CONT'D)`,
+  - `INT. `/`EXT. `/`INT./EXT. `/`EST. `, known locations, and times of day.
+
+  Tab, → or Return accepts it, Esc removes it, and typing over it keeps what you type.
+- **Spell check:** on as you type, with auto-correct and smart quotes off. Character names, aliases, `dictionary/words.txt` and screenplay terms (`INT`, `V.O.`, `CONT'D`, `ECU`, …) are ignored. Scene tags, markers and `[[links]]` are never flagged.
+- **Scene navigator:** title page, then each act file with its scenes. Each scene row shows its number, heading, eighths and estimated time, and the scene under the caret is bold. Clicking a scene jumps to it, and dragging reorders scenes within a file. Totals are shown at the bottom.
+- **Status bar:** current element, scene N of M with its length, words, estimated pages and runtime.
+- **Menus:** Script › Jump to Scene… (⇧⌘O, type to filter, arrows, Return), Move Scene Up/Down (⌃⌘↑/↓). The Script area can create `script/script.md` when the folder has no script yet.
+- **Speed:** 4.9 ms per keystroke on a 10-page script in release (7 ms in debug), including SwiftUI's update. A test enforces < 16 ms.
+
+### Stubbed or not yet done
+- **Page view**, real page breaks, and exact eighths and timings come in M3. Today's eighths and pages are estimates from line counts, labelled `~` in the UI.
+- Fountain emphasis (`*italic*`, `**bold**`, `_underline_`) is not rendered yet, so the markers show as typed.
+- Dual dialogue (`^`) is parsed but not laid out side by side.
+- Scene colour labels, and dragging scenes **between** act files, are not built yet. Creating new act files has to be done in Finder for now.
+- Focus mode, typewriter scrolling and snapshots (⇧⌘S) aren't built. The spec lists them under the editor but not in M2.
+- Duplicate scene IDs are fixed only within one act file. A copy that collides with an ID in another act file isn't renumbered yet.
+- The other areas still show the temporary file list from M1.
+
+### How to check the "done when"
+1. Open a project and press ⌘2. The first act file opens with the caret in it.
+2. Without the mouse: press Tab three times and type `int. kitchen - night`, then Return. Type an action line and press Return, then Tab. Type `mara`, press Return and type dialogue. Press Return, then Tab twice for a transition. Use ⇧⌘O to jump between scenes.
+3. Keep going for ~10 pages. The status bar shows the page estimate, and the layout should look like a screenplay in Draft view.
+
 ## Milestone 1 — Foundation (2026-11-22)
 
 **Build:** `xcodegen generate && xcodebuild -project Slate.xcodeproj -scheme Slate build`. It succeeds with no compiler warnings. Xcode's App Intents metadata tool still prints "Metadata extraction skipped", which is a tool log line and not a code warning.
