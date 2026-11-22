@@ -40,7 +40,8 @@ final class ScriptWorkspace {
     var reveal: RevealRequest?
     var caret: ScriptCaret?
     private(set) var characterNoteNames: [String] = []
-    private(set) var projectWords: [String] = []
+    /// The project's dictionary, for spell check and defined-word underlines.
+    var dictionary: DictionaryModel?
     private(set) var openError: String?
     /// Draft view (editable) or Page view (the printed pages).
     var showingPages = false
@@ -62,6 +63,8 @@ final class ScriptWorkspace {
     @ObservationIgnored var linkGraph: () -> LinkGraph = { .empty }
     @ObservationIgnored var followLink: (String) -> Bool = { _ in false }
     @ObservationIgnored var linkPreview: (String) -> NSViewController? = { _ in nil }
+    /// Dictionary words: hover card, ⌘-click and context-menu items.
+    @ObservationIgnored var dictionaryActions = DictionaryActions.none
     /// Told about every edit to an act file, for the link index.
     @ObservationIgnored var textDidChange: ((String, String) -> Void)?
 
@@ -101,13 +104,12 @@ final class ScriptWorkspace {
         }
     }
 
-    /// Re-reads character notes and `dictionary/words.txt`.
+    /// Re-reads character notes.
     func refreshAuxiliary() {
         let notes = (store.files[.universe] ?? []).filter { $0.relativePath.hasPrefix("universe/characters/") && $0.name.hasSuffix(".md") }
         characterNoteNames = notes.flatMap { note in
             (try? store.readText(at: note.relativePath)).map(CharacterNotes.names(inNote:)) ?? []
         }
-        projectWords = (try? store.readText(at: "dictionary/words.txt")).map(ScriptSpelling.words(fromWordList:)) ?? []
     }
 
     var publishSettings: PublishSettings { PublishSettings(manifest: store.manifest) }
@@ -224,8 +226,11 @@ final class ScriptWorkspace {
         return ScriptCompletion.Sources(characters: characters, locations: book.locations, times: book.times)
     }
 
-    var ignoredWords: [String] {
-        ScriptSpelling.ignoredWords(characters: book.characters + characterNoteNames, extra: projectWords)
+    /// Character names from the script and notes, which spell check accepts.
+    var characterNames: [String] { book.characters + characterNoteNames }
+
+    var spelling: EditorSpelling {
+        dictionary?.spelling(for: .script, characters: characterNames) ?? .none
     }
 
     /// Scene IDs used in act files other than `path`.

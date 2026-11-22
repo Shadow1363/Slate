@@ -273,7 +273,7 @@ struct LinkIndexTests {
         let root = try Fixtures.copySampleProject(into: folder)
         let store = try ProjectStore(rootURL: root, autosaveDelay: nil)
         let index = LinkIndex(store: store)
-        #expect(index.graph.backlinks(to: "universe/items/the-brass-key.md").count == 4)
+        #expect(index.graph.backlinks(to: "universe/items/the-brass-key.md").count == 5)
         #expect(FileManager.default.fileExists(atPath: root.appending(path: LinkIndex.cachePath).path))
 
         // Unsaved edits count.
@@ -336,7 +336,7 @@ struct RenameTests {
             renaming: "universe/items/the-brass-key.md", to: "The Copper Key", in: index.graph,
             existingPaths: Set(store.files.values.flatMap { $0 }.map(\.relativePath))
         ))
-        #expect(plan.fileCount == 3) // the draft links by alias
+        #expect(plan.fileCount == 4) // the draft links by alias
         let newPath = try RenameRefactor.apply(plan, updateLinks: true, store: store)
         #expect(newPath == "universe/items/the-copper-key.md")
 
@@ -354,7 +354,8 @@ struct RenameTests {
 
         index.update(path: open.relativePath, text: open.text)
         index.refresh()
-        #expect(index.graph.backlinks(to: newPath).count == 4)
+        #expect(index.graph.backlinks(to: newPath).count == 5)
+        #expect(try folder.read("SampleProject/dictionary/words.md").contains("See [[The Copper Key]]."))
     }
 
     @Test func trashMovesToTrashNotDelete() throws {

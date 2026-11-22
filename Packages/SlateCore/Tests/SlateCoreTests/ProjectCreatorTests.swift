@@ -19,7 +19,7 @@ struct ProjectCreatorTests {
             #expect(FileManager.default.fileExists(atPath: root.appending(path: path).path, isDirectory: &isDirectory) && isDirectory.boolValue, "missing \(path)")
         }
         for path in ["universe/draft.md", "script/title-page.md", "script/margin/todos.md", "script/margin/notes.md",
-                     "storyboard/storyboard.json", "dictionary/words.txt"] {
+                     "storyboard/storyboard.json", "dictionary/words.md"] {
             #expect(FileManager.default.fileExists(atPath: root.appending(path: path).path), "missing \(path)")
         }
         // The store can open what the creator made.

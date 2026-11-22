@@ -17,12 +17,14 @@ struct NoteEditor: View {
             if let error = note.frontmatterError {
                 Banner(systemImage: "exclamationmark.triangle.fill", message: "\(error). Fix it below; the form returns when the YAML is valid.") {}
                 MarkdownEditor(document: document, text: document.text, hidesFrontmatter: false, theme: theme,
-                               reveal: session.noteReveal, linkVersion: session.links.version, session: session)
+                               reveal: session.noteReveal, linkVersion: session.links.version, session: session,
+                           spelling: session.noteSpelling)
             } else {
                 NoteHeader(session: session, document: document, note: note, expanded: $fieldsExpanded)
                 Divider()
                 MarkdownEditor(document: document, text: document.text, hidesFrontmatter: true, theme: theme,
-                               reveal: session.noteReveal, linkVersion: session.links.version, session: session)
+                               reveal: session.noteReveal, linkVersion: session.links.version, session: session,
+                           spelling: session.noteSpelling)
             }
             Divider()
             FileStatusBar(document: document)

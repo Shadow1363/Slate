@@ -84,6 +84,8 @@ public struct ResolvedTheme: Codable, Sendable, Equatable {
         public var selection: HexColor
         public var currentLine: HexColor
         public var spellError: HexColor
+        /// The dotted underline under words defined in the dictionary.
+        public var termUnderline: HexColor
         public var font: String
         public var size: Double
         public var lineSpacing: Double

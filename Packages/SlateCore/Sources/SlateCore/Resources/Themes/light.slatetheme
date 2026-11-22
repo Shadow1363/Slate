@@ -43,6 +43,7 @@
     "selection": "#C9DBFA",
     "size": 13,
     "spellError": "#D93025",
+    "termUnderline": "#8E6FD8",
     "text": "#1D1D1F"
   },
   "margin": {

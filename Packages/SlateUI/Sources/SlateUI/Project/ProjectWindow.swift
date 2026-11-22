@@ -15,11 +15,14 @@ public struct ProjectActions {
     public let quickOpen: @MainActor () -> Void
     public let findInProject: @MainActor () -> Void
     public let newNote: @MainActor () -> Void
+    /// "New Note…", or "Add Word…" in the Dictionary.
+    public let newItemTitle: String
     public let toggleInspector: @MainActor () -> Void
     public let addTodo: @MainActor () -> Void
     public let addMarginNote: @MainActor () -> Void
     public let toggleMargin: @MainActor () -> Void
     public let showAllTodos: @MainActor () -> Void
+    public let defineSelection: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -104,6 +107,7 @@ struct ProjectContent: View {
                 switch session.area ?? .script {
                 case .script: ScriptNavigator(workspace: session.script)
                 case .universe: UniverseNavigator(session: session)
+                case .dictionary: DictionaryNavigator(session: session)
                 case let area: AreaFileList(store: store, area: area, selection: $session.selectedFile)
                 }
             }
@@ -123,6 +127,8 @@ struct ProjectContent: View {
                     }
                 case .universe:
                     UniverseDetail(session: session)
+                case .dictionary:
+                    DictionaryDetail(session: session)
                 case let area:
                     if let selectedFile = session.selectedFile {
                         DocumentPane(store: store, relativePath: selectedFile, close: { session.selectedFile = nil })
@@ -133,16 +139,27 @@ struct ProjectContent: View {
                 }
             }
             .inspector(isPresented: $session.showingInspector) {
-                LinksInspector(session: session)
+                VStack(spacing: 0) {
+                    Picker("Inspector", selection: $session.inspectorTab) {
+                        ForEach(ProjectSession.InspectorTab.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .padding(8)
+                    switch session.inspectorTab {
+                    case .links: LinksInspector(session: session)
+                    case .define: DefineInspector(session: session)
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         session.showingInspector.toggle()
                     } label: {
-                        Label("Links", systemImage: "sidebar.trailing")
+                        Label("Inspector", systemImage: "sidebar.trailing")
                     }
-                    .help("Show backlinks (⌥⌘0)")
+                    .help("Show backlinks and definitions (⌥⌘0)")
                 }
             }
         }
@@ -163,6 +180,7 @@ struct ProjectContent: View {
             model.reschedule(root: store.rootURL, todos: MarginTodos.parse(text))
         }
         .onChange(of: store.files) { session.filesChanged() }
+        .onChange(of: session.dictionary.projectText) { session.dictionary.refresh() }
         .sheet(item: $session.sheet) { sheet in
             switch sheet {
             case .jumpToScene: JumpToSceneSheet(workspace: session.script)
@@ -174,6 +192,7 @@ struct ProjectContent: View {
             case .editTodo(let todo): TodoSheet(session: session, editing: todo, sceneID: nil, quote: nil)
             case .addMarginNote(let sceneID, let quote): MarginNoteSheet(session: session, editing: nil, sceneID: sceneID, quote: quote)
             case .editNote(let note): MarginNoteSheet(session: session, editing: note, sceneID: nil, quote: nil)
+            case .wordEntry(let entry, let word): WordEntrySheet(session: session, editing: entry, word: word)
             }
         }
         .focusedSceneValue(\.projectActions, ProjectActions(
@@ -195,7 +214,14 @@ struct ProjectContent: View {
             },
             quickOpen: { session.sheet = .quickOpen },
             findInProject: { session.sheet = .search },
-            newNote: { session.sheet = .newNote(type: nil, name: "") },
+            newNote: {
+                if session.area == .dictionary {
+                    session.sheet = .wordEntry(nil, word: "")
+                } else {
+                    session.sheet = .newNote(type: nil, name: "")
+                }
+            },
+            newItemTitle: session.area == .dictionary ? "Add Word…" : "New Note…",
             toggleInspector: { session.showingInspector.toggle() },
             addTodo: { session.addTodoAtCaret() },
             addMarginNote: { session.addMarginNoteAtCaret() },
@@ -209,7 +235,8 @@ struct ProjectContent: View {
                 session.script.margin.peek = nil
                 session.script.margin.tab = .todos
                 session.script.margin.scope = .all
-            }
+            },
+            defineSelection: { session.defineSelection() }
         ))
     }
 }
@@ -230,7 +257,7 @@ extension ProjectArea {
         case .universe: "Canvas, timeline and map arrive in Milestones 7–8."
         case .script: "The screenplay editor arrives in Milestone 2."
         case .storyboard: "Boards arrive in Milestone 9 and the animatic player in Milestone 10."
-        case .dictionary: "Terms and project spell check arrive in Milestone 6."
+        case .dictionary: "Pick a word to see its page."
         }
     }
 }

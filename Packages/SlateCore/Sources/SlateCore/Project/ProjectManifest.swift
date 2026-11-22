@@ -24,7 +24,7 @@ public enum ManifestError: Error, Equatable, LocalizedError {
 /// Keys Slate doesn't know are kept in `extra` and written back unchanged,
 /// so hand edits and newer-version fields survive a save.
 public struct ProjectManifest: Sendable, Equatable {
-    public static let currentSchemaVersion = 2
+    public static let currentSchemaVersion = 3
 
     public var name: String
     public var id: String

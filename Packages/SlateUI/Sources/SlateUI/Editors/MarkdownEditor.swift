@@ -17,6 +17,8 @@ struct MarkdownEditor: NSViewRepresentable {
     /// Bumped when the link index changes, so link colours update.
     let linkVersion: Int
     let session: ProjectSession?
+    /// Spell check for notes, and defined-word underlines.
+    var spelling: EditorSpelling = .none
 
     func makeCoordinator() -> MarkdownEditorController {
         MarkdownEditorController()
@@ -58,6 +60,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
     private var syncedText = ""
     private var programmatic = false
     private var frameObserver: (any NSObjectProtocol)?
+    private(set) var terms: TermDecorator!
 
     private var theme: ResolvedTheme { config.theme }
 
@@ -96,6 +99,9 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
         }
         completion.graph = { [weak self] in self?.config.session?.links.graph ?? .empty }
         textView.previewForLink = { [weak self] target in self?.config.session?.linkPreview(target) }
+        terms = TermDecorator(textView: textView)
+        terms.protectedRanges = { [weak self] in self?.protectedRanges ?? [] }
+        config.session?.dictionaryActions(inScript: false).install(in: textView, decorator: terms)
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main
@@ -109,6 +115,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
         restyle(force: true)
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         appliedLinkVersion = config.linkVersion
+        terms.apply(config.spelling, color: NSColor(config.theme.editor.termUnderline))
         return scrollView
     }
 
@@ -145,6 +152,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
             applyTheme()
             restyle(force: true)
         }
+        terms.apply(config.spelling, color: NSColor(config.theme.editor.termUnderline))
         if appliedLinkVersion != config.linkVersion {
             appliedLinkVersion = config.linkVersion
             restyle(force: true)
@@ -369,6 +377,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
         syncedText = full
         if config.document.text != full { config.document.text = full }
         restyle(force: false)
+        terms.textChanged()
         if !programmatic {
             config.session?.textDidChange(path: config.document.relativePath, text: full)
             completion.update(in: textView)
@@ -378,6 +387,17 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
     func textViewDidChangeSelection(_ notification: Notification) {
         guard !programmatic, let textView else { return }
         completion.update(in: textView)
+        let selected = textView.selectedRange()
+        var words: String?
+        if selected.length > 0, selected.length <= 200 {
+            let text = (textView.string as NSString).substring(with: selected).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !text.isEmpty, !text.contains(where: \.isNewline) { words = text }
+        }
+        if let session = config.session, words != nil || textView.window?.firstResponder === textView {
+            DispatchQueue.main.async {
+                if session.selectedText != words { session.selectedText = words }
+            }
+        }
     }
 
     func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {

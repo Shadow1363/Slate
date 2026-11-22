@@ -12,7 +12,7 @@ struct ScriptEditor: NSViewRepresentable {
     let reveal: RevealRequest?
     let theme: ResolvedTheme
     let sources: ScriptCompletion.Sources
-    let ignoredWords: [String]
+    let spelling: EditorSpelling
 
     func makeCoordinator() -> ScriptEditorController {
         ScriptEditorController()
@@ -55,7 +55,8 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     private var styled: [LineSignature] = []
     private var attributeCache: [ScriptElementKind: [NSAttributedString.Key: Any]] = [:]
     private var appliedTheme: ResolvedTheme?
-    private var lastIgnoredWords: [String] = []
+    /// Spell-check settings and the dotted underline under defined words.
+    private(set) var terms: TermDecorator!
     private var lastRevealToken: UUID?
     /// Margin anchors last highlighted, and where.
     private var appliedAnchors: [String] = []
@@ -108,6 +109,9 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         }
         linkCompletion.graph = { [weak self] in self?.config.workspace.linkGraph() ?? .empty }
         textView.previewForLink = { [weak self] target in self?.config.workspace.linkPreview(target) }
+        terms = TermDecorator(textView: textView)
+        terms.protectedRanges = { [weak self] in self?.protectedRanges ?? [] }
+        config.workspace.dictionaryActions.install(in: textView, decorator: terms)
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main
@@ -122,6 +126,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         restyle(force: true)
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         updateTypingAttributes()
+        terms.apply(config.spelling, color: NSColor(config.theme.editor.termUnderline))
 
         DispatchQueue.main.async { [weak textView] in
             guard let textView, textView.window?.firstResponder !== textView else { return }
@@ -150,16 +155,14 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
             let length = (config.text as NSString).length
             let location = min(selection.location, length)
             replace(full, with: config.text, selection: NSRange(location: location, length: 0))
+            terms.textChanged()
         }
         if appliedTheme != config.theme {
             applyTheme()
             restyle(force: true)
             updateTypingAttributes()
         }
-        if lastIgnoredWords != config.ignoredWords {
-            lastIgnoredWords = config.ignoredWords
-            NSSpellChecker.shared.setIgnoredWords(config.ignoredWords, inSpellDocumentWithTag: textView.spellCheckerDocumentTag)
-        }
+        terms.apply(config.spelling, color: NSColor(theme.editor.termUnderline))
         highlightAnchors()
         if let reveal = config.reveal, reveal.token != lastRevealToken, reveal.file == path {
             lastRevealToken = reveal.token
@@ -532,6 +535,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         updateTypingAttributes()
         publishCaret()
         highlightAnchors()
+        terms.textChanged()
 
         if wantsCompletion {
             wantsCompletion = false

@@ -88,7 +88,7 @@ struct MarginUITests {
         #expect(session.area == .script)
         #expect(session.linkPreview("The Station") != nil)
         #expect(session.linkPreview("Nobody") == nil)
-        session.script.followLink("Nobody")
+        _ = session.script.followLink("Nobody")
         guard case .newNote(_, let name) = session.sheet else {
             Issue.record("Expected the new note sheet")
             return

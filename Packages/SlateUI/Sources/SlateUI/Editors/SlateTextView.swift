@@ -7,8 +7,9 @@ extension NSAttributedString.Key {
 }
 
 /// The text view behind Slate's editors (TextKit 2). ⌘-click on a styled
-/// `[[link]]` follows it; the cursor becomes a pointing hand over links
-/// while ⌘ is held.
+/// `[[link]]` or a defined dictionary word follows it; the cursor becomes a
+/// pointing hand over them while ⌘ is held. Hovering shows a preview, and
+/// the context menu adds the dictionary's spelling items.
 final class SlateTextView: NSTextView {
     /// Called with a link's target on ⌘-click. Return true if handled.
     var followLink: ((String) -> Bool)?
@@ -16,8 +17,21 @@ final class SlateTextView: NSTextView {
     var insertLinkAction: (() -> Void)?
     /// A preview of a link's target, shown after hovering over the link.
     var previewForLink: ((String) -> NSViewController?)?
+    /// The defined dictionary word at a character index (from the editor's `TermDecorator`).
+    var termAt: ((Int) -> TermMatcher.Hit?)?
+    /// The definition card for a dictionary word.
+    var previewForTerm: ((String) -> NSViewController?)?
+    /// ⌘-click on a dictionary word. Return true if handled.
+    var followTerm: ((String) -> Bool)?
+    /// Context-menu items for the word under the pointer: (word, misspelled).
+    var dictionaryMenuItems: ((String, Bool) -> [NSMenuItem])?
 
-    private var hoverTarget: String?
+    private enum HoverItem: Equatable {
+        case link(String)
+        case term(String, NSRange)
+    }
+
+    private var hoverTarget: HoverItem?
     private var hoverWork: DispatchWorkItem?
     private var previewPopover: NSPopover?
     private var hoverArea: NSTrackingArea?
@@ -51,11 +65,27 @@ final class SlateTextView: NSTextView {
         return nil
     }
 
+    /// The link or dictionary word at a point, links first.
+    private func hoverItem(at point: NSPoint) -> HoverItem? {
+        if let target = linkTarget(at: point) { return .link(target) }
+        guard let termAt else { return nil }
+        let index = characterIndexForInsertion(at: point)
+        // Only when the pointer is over the glyphs, not past the line's end.
+        guard let hit = termAt(index) ?? termAt(index - 1) else { return nil }
+        var actual = NSRange()
+        guard let window else { return nil }
+        let screen = firstRect(forCharacterRange: hit.range, actualRange: &actual)
+        let local = convert(window.convertFromScreen(screen), from: nil)
+        return local.insetBy(dx: -2, dy: -2).contains(point) ? .term(hit.word, hit.range) : nil
+    }
+
     override func mouseDown(with event: NSEvent) {
-        if event.modifierFlags.contains(.command),
-           let target = linkTarget(at: convert(event.locationInWindow, from: nil)),
-           followLink?(target) == true {
-            return
+        if event.modifierFlags.contains(.command) {
+            switch hoverItem(at: convert(event.locationInWindow, from: nil)) {
+            case .link(let target) where followLink?(target) == true: return
+            case .term(let word, _) where followTerm?(word) == true: return
+            default: break
+            }
         }
         super.mouseDown(with: event)
     }
@@ -67,7 +97,7 @@ final class SlateTextView: NSTextView {
 
     override func mouseMoved(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        let target = linkTarget(at: point)
+        let target = hoverItem(at: point)
         updateHover(target, at: point)
         if event.modifierFlags.contains(.command), target != nil {
             NSCursor.pointingHand.set()
@@ -94,13 +124,13 @@ final class SlateTextView: NSTextView {
         super.keyDown(with: event)
     }
 
-    /// Shows the preview after the pointer rests on a link for half a second.
-    private func updateHover(_ target: String?, at point: NSPoint) {
+    /// Shows the preview after the pointer rests on a link or word for half a second.
+    private func updateHover(_ target: HoverItem?, at point: NSPoint) {
         guard target != hoverTarget else { return }
         hoverTarget = target
         hoverWork?.cancel()
         closePreview()
-        guard let target, previewForLink != nil else { return }
+        guard let target else { return }
         let index = characterIndexForInsertion(at: point)
         let work = DispatchWorkItem { [weak self] in
             MainActor.assumeIsolated { self?.showPreview(for: target, near: index) }
@@ -109,14 +139,23 @@ final class SlateTextView: NSTextView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
-    private func showPreview(for target: String, near index: Int) {
-        guard hoverTarget == target, let window, let storage = textStorage, storage.length > 0,
-              let controller = previewForLink?(target) else { return }
+    private func showPreview(for target: HoverItem, near index: Int) {
+        guard hoverTarget == target, let window, let storage = textStorage, storage.length > 0 else { return }
         var range = NSRange()
-        let at = min(max(index, 0), storage.length - 1)
-        guard storage.attribute(.slateLinkTarget, at: at, longestEffectiveRange: &range, in: NSRange(location: 0, length: storage.length)) != nil
-            || storage.attribute(.slateLinkTarget, at: max(at - 1, 0), longestEffectiveRange: &range, in: NSRange(location: 0, length: storage.length)) != nil
-        else { return }
+        let controller: NSViewController?
+        switch target {
+        case .link(let name):
+            let at = min(max(index, 0), storage.length - 1)
+            guard storage.attribute(.slateLinkTarget, at: at, longestEffectiveRange: &range, in: NSRange(location: 0, length: storage.length)) != nil
+                || storage.attribute(.slateLinkTarget, at: max(at - 1, 0), longestEffectiveRange: &range, in: NSRange(location: 0, length: storage.length)) != nil
+            else { return }
+            controller = previewForLink?(name)
+        case .term(let word, let wordRange):
+            guard NSMaxRange(wordRange) <= storage.length else { return }
+            range = wordRange
+            controller = previewForTerm?(word)
+        }
+        guard let controller else { return }
         var actual = NSRange()
         let screenRect = firstRect(forCharacterRange: range, actualRange: &actual)
         let local = convert(window.convertFromScreen(screenRect), from: nil)
@@ -131,6 +170,41 @@ final class SlateTextView: NSTextView {
     func closePreview() {
         previewPopover?.performClose(nil)
         previewPopover = nil
+    }
+
+    // MARK: - Context menu
+
+    /// The word under a point and its range.
+    func word(at point: NSPoint) -> (String, NSRange)? {
+        let index = characterIndexForInsertion(at: point)
+        let length = (string as NSString).length
+        guard length > 0 else { return nil }
+        let range = selectionRange(forProposedRange: NSRange(location: min(index, length - 1), length: 0), granularity: .selectByWord)
+        guard range.length > 0, NSMaxRange(range) <= length else { return nil }
+        let word = (string as NSString).substring(with: range).trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        return word.isEmpty || !word.contains(where: \.isLetter) ? nil : (word, range)
+    }
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        let menu = super.menu(for: event)
+        guard let menu, let dictionaryMenuItems,
+              let (word, _) = word(at: convert(event.locationInWindow, from: nil)) else { return menu }
+        let checker = NSSpellChecker.shared
+        let misspelled = checker.checkSpelling(of: word, startingAt: 0, language: nil, wrap: false,
+                                               inSpellDocumentWithTag: spellCheckerDocumentTag, wordCount: nil).location != NSNotFound
+        let items = dictionaryMenuItems(word, misspelled)
+        guard !items.isEmpty else { return menu }
+        // Slate's own "learn" items replace the system's, which would teach every app.
+        var insertAt = 0
+        if let learn = menu.items.firstIndex(where: { $0.action == NSSelectorFromString("learnSpelling:") }) {
+            menu.removeItem(at: learn)
+            insertAt = learn
+        } else if let ignore = menu.items.firstIndex(where: { $0.action == NSSelectorFromString("ignoreSpelling:") }) {
+            insertAt = ignore + 1
+        }
+        for (offset, item) in items.enumerated() { menu.insertItem(item, at: insertAt + offset) }
+        if insertAt == 0 { menu.insertItem(.separator(), at: items.count) }
+        return menu
     }
 
     /// Edit › Insert Link (⌘K), sent down the responder chain.

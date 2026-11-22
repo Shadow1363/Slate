@@ -115,6 +115,24 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **Find in Project** is ⇧⌘F. **Quick Open** (⌘P) opens any note, scene or file.
 - **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script.
 
+## Dictionary
+
+- **One book:** `dictionary/words.md` is the film's own dictionary, filed A–Z under `## Letter` headings:
+  ```markdown
+  ## C
+
+  - **Chronoshift** *noun* (chronoshifts, chronoshifted) — A jump between loops that keeps memory.
+  - Calloway
+  - **Copper Gate** — See [[The Copper Gate]].
+  ```
+  A word on its own is just a correct spelling. Anything after the dash is its meaning, and a `[[link]]` points to the Universe note with the full story.
+- **The Dictionary area** reads it like a book. Search words, forms and meanings; jump with the A–Z strip; open a word to see its page and every place it's used in the script and notes. ⌘N or + adds a word. The toolbar's document button shows `words.md` as text.
+- **Everywhere you write,** defined words get a faint dotted underline. Hovering one shows its meaning (or the linked note's preview), and ⌘-click opens it.
+- **Spell check** accepts every word and form in the book, plus character names. Right-click a misspelling for **Add to Project Dictionary**, **Add to Every Project** (`~/Library/Application Support/Slate/words.md`) or **Define in Dictionary…**.
+- **Define** (⌃⌥⌘D, or the inspector's Define tab) shows the selected word's project meaning, then the Mac's dictionary definition. Force-click still opens Look Up.
+- **Settings › Spelling** sets the language, grammar checking for the script and for notes, and auto-correct (off by default).
+- Projects from before Milestone 6 are converted once: `words.txt` becomes entries, and any `dictionary/terms/*.md` file moves to `universe/notes/` with an entry linking to it. The originals are backed up in `.slate/backups/`.
+
 ## Layout
 
 ```
@@ -133,12 +151,13 @@ Fixtures/Snapshots      Golden page layouts
 
 | Shortcut | Action |
 | --- | --- |
-| ⌘N | New Note (in a project window) / New Project (elsewhere) |
+| ⌘N | New Note (in a project window; Add Word in the Dictionary) / New Project (elsewhere) |
 | ⌥⌘N | New Project (from a project window) |
 | ⌘P | Quick Open |
 | ⇧⌘F | Find in Project |
 | ⌘K | Insert link |
-| ⌥⌘0 | Links inspector |
+| ⌥⌘0 | Inspector (Links and Define) |
+| ⌃⌥⌘D | Define the selected word |
 | ⇧⌘T | Add to-do at the caret |
 | ⌥⌘T | Add margin note at the caret |
 | ⇧⌘M | Show / hide the margin |
@@ -152,4 +171,4 @@ Fixtures/Snapshots      Golden page layouts
 | ⇧⌘E | Publish PDF |
 | ⌥⌘P | Print script |
 | ⇧⌘I | Import a screenplay |
-| ⌘, | Settings (appearance and themes) |
+| ⌘, | Settings (appearance, spelling, reminders) |

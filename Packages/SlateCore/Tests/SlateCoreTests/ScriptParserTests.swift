@@ -16,6 +16,7 @@ struct ScriptParserTests {
             .action, .blank,
             .character, .parenthetical, .dialogue, .blank,
             .character, .dialogue, .blank,
+            .action, .blank,
             .transition,
             .blank, // trailing newline
         ])

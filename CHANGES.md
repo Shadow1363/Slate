@@ -1,5 +1,60 @@
 # Changes
 
+## Milestone 6 — Dictionary (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 244 pass: 181 in SlateCore, 47 in SlateUI and 16 in SlateExport.
+**Dependencies:** none added. Spell check uses `NSSpellChecker` and definitions use Dictionary Services, both part of macOS.
+
+### What works
+- **`dictionary/words.md`** is the project's dictionary, as you asked: one readable book, filed A–Z.
+  - `- Riley` is a spelling.
+  - `- **Chronoshift** *noun* (chronoshifts, chronoshifted) — meaning` is a word with its part of speech, other forms and meaning. Meanings can run onto indented lines.
+  - A `[[link]]` in the meaning points to a Universe note, so a made-up element can have a one-line meaning here and its full story in Universe.
+- **Dictionary area:**
+  - The sidebar has a search field (words, forms and meanings) and an A–Z strip for jumping. Words from the global book are listed under "Every Project".
+  - With no word selected, the main view shows every defined word as a reading page, with the spelling-only words listed underneath.
+  - A word's page shows its card, an Open-note button when it links somewhere, Look Up, and **Used In**: every place it appears in the script and notes. Click a row to go there.
+  - **Add Word** is ⌘N or +. It opens a sheet with fields for word, part of speech, forms and meaning, a **Link to Note** menu, and a choice of this project or every project. Edit and Delete are on the same sheet and in the right-click menu.
+  - The document toolbar button shows `words.md` as text in the Markdown editor.
+- **In every editor** (script, notes, the draft, the word book):
+  - Words in the dictionary aren't flagged as misspelled. Neither are their forms or character names.
+  - Defined words get a faint dotted underline. Hovering one shows its meaning, or its note's preview if the entry is only a link.
+  - ⌘-click opens a defined word: a link-only entry opens its note (in the margin, from the script); any other entry opens its page.
+- **Right-click a misspelling:**
+  - **Add to Project Dictionary** adds the word to `words.md`, under its letter.
+  - **Add to Every Project** adds it to the global `~/Library/Application Support/Slate/words.md`.
+  - **Define in Dictionary…** opens the Add Word sheet.
+
+  These replace the system's "Learn Spelling", which would teach every app on the Mac.
+- **Define panel:** the inspector now has Links and Define tabs (⌃⌥⌘D opens Define). It shows the project's meaning for the selected words first, then the definition from the Mac's dictionaries. Force-click Look Up works as before.
+- **Settings › Spelling:**
+  - language: Automatic, or one fixed language;
+  - grammar checking for the script (off) and for notes (on);
+  - auto-correct (off);
+  - a button that shows the global word book in Finder.
+- **Links and rename:** `[[links]]` in `words.md` show up as backlinks on Universe notes, and renaming a note updates them.
+- **Outside edits:** edits to `words.md` reload the book, the underlines and spell check. Edits to the global book are picked up when you switch back to Slate.
+- **Older projects** are converted once, and `project.json` moves to schema 3:
+  - the words in `words.txt` become spelling entries;
+  - any `dictionary/terms/*.md` file moves to `universe/notes/`, and its entry keeps the definition and links to the note;
+  - the originals are copied to `.slate/backups/dictionary-v2-<date>/` first.
+- **Sample project:** it now has a `words.md` with spellings, a word with forms (Chronoshift), and a link-only word (Brass Key). The script uses "chronoshifted".
+
+### Stubbed or not yet
+- Spell check in the margin's to-do and note sheets uses the system list only, because they're SwiftUI text fields. The script and Markdown editors use the full list.
+- The meaning field in the Add Word sheet has no `[[` autocomplete. Use the Link to Note menu, or type the link.
+- Multiple languages at once work only through Automatic, which uses the languages set in System Settings. macOS has no per-app language list.
+- Typing speed: the keystroke test passes in the full test run, but this Mac is busy right now (load average around 12). Debug builds measure about 24–34 ms per keystroke, against the 33 ms limit, and release about 17–20 ms, against 16 ms, so the test can fail on a loaded machine. A clean copy of the Milestone 5 code measures the same on this machine today, so this milestone didn't slow typing. Matching 200 dictionary words across ten pages takes about 8 ms, and it runs only after you pause typing.
+- Not checked by hand yet. Please try these:
+  1. Open the sample project's Dictionary. Search "chrono", click C on the A–Z strip, and open Chronoshift to see its meaning and Used In.
+  2. Click the `[[Time Travel]]` link on Chronoshift's page, and the Universe note opens.
+  3. In the script, type a made-up word, right-click it, choose Add to Project Dictionary, and check that `words.md` has it under its letter.
+  4. Hover "chronoshifted" in the script to see the meaning card. Hover "brass key" in a note for the note preview, and ⌘-click it.
+  5. Edit `words.md` in VS Code while Slate is open: the book, the underlines and spell check update.
+  6. Select an ordinary word and press ⌃⌥⌘D to see the Mac's definition.
+  7. Open a copy of an older project with a `words.txt`: it converts, and the original is in `.slate/backups/`.
+
 ## Milestone 5 — Margin (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

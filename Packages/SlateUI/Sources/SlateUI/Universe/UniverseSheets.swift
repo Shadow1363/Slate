@@ -85,6 +85,9 @@ struct LinksInspector: View {
         if source.kind == .scene, let id = source.sceneID {
             session.open(sceneID: id)
             session.script.reveal(file: source.path, location: source.link.range.location)
+        } else if source.kind == .dictionary,
+                  let entry = session.dictionary.entries.first(where: { $0.lines.contains(source.line) }) {
+            session.showInDictionary(entry)
         } else {
             session.open(source.path, location: source.link.range.location)
         }
@@ -114,7 +117,8 @@ private struct BacklinkRow: View {
         case .scene: source.sceneHeading ?? (source.path as NSString).lastPathComponent
         case .margin: "Margin · " + (source.path as NSString).lastPathComponent
         case .draft: "Rough Draft"
-        case .note, .term: graph.note(at: source.path)?.name ?? source.path
+        case .dictionary: "Dictionary"
+        case .note: graph.note(at: source.path)?.name ?? source.path
         }
     }
 
@@ -123,7 +127,7 @@ private struct BacklinkRow: View {
         case .scene: "film"
         case .margin: "note.text"
         case .draft: "doc.richtext"
-        case .term: "character.book.closed"
+        case .dictionary: "character.book.closed"
         case .note: icon(for: graph.note(at: source.path)?.type)
         }
     }

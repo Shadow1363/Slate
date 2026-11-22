@@ -2,7 +2,7 @@
   "id" : "p-fixture-0001",
   "name" : "The Brass Key",
   "pageSize" : "letter",
-  "schemaVersion" : 2,
+  "schemaVersion" : 3,
   "settings" : {
     "reminders" : "lastProject"
   },

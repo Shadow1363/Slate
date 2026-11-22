@@ -33,10 +33,12 @@ public struct SettingsView: View {
             }
             .formStyle(.grouped)
             .tabItem { Label("Appearance", systemImage: "paintpalette") }
+            SpellingSettingsView()
+                .tabItem { Label("Spelling", systemImage: "textformat.abc.dottedunderline") }
             ReminderSettings()
                 .tabItem { Label("Reminders", systemImage: "bell") }
         }
-        .frame(width: 460, height: 320)
+        .frame(width: 480, height: 400)
         .slateThemed()
     }
 

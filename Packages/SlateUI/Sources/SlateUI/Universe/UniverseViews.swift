@@ -234,7 +234,8 @@ struct MarkdownPane: View {
         VStack(spacing: 0) {
             DiskStateBanners(store: session.store, document: document, close: { session.universeSelection = nil })
             MarkdownEditor(document: document, text: document.text, hidesFrontmatter: false, theme: theme,
-                           reveal: session.noteReveal, linkVersion: session.links.version, session: session)
+                           reveal: session.noteReveal, linkVersion: session.links.version, session: session,
+                           spelling: session.noteSpelling)
             Divider()
             FileStatusBar(document: document)
         }

@@ -164,10 +164,6 @@ struct ScriptSpellingTests {
         #expect(protected.contains("[[The Brass Key]]"))
     }
 
-    @Test func wordList() {
-        #expect(ScriptSpelling.words(fromWordList: "chronoshift\n\n# comment\n  Voss  \n") == ["chronoshift", "Voss"])
-    }
-
     @Test func characterNoteNames() throws {
         let note = try String(contentsOf: Fixtures.sampleProject.appending(path: "universe/characters/mara-voss.md"), encoding: .utf8)
         #expect(CharacterNotes.names(inNote: note) == ["Mara Voss", "Mara", "The Courier"])

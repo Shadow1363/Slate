@@ -21,6 +21,8 @@ final class ProjectSession {
         case editTodo(MarginTodo)
         case addMarginNote(sceneID: String?, quote: String?)
         case editNote(MarginNote)
+        /// Add or edit a dictionary word; `word` pre-fills a new entry.
+        case wordEntry(WordEntry?, word: String)
 
         var id: String {
             switch self {
@@ -33,17 +35,33 @@ final class ProjectSession {
             case .editTodo(let todo): "editTodo:" + todo.id
             case .addMarginNote: "addMarginNote"
             case .editNote(let note): "editNote:" + note.id
+            case .wordEntry(let entry, let word): "word:\(entry?.id ?? ""):\(word)"
             }
         }
+    }
+
+    enum InspectorTab: String, CaseIterable, Identifiable {
+        case links, define
+        var id: String { rawValue }
+        var title: String { self == .links ? "Links" : "Define" }
     }
 
     let store: ProjectStore
     let links: LinkIndex
     let script: ScriptWorkspace
+    let dictionary: DictionaryModel
 
     var area: ProjectArea? = .script
-    /// The open file in Storyboard and Dictionary (temporary file lists).
+    /// The open file in Storyboard (a temporary file list).
     var selectedFile: String?
+    /// The word showing in the Dictionary area.
+    var dictionarySelection: DictionarySelection?
+    var dictionaryQuery = ""
+    /// The Dictionary area shows `words.md` as text instead of the book.
+    var showingWordBookSource = false
+    var inspectorTab: InspectorTab = .links
+    /// The words selected in the focused editor (for the Define panel).
+    var selectedText: String?
     /// The open note or file in Universe.
     var universeSelection: String?
     /// Caret placement for the Markdown editors.
@@ -62,17 +80,20 @@ final class ProjectSession {
         SlateAppModel.applicationSupport.appending(path: "Templates", directoryHint: .isDirectory)
     }
 
-    init(store: ProjectStore) {
+    init(store: ProjectStore, globalWordsURL: URL = GlobalWords.defaultURL) {
         self.store = store
         links = LinkIndex(store: store)
         script = ScriptWorkspace(store: store)
+        dictionary = DictionaryModel(store: store, globalURL: globalWordsURL)
         refreshTemplates()
+        script.dictionary = dictionary
         script.linkGraph = { [weak self] in self?.links.graph ?? .empty }
         // In the script, a link opens in the margin so you stay in the scene.
         script.followLink = { [weak self] target in self?.peekLink(target) ?? false }
         script.linkPreview = { [weak self] target in self?.linkPreview(target) }
         script.textDidChange = { [weak self] path, text in self?.textDidChange(path: path, text: text) }
         universeSelection = ProjectLayout.draft
+        script.dictionaryActions = dictionaryActions(inScript: true)
     }
 
     /// Call when `store.files` changes.
@@ -80,6 +101,7 @@ final class ProjectSession {
         script.refreshFiles()
         script.refreshAuxiliary()
         links.refresh()
+        dictionary.refresh()
         refreshTemplates()
         if let selection = universeSelection, !exists(selection) { universeSelection = nil }
         if let selection = selectedFile, !exists(selection) { selectedFile = nil }
@@ -105,6 +127,7 @@ final class ProjectSession {
 
     /// Re-indexes a file shortly after it's edited (before it's saved).
     func textDidChange(path: String, text: String) {
+        if path == WordBook.path { dictionary.refresh() }
         guard IndexedFile.isIndexed(path) else { return }
         indexTasks[path]?.cancel()
         indexTasks[path] = Task { [weak self] in
@@ -128,6 +151,10 @@ final class ProjectSession {
         case ProjectLayout.script where script.scriptFiles.contains(where: { $0.relativePath == path }):
             self.area = .script
             script.reveal(file: path, location: location ?? 0)
+        case ProjectLayout.dictionary where path == WordBook.path:
+            self.area = .dictionary
+            showingWordBookSource = true
+            if let location { noteReveal = RevealRequest(file: path, location: location, focus: true) }
         case ProjectLayout.script where path == ScriptWorkspace.titlePagePath:
             self.area = .script
             script.showTitlePage()
@@ -235,6 +262,7 @@ final class ProjectSession {
             }
             if universeSelection == plan.notePath { universeSelection = newPath }
             script.refreshAuxiliary()
+            dictionary.refresh()
         } catch {
             SlateAppModel.showError("Couldn't rename “\(plan.oldName)”", error)
         }

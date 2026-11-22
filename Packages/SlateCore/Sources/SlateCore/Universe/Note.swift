@@ -61,7 +61,7 @@ public struct WikiLink: Sendable, Equatable, Codable {
     }
 }
 
-/// A universe note (or dictionary term) as the index sees it.
+/// A universe note as the index sees it.
 public struct Note: Sendable, Equatable, Codable, Identifiable {
     public let path: String
     public let noteID: String?

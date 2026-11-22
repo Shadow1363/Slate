@@ -144,7 +144,7 @@ struct ScriptEditorPane: View {
                 reveal: workspace.reveal,
                 theme: theme,
                 sources: workspace.completionSources,
-                ignoredWords: workspace.ignoredWords
+                spelling: workspace.spelling
             )
             Divider()
             ScriptStatusBar(workspace: workspace, document: document)

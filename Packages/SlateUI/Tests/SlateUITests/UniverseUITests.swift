@@ -21,7 +21,8 @@ final class SessionHarness {
         let root = folder.appending(path: "SampleProject", directoryHint: .isDirectory)
         try FileManager.default.copyItem(at: sample, to: root)
         store = try ProjectStore(rootURL: root, autosaveDelay: nil)
-        session = ProjectSession(store: store)
+        // Never the real global word book.
+        session = ProjectSession(store: store, globalWordsURL: folder.appending(path: "global-words.md"))
     }
 
     deinit {
@@ -52,7 +53,8 @@ final class MarkdownHarness {
 
     func editor() -> MarkdownEditor {
         MarkdownEditor(document: document, text: document.text, hidesFrontmatter: hidesFrontmatter, theme: ThemeEngine.builtInLight,
-                       reveal: nil, linkVersion: harness.session.links.version, session: harness.session)
+                       reveal: nil, linkVersion: harness.session.links.version, session: harness.session,
+                       spelling: harness.session.noteSpelling)
     }
 
     var textView: NSTextView { controller.textView }
@@ -190,8 +192,9 @@ struct UniverseSessionTests {
         let session = h.session
         session.universeSelection = "universe/locations/the-station.md"
         let plan = try #require(session.renamePlan(for: "universe/locations/the-station.md", to: "Grand Station"))
-        #expect(plan.edits.count == 1)
+        #expect(plan.edits.count == 2) // the brass key and the dictionary
         session.rename(plan, updateLinks: true)
+        #expect(session.dictionary.entry(for: "Chronoshift")?.links.map(\.target).contains("Grand Station") == true)
         #expect(session.universeSelection == "universe/locations/grand-station.md")
         #expect(try h.read("universe/items/the-brass-key.md").contains("[[Grand Station]]"))
         #expect(session.links.graph.resolve("Grand Station")?.path == "universe/locations/grand-station.md")

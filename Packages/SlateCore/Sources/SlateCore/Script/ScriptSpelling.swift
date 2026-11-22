@@ -1,7 +1,7 @@
 import Foundation
 
 /// Screenplay-aware spell check: what never counts as a misspelling.
-/// (Milestone 6 adds the project's dictionary terms and global words.)
+/// `SpellService` adds the project's and global word books.
 public enum ScriptSpelling {
     /// Abbreviations that appear in every script.
     public static let screenplayTerms: Set<String> = [
@@ -10,13 +10,15 @@ public enum ScriptSpelling {
         "V.O.", "O.S.", "O.C.", "B.G.", "F.G.",
     ]
 
-    /// Words to hand `NSSpellChecker.setIgnoredWords`: character names (each
-    /// word, in capitals and in title case), extra words such as
-    /// `dictionary/words.txt`, and the screenplay terms.
+    /// Words to hand `NSSpellChecker.setIgnoredWords`: character names and
+    /// extra words such as the word books' entries (each word as written, in
+    /// capitals and in title case, plus hyphenated words whole), and the
+    /// screenplay terms.
     public static func ignoredWords(characters: [String], extra: [String] = []) -> [String] {
         var words = Set<String>()
         for name in characters + extra {
-            for word in name.split(whereSeparator: { $0.isWhitespace || $0 == "-" }) {
+            let pieces = name.split(whereSeparator: \.isWhitespace).map(String.init)
+            for word in pieces + pieces.flatMap({ $0.split(separator: "-").map(String.init) }) {
                 let word = String(word)
                 words.insert(word)
                 words.insert(word.uppercased())
@@ -48,12 +50,6 @@ public enum ScriptSpelling {
     /// `[[Name]]` and `[[Name|shown text]]`.
     public static let linkPattern = try! NSRegularExpression(pattern: #"\[\[[^\[\]\n]*\]\]"#)
 
-    /// `dictionary/words.txt`: one word per line; blank lines and `#` comments skipped.
-    public static func words(fromWordList text: String) -> [String] {
-        text.split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
-    }
 }
 
 /// Names from character notes (`universe/characters/*.md`): the

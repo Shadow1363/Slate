@@ -17,7 +17,7 @@ public struct SlateCommands: Commands {
         CommandGroup(replacing: .newItem) {
             // ⌘N makes a note inside a project window, a project elsewhere.
             if actions != nil {
-                Button("New Note…") { actions?.newNote() }
+                Button(actions?.newItemTitle ?? "New Note…") { actions?.newNote() }
                     .keyboardShortcut("n")
                 Button("New Project…") {
                     openWindow(id: SlateWindowID.home)
@@ -108,6 +108,9 @@ public struct SlateCommands: Commands {
                 NSApp.sendAction(#selector(SlateTextView.insertWikiLink(_:)), to: nil, from: nil)
             }
             .keyboardShortcut("k")
+            Button("Define Selection") { actions?.defineSelection() }
+                .keyboardShortcut("d", modifiers: [.command, .option, .control])
+                .disabled(actions == nil)
         }
         CommandGroup(before: .sidebar) {
             ForEach(ProjectArea.allCases) { area in
@@ -115,7 +118,7 @@ public struct SlateCommands: Commands {
                     .keyboardShortcut(KeyEquivalent(Character(String(area.shortcutNumber))), modifiers: .command)
                     .disabled(actions == nil)
             }
-            Button("Toggle Links Inspector") { actions?.toggleInspector() }
+            Button("Toggle Inspector") { actions?.toggleInspector() }
                 .keyboardShortcut("0", modifiers: [.command, .option])
                 .disabled(actions == nil)
             Divider()

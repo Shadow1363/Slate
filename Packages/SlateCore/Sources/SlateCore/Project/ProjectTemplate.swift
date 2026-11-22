@@ -33,7 +33,7 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
         "script/margin",
         "storyboard/scenes",
         "storyboard/orphans",
-        "dictionary/terms",
+        "dictionary",
         "templates",
         "exports",
         ".slate",
@@ -63,7 +63,7 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
             "script/margin/todos.md": "",
             "script/margin/notes.md": "",
             "storyboard/storyboard.json": Self.emptyStoryboard,
-            "dictionary/words.txt": "",
+            "dictionary/words.md": WordBook.starter,
         ]
         files["script/title-page.md"] = titlePage(title: title, date: date)
         for (name, label) in actFiles {

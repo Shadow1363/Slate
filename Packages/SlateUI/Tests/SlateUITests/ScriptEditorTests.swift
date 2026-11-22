@@ -12,6 +12,8 @@ final class EditorHarness {
     let workspace: ScriptWorkspace
     let document: TextDocument
     let controller = ScriptEditorController()
+    /// What SwiftUI would pass from the dictionary.
+    var spelling = EditorSpelling.none
     private var scrollView: NSScrollView?
 
     init(text: String = "") throws {
@@ -38,7 +40,7 @@ final class EditorHarness {
             reveal: workspace.reveal,
             theme: ThemeEngine.builtInLight,
             sources: workspace.completionSources,
-            ignoredWords: []
+            spelling: spelling
         )
     }
 

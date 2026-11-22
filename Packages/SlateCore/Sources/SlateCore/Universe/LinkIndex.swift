@@ -6,8 +6,9 @@ public struct LinkSource: Sendable, Equatable, Codable, Identifiable {
     public enum Kind: String, Sendable, Codable {
         /// A universe note.
         case note
-        /// A dictionary term (`dictionary/terms/`).
-        case term
+        /// The project's word book (`dictionary/words.md`): indexed for its
+        /// links, but not a link target.
+        case dictionary
         /// A line in a script act file.
         case scene
         /// `script/margin/*.md`.
@@ -34,7 +35,7 @@ public struct IndexedFile: Sendable, Equatable, Codable {
     public let path: String
     public var modified: Date?
     public var size: Int?
-    /// Set for notes and dictionary terms.
+    /// Set for universe notes.
     public let note: Note?
     public let links: [LinkSource]
 
@@ -52,7 +53,7 @@ public struct IndexedFile: Sendable, Equatable, Codable {
             if path == ProjectLayout.draft { return .draft }
             return ["md", "markdown"].contains(ext) ? .note : nil
         case "dictionary":
-            return components.count == 3 && components[1] == "terms" && ext == "md" ? .term : nil
+            return path == WordBook.path ? .dictionary : nil
         case "script":
             if components.count == 3, components[1] == "margin", ext == "md" { return .margin }
             if components.count == 2, components[1] != "title-page.md", ["md", "fountain", "txt"].contains(ext) { return .scene }
@@ -77,10 +78,10 @@ public struct IndexedFile: Sendable, Equatable, Codable {
             )
         }
         switch kind {
-        case .note, .term:
+        case .note:
             let note = Note(path: path, text: text)
             return IndexedFile(path: path, modified: modified, size: size, note: note, links: note.links.map { source($0) })
-        case .margin, .draft:
+        case .margin, .draft, .dictionary:
             let outline = MarkdownOutline(parsing: text)
             return IndexedFile(path: path, modified: modified, size: size, note: nil,
                                links: WikiLink.find(in: text, excluding: outline.codeRanges).map { source($0) })
@@ -272,7 +273,7 @@ public final class LinkIndex {
 
     public static let cachePath = ".slate/index/links.json"
     /// Bump when `IndexedFile` changes shape, so old caches are ignored.
-    static let cacheVersion = 1
+    static let cacheVersion = 2
 
     public init(store: ProjectStore) {
         self.store = store

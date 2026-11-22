@@ -33,7 +33,7 @@ A project has four areas, switched from the sidebar (Cmd-1 to Cmd-4):
 | Universe   | Rough draft, characters, locations, rules of the world, idea canvases, timelines (including time travel), maps | `.md` with frontmatter, `.canvas`, `.json` |
 | Script     | The official screenplay with live formatting, timings, a margin for to-dos and notes, and Publish              | `.md` (Fountain-flavoured)                 |
 | Storyboard | Frames per scene, created automatically from the script's scene headings, with a player to watch them          | scene folders of images/clips + `.json`    |
-| Dictionary | In-world terms and custom spellings that feed spell check                                                      | `.md` + `words.txt`                        |
+| Dictionary | In-world words, their meanings and custom spellings, in one book that feeds spell check                        | `words.md`                                 |
 
 Goals:
 
@@ -64,11 +64,11 @@ SwiftUI for the app shell and most views, AppKit for the parts that need the ful
 
 Key services in SlateCore:
 
-- **ProjectStore**: opens a folder, loads `project.json`, exposes typed models (notes, script, boards, terms), writes changes atomically.
+- **ProjectStore**: opens a folder, loads `project.json`, exposes typed models (notes, script, boards, dictionary), writes changes atomically.
 - **FileWatcher**: reports outside changes; merges if the open document is clean, otherwise shows "Changed on disk: keep mine / load theirs".
 - **ScriptParser**: turns `script.md` into elements (scene heading, action, character, dialogue, parenthetical, transition) and scenes with stable IDs.
 - **LinkIndex**: tracks every `[[link]]`, alias and scene reference for backlinks, rename-refactoring and autocomplete.
-- **SpellService**: merges system, global and project dictionaries into one ignore list per document.
+- **SpellService**: merges system, global and project word books (plus character names) into one ignore list per document.
 - **ThemeEngine**: loads theme JSON and publishes resolved fonts and colours to every view.
 
 &#91;embedded content: app architecture · 3 packages, 1 store\]
@@ -107,8 +107,7 @@ My Film/
 │   │   └── 02.mov
 │   └── orphans/                 boards whose scene was removed from the script
 ├── dictionary/
-│   ├── terms/chronoshift.md     one file per in-world term
-│   └── words.txt                extra spellings, one per line
+│   └── words.md                 the film's own dictionary: A–Z entries, meanings, links
 ├── templates/                   project overrides for note templates
 ├── exports/                     Publish output (PDF, FDX, .mov)
 └── .slate/                      index, caches, window state; safe to delete
@@ -382,10 +381,12 @@ The Dictionary area is the film's own glossary, and every word in it (plus every
 
 **Project dictionary**
 
-- One file per term in `dictionary/terms/`, with frontmatter: word, pronunciation, part of speech, plural/forms, definition, and links to related notes.
-- `dictionary/words.txt` for quick custom spellings with no definition (one per line).
-- List view with search, A–Z index and tags; selecting a term shows where it is used across script and notes.
-- Hovering a defined term anywhere shows its definition; Cmd-click opens it.
+- One readable book, `dictionary/words.md`, filed A–Z under `## Letter` headings. Each entry is a list item:
+  - `- Riley`: a correct spelling only (never flagged or auto-corrected).
+  - `- **Chronoshift** *noun* (chronoshifts, chronoshifted) — A jump between loops that keeps memory.`: a word with an optional part of speech, other forms and a short meaning. Longer meanings continue on indented lines.
+  - `- **Rhodium-9** — [[Rhodium-9]]`: a word whose full story lives in a Universe note.
+- The Dictionary area reads it like a book: search (words, forms and meanings), an A–Z index, a page per word with where it is used across script and notes, and the raw file one click away.
+- Hovering a defined word anywhere shows its meaning (or its linked note); Cmd-click opens it.
 
 **Built-in dictionary**
 
@@ -395,9 +396,9 @@ The Dictionary area is the film's own glossary, and every word in it (plus every
 **Spell check**
 
 - `NSSpellChecker` with one document tag per editor; check-as-you-type and grammar toggles per area (e.g. on in Script, off in canvas cards).
-- Ignore list for each document = system dictionary + global words (`~/Library/Application Support/Slate/words.txt`) + project `words.txt` + project terms + character names and aliases.
+- Ignore list for each document = system dictionary + global words (`~/Library/Application Support/Slate/words.md`, same format) + every word and form in the project's `words.md` + character names and aliases.
 - Screenplay-aware: never flags scene IDs, `INT./EXT.`, `V.O.`, `O.S.`, `CONT'D`, `[[links]]` or shot abbreviations.
-- Right-click a misspelling: suggestions, Learn for this project, Learn everywhere, Add as term (opens a new dictionary entry).
+- Right-click a misspelling: suggestions, Add to Project Dictionary, Add to Every Project, Define in Dictionary (opens a new entry).
 - Settings: languages (multiple at once), auto-correct on/off (off by default for screenwriting).
 
 ## Theme system
@@ -452,7 +453,7 @@ Twelve milestones, ordered so the script is writable and printable early and the
    - Done when: a Fountain sample script exports to a PDF whose page breaks match Final Draft or Highland within a line or two.
 4. **Universe notes** — Markdown editor, templates with frontmatter forms, `[[links]]` with autocomplete, LinkIndex, backlinks, rename-refactor, project search, quick open.
 5. **Margin** — anchored to-dos and notes, link previews, launch-reminder sheet, due-date notifications, project to-do list.
-6. **Dictionary** — terms area, `words.txt`, merged spell-check ignore lists, hover definitions, Look Up / Define panel.
+6. **Dictionary** — the `words.md` book (A–Z, search, meanings, links), merged spell-check ignore lists, hover definitions, Look Up / Define panel.
 7. **Canvas** — JSON Canvas read/write, cards, connections, groups, zoom/pan, minimap.
 8. **Timeline and map** — lanes, branches, jumps, the three views, continuity warnings; map layers, pins, regions, links.
 9. **Storyboard** — scenes synced from the script, frame import by drag-drop, frame metadata, sketch pad, orphans, script↔frame highlighting.
