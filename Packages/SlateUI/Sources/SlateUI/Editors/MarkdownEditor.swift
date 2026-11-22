@@ -95,6 +95,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
             self.completion.insertLink(in: self.textView)
         }
         completion.graph = { [weak self] in self?.config.session?.links.graph ?? .empty }
+        textView.previewForLink = { [weak self] target in self?.config.session?.linkPreview(target) }
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main
@@ -113,6 +114,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
 
     func teardown() {
         completion.hide()
+        textView?.closePreview()
         if let frameObserver { NotificationCenter.default.removeObserver(frameObserver) }
         frameObserver = nil
     }

@@ -66,9 +66,19 @@ public struct HomeView: View {
         .sheet(isPresented: $model.showingNewProject) {
             NewProjectSheet { url in openWindow(id: SlateWindowID.project, value: url) }
         }
+        .sheet(isPresented: $model.showingLaunchReminders) {
+            LaunchRemindersSheet()
+        }
         .task {
             model.library.scanWatchedFolders()
             model.library.refreshStatuses()
+            model.checkLaunchReminders()
+        }
+        .onChange(of: model.pendingOpen) { _, root in
+            // A due-date notification was clicked.
+            guard let root else { return }
+            model.pendingOpen = nil
+            openWindow(id: SlateWindowID.project, value: root)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.library.refreshStatuses()

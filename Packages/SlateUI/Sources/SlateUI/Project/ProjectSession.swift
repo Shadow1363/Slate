@@ -17,6 +17,10 @@ final class ProjectSession {
         case rename(String, String?)
         /// New note; the name is pre-filled when creating from a link.
         case newNote(type: String?, name: String)
+        case addTodo(sceneID: String?, quote: String?)
+        case editTodo(MarginTodo)
+        case addMarginNote(sceneID: String?, quote: String?)
+        case editNote(MarginNote)
 
         var id: String {
             switch self {
@@ -25,6 +29,10 @@ final class ProjectSession {
             case .search: "search"
             case .rename(let path, _): "rename:" + path
             case .newNote(let type, let name): "new:\(type ?? ""):\(name)"
+            case .addTodo: "addTodo"
+            case .editTodo(let todo): "editTodo:" + todo.id
+            case .addMarginNote: "addMarginNote"
+            case .editNote(let note): "editNote:" + note.id
             }
         }
     }
@@ -60,7 +68,9 @@ final class ProjectSession {
         script = ScriptWorkspace(store: store)
         refreshTemplates()
         script.linkGraph = { [weak self] in self?.links.graph ?? .empty }
-        script.followLink = { [weak self] target in self?.followLink(target) ?? false }
+        // In the script, a link opens in the margin so you stay in the scene.
+        script.followLink = { [weak self] target in self?.peekLink(target) ?? false }
+        script.linkPreview = { [weak self] target in self?.linkPreview(target) }
         script.textDidChange = { [weak self] path, text in self?.textDidChange(path: path, text: text) }
         universeSelection = ProjectLayout.draft
     }
@@ -149,6 +159,41 @@ final class ProjectSession {
             sheet = .newNote(type: nil, name: target)
         }
         return true
+    }
+
+    /// Shows a linked note in the Script margin (or offers to create it).
+    @discardableResult
+    func peekLink(_ target: String) -> Bool {
+        guard let resolution = links.graph.resolve(target) else {
+            sheet = .newNote(type: nil, name: target)
+            return true
+        }
+        script.showingMargin = true
+        script.margin.peek = resolution.path
+        return true
+    }
+
+    /// The hover preview for a link, or nil if it doesn't resolve.
+    func linkPreview(_ target: String) -> NSViewController? {
+        guard let path = links.graph.resolve(target)?.path else { return nil }
+        let card = NotePreviewCard(session: self, path: path, bodyLimit: 400)
+            .padding(14)
+            .frame(width: 320, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+        let controller = NSHostingController(rootView: card)
+        controller.sizingOptions = .preferredContentSize
+        return controller
+    }
+
+    /// ⇧⌘T / ⌥⌘T: anchored to the caret's scene and the selected words.
+    func addTodoAtCaret() {
+        area = .script
+        sheet = .addTodo(sceneID: script.currentSceneID, quote: script.caret?.selection)
+    }
+
+    func addMarginNoteAtCaret() {
+        area = .script
+        sheet = .addMarginNote(sceneID: script.currentSceneID, quote: script.caret?.selection)
     }
 
     // MARK: - Notes

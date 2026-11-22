@@ -1,5 +1,41 @@
 # Changes
 
+## Milestone 5 — Margin (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 224 pass: 169 in SlateCore, 39 in SlateUI and 16 in SlateExport.
+**Dependencies:** none added; notifications use Apple's UserNotifications.
+
+### What works
+- **Margin column** beside the script (⇧⌘M or the toolbar button), with To-dos and Notes tabs. Each tab shows This Scene (the caret's scene) or All.
+- **To-dos** (`script/margin/todos.md`, a Markdown task list):
+  - ⇧⌘T adds one at the caret, anchored to the scene and the selected words, with an optional due date.
+  - Tick, edit or delete from the list. Ticking changes only the `[ ]` box in the file.
+  - Filters: Open / Done / All. Order: By Scene / By Due Date. Overdue dates are red.
+  - Scene chips jump to the scene; a quote selects those words. Script › Show All To-dos opens the project-wide list.
+- **Notes** (`script/margin/notes.md`, grouped by `## @sceneID`):
+  - ⌥⌘T adds one at the caret (anchored to the scene and the selection), or type it at the bottom of the tab.
+  - `[[links]]` are clickable. Notes can be edited and deleted.
+- **Anchors:** the words a note or open to-do points at get a soft highlight in the script. The file isn't touched.
+- **Link previews:** hovering a `[[link]]` for half a second in the script, a note or the draft shows a preview (name, type, fields, start of the body).
+- **Peek:** ⌘-click on a link in the script, or a click in the margin, opens the note in the margin. You stay in the scene, and Open in Universe goes to the full note.
+- **Launch sheet:** open to-dos, overdue first, with Go to Scene and Done. **Settings › Reminders** chooses Off / Last project (the default) / All projects.
+- **Due-date notifications** at 9:00 on the due date. Clicking one opens the project at the scene. They're rescheduled whenever to-dos change, and can be turned off in Settings › Reminders.
+- **Project cards** show how many to-dos are open.
+- **Outside edits** to either margin file reload the lists. An edit to an item that changed underneath is refused with a message, and never overwrites.
+
+### Stubbed or not yet
+- Notes are listed per scene in the margin, not placed level with their exact line as the script scrolls.
+- If the anchored words are rewritten in the script, the item keeps its scene but loses its highlight; there's no fuzzy re-anchoring.
+- Notifications only cover to-dos as of Slate's last launch or edit. A due date added in another editor while Slate is closed is scheduled at the next launch.
+- If no Slate window is open when you click a notification, the project opens the next time the library window appears.
+- Not checked by hand yet. Please try these:
+  1. Open the sample project. The margin shows its to-dos; the Notes tab shows the "I haven't opened it yet" note, and those words are highlighted.
+  2. Select some words, press ⇧⌘T, set a due date for tomorrow and add it. Check `todos.md` in another editor.
+  3. Hover `[[The Brass Key|a brass key]]` in the script, then ⌘-click it.
+  4. Quit and reopen Slate: the launch sheet should list the open to-dos. Try Done and Go to Scene.
+  5. Set a to-do due today, allow notifications, and wait for it (or set it in the past to see it only on the sheet).
+
 ## Standard Fountain scripts (2026-11-22, after Milestone 4)
 
 You asked to drop `#` scene headings and use standard Fountain.

@@ -33,6 +33,8 @@ public struct SettingsView: View {
             }
             .formStyle(.grouped)
             .tabItem { Label("Appearance", systemImage: "paintpalette") }
+            ReminderSettings()
+                .tabItem { Label("Reminders", systemImage: "bell") }
         }
         .frame(width: 460, height: 320)
         .slateThemed()

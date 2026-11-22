@@ -14,6 +14,29 @@ public final class SlateAppModel {
     /// Set by File › New Project… so the home window shows the sheet.
     public var showingNewProject = false
 
+    // MARK: Reminders state
+
+    /// Open to-dos per project, for the sheet shown at launch.
+    var launchReminders: [ProjectTodos] = []
+    var showingLaunchReminders = false
+    @ObservationIgnored private var checkedLaunchReminders = false
+    /// "Go to scene" requests for project windows, by project path.
+    private(set) var jumpRequests: [String: JumpRequest] = [:]
+    @ObservationIgnored private var sessions: [String: WeakSession] = [:]
+    @ObservationIgnored private var scheduler: ReminderScheduler?
+    @ObservationIgnored private var rescheduleTasks: [String: Task<Void, Never>] = [:]
+
+    struct JumpRequest: Equatable {
+        let sceneID: String?
+        let quote: String?
+        let token = UUID()
+    }
+
+    private final class WeakSession {
+        weak var session: ProjectSession?
+        init(_ session: ProjectSession) { self.session = session }
+    }
+
     public static var applicationSupport: URL {
         URL.applicationSupportDirectory.appending(path: "Slate", directoryHint: .isDirectory)
     }
@@ -28,6 +51,12 @@ public final class SlateAppModel {
         let support = Self.applicationSupport
         library = ProjectLibrary(directory: support, defaultWatchedFolder: Self.defaultProjectsFolder)
         themes = ThemeEngine(userThemesDirectory: support.appending(path: "Themes", directoryHint: .isDirectory))
+        // The notification centre needs an app bundle; tests run without one.
+        if Bundle.main.bundleURL.pathExtension == "app" {
+            let scheduler = ReminderScheduler()
+            scheduler.onOpen = { [weak self] root, scene in self?.requestJump(to: root, sceneID: scene, quote: nil) }
+            self.scheduler = scheduler
+        }
     }
 
     /// Asks for a project folder and adds it to the library. Returns the
@@ -85,4 +114,127 @@ public final class SlateAppModel {
         alert.alertStyle = .warning
         alert.runModal()
     }
+
+    // MARK: - Open projects and jumps
+
+    static func key(_ root: URL) -> String { root.standardizedFileURL.path }
+
+    func register(_ session: ProjectSession) {
+        sessions[Self.key(session.store.rootURL)] = WeakSession(session)
+    }
+
+    func unregister(_ session: ProjectSession) {
+        sessions[Self.key(session.store.rootURL)] = nil
+    }
+
+    func openSession(for root: URL) -> ProjectSession? {
+        sessions[Self.key(root)]?.session
+    }
+
+    /// Asks the project's window (once open) to show a scene. The caller
+    /// opens the window; a notification click is handled by `pendingOpen`.
+    func requestJump(to root: URL, sceneID: String?, quote: String?) {
+        jumpRequests[Self.key(root)] = JumpRequest(sceneID: sceneID, quote: quote)
+        pendingOpen = root
+    }
+
+    /// A project the next active window should open (from a notification).
+    var pendingOpen: URL?
+
+    func takeJump(for root: URL) -> JumpRequest? {
+        jumpRequests.removeValue(forKey: Self.key(root))
+    }
+
+    // MARK: - Launch reminders
+
+    static func projectName(at root: URL) -> String {
+        (try? CoordinatedFileIO.read(root.appending(path: ProjectLayout.manifest)))
+            .flatMap { try? ProjectManifest.decode($0) }?.name ?? root.lastPathComponent
+    }
+
+    /// Projects in the library that can be found, newest-opened first.
+    func reachableProjects() -> [(name: String, root: URL)] {
+        library.recent.compactMap { entry in
+            guard case .found(let url) = library.resolve(entry.id) else { return nil }
+            return (Self.projectName(at: url), url)
+        } + library.entries.filter { $0.lastOpened == nil }.compactMap { entry in
+            guard case .found(let url) = library.resolve(entry.id) else { return nil }
+            return (Self.projectName(at: url), url)
+        }
+    }
+
+    /// Once per launch: collect open to-dos for the sheet, per the setting.
+    func checkLaunchReminders() {
+        guard !checkedLaunchReminders else { return }
+        checkedLaunchReminders = true
+        let scope = LaunchReminderScope(rawValue: UserDefaults.standard.string(forKey: ReminderPreferences.launchScope) ?? "") ?? .lastProject
+        let projects: [(name: String, root: URL)]
+        switch scope {
+        case .off: projects = []
+        case .lastProject: projects = Array(reachableProjects().prefix(1))
+        case .allProjects: projects = reachableProjects()
+        }
+        launchReminders = Reminders.launchList(projects: projects)
+        showingLaunchReminders = !launchReminders.isEmpty
+        rescheduleAll()
+    }
+
+    /// Ticks a to-do from the launch sheet: through the open window's
+    /// document if the project is open, else straight to the file.
+    func complete(_ todo: MarginTodo, in root: URL) {
+        if let session = openSession(for: root) {
+            session.script.margin.toggle(todo)
+        } else {
+            let url = root.appending(path: MarginTodos.path)
+            do {
+                let text = try CoordinatedFileIO.readText(url)
+                guard let updated = MarginTodos.toggling(todo, in: text) else { return }
+                try CoordinatedFileIO.writeText(updated, to: url)
+            } catch {
+                Self.showError("Couldn't update the to-do", error)
+            }
+        }
+        launchReminders = launchReminders.compactMap { project in
+            guard project.root == root else { return project }
+            let rest = project.todos.filter { $0.id != todo.id }
+            return rest.isEmpty ? nil : ProjectTodos(name: project.name, root: project.root, todos: rest)
+        }
+        reschedule(root: root)
+    }
+
+    // MARK: - Notifications
+
+    var notificationsEnabled: Bool {
+        UserDefaults.standard.object(forKey: ReminderPreferences.notifications) as? Bool ?? true
+    }
+
+    /// Re-plans one project's due-date notifications (debounced).
+    func reschedule(root: URL, todos: [MarginTodo]? = nil) {
+        guard let scheduler else { return }
+        let key = Self.key(root)
+        rescheduleTasks[key]?.cancel()
+        let enabled = notificationsEnabled
+        rescheduleTasks[key] = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            let list = todos ?? Reminders.todos(in: root)
+            let plan = enabled ? Reminders.plan(projectName: Self.projectName(at: root), projectRoot: root, todos: list) : []
+            await scheduler.schedule(plan, for: root)
+            self?.rescheduleTasks[key] = nil
+        }
+    }
+
+    func rescheduleAll() {
+        guard let scheduler else { return }
+        guard notificationsEnabled else {
+            Task { await scheduler.removeAll() }
+            return
+        }
+        for project in reachableProjects() { reschedule(root: project.root) }
+    }
+}
+
+public enum ReminderPreferences {
+    public static let launchScope = "launchReminderScope"
+    public static let notifications = "dueDateNotifications"
 }

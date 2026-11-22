@@ -32,8 +32,8 @@ struct ProjectCard: View {
                     Text(lastEditedText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    // Page count, runtime and to-dos come with Milestones 3 and 5.
-                    Text("— pages · — min · — to-dos")
+                    // Page count and runtime need a full layout; they come with the cover images (M9).
+                    Text(todoText)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -80,6 +80,11 @@ struct ProjectCard: View {
         Button("Remove from Library") {
             model.library.remove(entry.id)
         }
+    }
+
+    private var todoText: String {
+        let open = summary?.openTodos ?? 0
+        return open == 0 ? "No open to-dos" : "\(open) open \(open == 1 ? "to-do" : "to-dos")"
     }
 
     private var lastEditedText: String {

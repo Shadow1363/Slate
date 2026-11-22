@@ -10,6 +10,8 @@ struct RevealRequest: Equatable {
     let file: String
     let location: Int
     let focus: Bool
+    /// Characters to select from `location`.
+    var length = 0
     let token = UUID()
 }
 
@@ -19,6 +21,8 @@ struct ScriptCaret: Equatable {
     var location: Int
     var kind: ScriptElementKind
     var sceneIndex: Int?
+    /// Selected words on one line, for anchoring margin notes and to-dos.
+    var selection: String? = nil
 }
 
 /// State for the Script area: the act files, the joined script, the caret
@@ -40,6 +44,8 @@ final class ScriptWorkspace {
     private(set) var openError: String?
     /// Draft view (editable) or Page view (the printed pages).
     var showingPages = false
+    var showingMargin = true
+    let margin: MarginModel
     /// The latest exact page layout, made 300 ms after typing stops.
     private(set) var paginated: PaginatedScript?
     /// Bumped whenever `paginated` changes, so Page view knows to redraw.
@@ -55,6 +61,7 @@ final class ScriptWorkspace {
     /// Links: the project's link graph, and what ⌘-click on a link does.
     @ObservationIgnored var linkGraph: () -> LinkGraph = { .empty }
     @ObservationIgnored var followLink: (String) -> Bool = { _ in false }
+    @ObservationIgnored var linkPreview: (String) -> NSViewController? = { _ in nil }
     /// Told about every edit to an act file, for the link index.
     @ObservationIgnored var textDidChange: ((String, String) -> Void)?
 
@@ -62,6 +69,7 @@ final class ScriptWorkspace {
 
     init(store: ProjectStore) {
         self.store = store
+        margin = MarginModel(store: store)
         refreshFiles()
         refreshAuxiliary()
     }
@@ -248,6 +256,33 @@ final class ScriptWorkspace {
         showingTitlePage = false
         currentFile = scene.file
         reveal = RevealRequest(file: scene.file, location: location, focus: focus)
+    }
+
+    /// The scene ID at the caret, if the caret is in a tagged scene.
+    var currentSceneID: String? { currentScene?.scene.sceneID }
+
+    /// Scene IDs in script order, for sorting margin items.
+    var sceneOrder: [String] { book.scenes.compactMap(\.scene.sceneID) }
+
+    func scene(withID id: String) -> ScriptBook.Scene? {
+        book.scenes.first { $0.scene.sceneID == id }
+    }
+
+    /// Shows a scene and, if given, selects the quoted words in it.
+    func reveal(sceneID: String, quote: String?) {
+        guard let scene = scene(withID: sceneID) else { return }
+        let row = Self.row(for: scene)
+        lastRevealedRow = row
+        selectedRow = row
+        guard let quote, let document = store.documents[scene.file],
+              let range = MarginQuote.range(of: quote, in: document.text, within: scene.scene.range) else {
+            reveal(scene, focus: true)
+            return
+        }
+        showingTitlePage = false
+        showingPages = false
+        currentFile = scene.file
+        reveal = RevealRequest(file: scene.file, location: range.location, focus: true, length: range.length)
     }
 
     /// Shows an act file with the caret at a UTF-16 location.

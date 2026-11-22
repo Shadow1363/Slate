@@ -256,7 +256,7 @@ You already have.
 CUT TO:
 ```
 
-- `# ...` = scene heading. Lines starting with `INT.`, `EXT.`, `INT./EXT.` or `EST.` are also detected without the `#`.
+- Scene heading = a line starting with `INT.`, `EXT.`, `INT./EXT.`, `I/E` or `EST.` after a blank line, or any line forced with a leading `.`. `# ...` lines are Fountain sections (acts, sequences), not printed.
 - `{#s014}` = the scene's stable ID, inserted automatically when a heading is typed and hidden in the editor (shown as a small scene-number chip). It ties the scene to its storyboard, margin notes, timeline events and to-dos, so reordering or renaming scenes never breaks anything.
 - Character cue = an ALL-CAPS line followed by dialogue; `(...)` lines under it are parentheticals; lines ending in `TO:` are transitions; `>THE END<` is centred; `/* ... */` is a boneyard comment left out of Publish. All per Fountain.
 - `[[Name]]` links to a universe note (instead of Fountain's `[[note]]` syntax, which Slate replaces with the margin).

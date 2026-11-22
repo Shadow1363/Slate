@@ -57,6 +57,9 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     private var appliedTheme: ResolvedTheme?
     private var lastIgnoredWords: [String] = []
     private var lastRevealToken: UUID?
+    /// Margin anchors last highlighted, and where.
+    private var appliedAnchors: [String] = []
+    private var anchorRanges: [NSRange] = []
     /// The text the editor last handed to the document (same storage, so
     /// comparing against it is cheap).
     private var syncedText = ""
@@ -104,6 +107,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
             self.linkCompletion.insertLink(in: self.textView)
         }
         linkCompletion.graph = { [weak self] in self?.config.workspace.linkGraph() ?? .empty }
+        textView.previewForLink = { [weak self] target in self?.config.workspace.linkPreview(target) }
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main
@@ -128,6 +132,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
 
     func teardown() {
         linkCompletion.hide()
+        textView?.closePreview()
         if let frameObserver { NotificationCenter.default.removeObserver(frameObserver) }
         frameObserver = nil
     }
@@ -155,6 +160,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
             lastIgnoredWords = config.ignoredWords
             NSSpellChecker.shared.setIgnoredWords(config.ignoredWords, inSpellDocumentWithTag: textView.spellCheckerDocumentTag)
         }
+        highlightAnchors()
         if let reveal = config.reveal, reveal.token != lastRevealToken, reveal.file == path {
             lastRevealToken = reveal.token
             perform(reveal)
@@ -164,11 +170,13 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     private func perform(_ reveal: RevealRequest) {
         let length = (textView.string as NSString).length
         let location = min(reveal.location, length)
+        let selection = NSRange(location: location, length: min(reveal.length, length - location))
         programmatic = true
-        textView.setSelectedRange(NSRange(location: location, length: 0))
+        textView.setSelectedRange(selection)
         programmatic = false
         caretMoved()
-        textView.scrollRangeToVisible(NSRange(location: location, length: 0))
+        textView.scrollRangeToVisible(selection)
+        if selection.length > 0 { textView.showFindIndicator(for: selection) }
         if reveal.focus { textView.window?.makeFirstResponder(textView) }
     }
 
@@ -523,6 +531,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         restyle(force: false)
         updateTypingAttributes()
         publishCaret()
+        highlightAnchors()
 
         if wantsCompletion {
             wantsCompletion = false
@@ -599,16 +608,52 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         }
     }
 
+    // MARK: - Margin anchors
+
+    /// Tints the words margin notes and to-dos point at (TextKit 2 rendering
+    /// attributes, so the file and undo are untouched).
+    private func highlightAnchors(force: Bool = false) {
+        guard let textView, let layout = textView.textLayoutManager, let content = layout.textContentManager else { return }
+        let anchors = config.workspace.margin.anchors
+        let key = anchors.map { $0.sceneID + "|" + $0.quote } + [theme.margin.anchorHighlight.hex]
+        let keyChanged = key != appliedAnchors
+        appliedAnchors = key
+        var ranges: [NSRange] = []
+        let text = textView.string
+        for anchor in anchors {
+            guard let scene = parsed.scenes.first(where: { $0.sceneID == anchor.sceneID }),
+                  let range = MarginQuote.range(of: anchor.quote, in: text, within: scene.range) else { continue }
+            ranges.append(range)
+        }
+        guard force || keyChanged || ranges != anchorRanges else { return }
+        let color = NSColor(theme.margin.anchorHighlight)
+        layout.removeRenderingAttribute(.backgroundColor, for: layout.documentRange)
+        for range in ranges {
+            guard let start = content.location(content.documentRange.location, offsetBy: range.location),
+                  let end = content.location(start, offsetBy: range.length),
+                  let textRange = NSTextRange(location: start, end: end) else { continue }
+            layout.addRenderingAttribute(.backgroundColor, value: color, for: textRange)
+        }
+        anchorRanges = ranges
+    }
+
     // MARK: - Caret reporting
 
     private func publishCaret() {
         let location = textView.selectedRange().location
         let line = parsed.lineIndex(containing: location)
+        let selected = textView.selectedRange()
+        var selection: String?
+        if selected.length > 0, selected.length <= 200 {
+            let words = (textView.string as NSString).substring(with: selected).trimmingCharacters(in: .whitespaces)
+            if !words.isEmpty, !words.contains(where: \.isNewline) { selection = words }
+        }
         let caret = ScriptCaret(
             file: path,
             location: location,
             kind: parsed.lines.indices.contains(line) ? parsed.lines[line].kind : .action,
-            sceneIndex: parsed.sceneIndex(containingLine: line)
+            sceneIndex: parsed.sceneIndex(containingLine: line),
+            selection: selection
         )
         let workspace = config.workspace
         // Deferred: this can run inside a SwiftUI view update.

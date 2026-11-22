@@ -61,6 +61,8 @@ public enum ProjectCreator {
 public struct ProjectSummary: Sendable, Equatable {
     public var name: String
     public var lastEdited: Date?
+    /// Open to-dos in `script/margin/todos.md`.
+    public var openTodos = 0
 
     /// Reads `project.json` and finds the newest file modification date,
     /// skipping `.slate/` and `exports/`. Safe to call off the main thread.
@@ -82,7 +84,8 @@ public struct ProjectSummary: Sendable, Equatable {
                 if newest == nil || date > newest! { newest = date }
             }
         }
-        return ProjectSummary(name: manifest.name, lastEdited: newest)
+        let open = Reminders.todos(in: root).filter { !$0.done }.count
+        return ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open)
     }
 }
 

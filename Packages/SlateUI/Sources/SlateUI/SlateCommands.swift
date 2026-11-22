@@ -76,6 +76,18 @@ public struct SlateCommands: Commands {
             }
             .disabled(actions == nil)
             Divider()
+            Button("Add To-do…") { actions?.addTodo() }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Button("Add Margin Note…") { actions?.addMarginNote() }
+                .keyboardShortcut("t", modifiers: [.command, .option])
+                .disabled(actions == nil)
+            Button("Show All To-dos") { actions?.showAllTodos() }
+                .disabled(actions == nil)
+            Button("Toggle Margin") { actions?.toggleMargin() }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Divider()
             Button("Jump to Scene…") { actions?.jumpToScene() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(actions == nil)

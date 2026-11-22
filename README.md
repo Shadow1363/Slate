@@ -95,6 +95,15 @@ Scene IDs such as `{#s014}` are added when you finish typing a heading. They sho
 
 Publish always uses Courier Prime 12 pt and the industry layout, whatever the editor theme. Courier Prime is bundled under the SIL Open Font License (`Packages/SlateExport/Sources/SlateExport/Resources/Fonts/OFL.txt`).
 
+## Margin: to-dos and notes
+
+- **The margin** is the column beside the script (⇧⌘M or the toolbar button). It has two tabs, To-dos and Notes, each showing **This Scene** (the caret's scene) or **All**.
+- **⇧⌘T** adds a to-do at the caret and **⌥⌘T** adds a note. Each is anchored to the scene, and to the selected words if you selected some. Anchored words get a soft highlight in the script, and clicking the quote in the margin selects them.
+- **Files:** to-dos are a Markdown task list in `script/margin/todos.md`, e.g. `- [ ] "I haven't opened it yet" — make it land @s014 due:2026-12-01`. Notes are list items under `## @s014` headings in `script/margin/notes.md`. Both read fine in any editor, and outside edits reload.
+- **All to-dos:** set the To-dos tab to All, then filter (Open / Done / All) and order (By Scene / By Due Date) from its menu. Script › Show All To-dos jumps straight there.
+- **Links:** hovering a `[[link]]` in the script or a note shows a preview. ⌘-click in the script, or a click in the margin, opens the note in the margin, so you never leave the scene.
+- **At launch,** a sheet lists open to-dos (overdue first) with Go to Scene and Done. **Settings › Reminders** chooses Off / Last project / All projects and turns due-date notifications (at 9:00) on or off.
+
 ## Universe notes
 
 - **Notes** live in `universe/<type>/<name>.md`: YAML frontmatter for fields, then a Markdown body. Use + or ⌘N to make a note from a template: Character, Location, Rule, Faction, Item, Event or Freeform.
@@ -130,6 +139,9 @@ Fixtures/Snapshots      Golden page layouts
 | ⇧⌘F | Find in Project |
 | ⌘K | Insert link |
 | ⌥⌘0 | Links inspector |
+| ⇧⌘T | Add to-do at the caret |
+| ⌥⌘T | Add margin note at the caret |
+| ⇧⌘M | Show / hide the margin |
 | ⌘O | Open a project folder |
 | ⇧⌘L | Project Library |
 | ⌘S | Save |

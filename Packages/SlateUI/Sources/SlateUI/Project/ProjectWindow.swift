@@ -16,6 +16,10 @@ public struct ProjectActions {
     public let findInProject: @MainActor () -> Void
     public let newNote: @MainActor () -> Void
     public let toggleInspector: @MainActor () -> Void
+    public let addTodo: @MainActor () -> Void
+    public let addMarginNote: @MainActor () -> Void
+    public let toggleMargin: @MainActor () -> Void
+    public let showAllTodos: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -79,6 +83,7 @@ public struct ProjectWindow: View {
 struct ProjectContent: View {
     let store: ProjectStore
     @State private var session: ProjectSession
+    @Environment(SlateAppModel.self) private var model
 
     init(store: ProjectStore) {
         self.store = store
@@ -107,7 +112,15 @@ struct ProjectContent: View {
             Group {
                 switch session.area ?? .script {
                 case .script:
-                    ScriptDetail(workspace: session.script)
+                    HStack(spacing: 0) {
+                        ScriptDetail(workspace: session.script)
+                            .frame(maxWidth: .infinity)
+                        if session.script.showingMargin {
+                            Divider()
+                            MarginView(session: session, margin: session.script.margin)
+                                .frame(width: 300)
+                        }
+                    }
                 case .universe:
                     UniverseDetail(session: session)
                 case let area:
@@ -139,6 +152,16 @@ struct ProjectContent: View {
             }
         }
         .onChange(of: session.area) { session.selectedFile = nil }
+        .onAppear { model.register(session) }
+        .onDisappear { model.unregister(session) }
+        .onChange(of: model.jumpRequests[SlateAppModel.key(store.rootURL)], initial: true) { _, request in
+            guard request != nil, let jump = model.takeJump(for: store.rootURL) else { return }
+            session.area = .script
+            if let id = jump.sceneID { session.script.reveal(sceneID: id, quote: jump.quote) }
+        }
+        .onChange(of: session.script.margin.todosText) { _, text in
+            model.reschedule(root: store.rootURL, todos: MarginTodos.parse(text))
+        }
         .onChange(of: store.files) { session.filesChanged() }
         .sheet(item: $session.sheet) { sheet in
             switch sheet {
@@ -147,6 +170,10 @@ struct ProjectContent: View {
             case .search: ProjectSearchSheet(session: session)
             case .rename(let path, let proposed): RenameNoteSheet(session: session, path: path, proposed: proposed)
             case .newNote(let type, let name): NewNoteSheet(session: session, type: type, name: name)
+            case .addTodo(let sceneID, let quote): TodoSheet(session: session, editing: nil, sceneID: sceneID, quote: quote)
+            case .editTodo(let todo): TodoSheet(session: session, editing: todo, sceneID: nil, quote: nil)
+            case .addMarginNote(let sceneID, let quote): MarginNoteSheet(session: session, editing: nil, sceneID: sceneID, quote: quote)
+            case .editNote(let note): MarginNoteSheet(session: session, editing: note, sceneID: nil, quote: nil)
             }
         }
         .focusedSceneValue(\.projectActions, ProjectActions(
@@ -169,7 +196,20 @@ struct ProjectContent: View {
             quickOpen: { session.sheet = .quickOpen },
             findInProject: { session.sheet = .search },
             newNote: { session.sheet = .newNote(type: nil, name: "") },
-            toggleInspector: { session.showingInspector.toggle() }
+            toggleInspector: { session.showingInspector.toggle() },
+            addTodo: { session.addTodoAtCaret() },
+            addMarginNote: { session.addMarginNoteAtCaret() },
+            toggleMargin: {
+                session.area = .script
+                session.script.showingMargin.toggle()
+            },
+            showAllTodos: {
+                session.area = .script
+                session.script.showingMargin = true
+                session.script.margin.peek = nil
+                session.script.margin.tab = .todos
+                session.script.margin.scope = .all
+            }
         ))
     }
 }
