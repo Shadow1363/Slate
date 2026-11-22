@@ -67,7 +67,7 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
         ]
         files["script/title-page.md"] = titlePage(title: title, date: date)
         for (name, label) in actFiles {
-            files["script/\(name)"] = label.map { "/* \($0) */\n\n" } ?? ""
+            files["script/\(name)"] = label.map { "# \($0)\n\n" } ?? ""
         }
         return files
     }
@@ -78,7 +78,7 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
         return String(decoding: data, as: UTF8.self)
     }
 
-    /// File name → boneyard label shown at the top of the file (nil for none).
+    /// File name → the Fountain section (`# ACT ONE`) that opens it (nil for none).
     private var actFiles: [(String, String?)] {
         switch self {
         case .feature:

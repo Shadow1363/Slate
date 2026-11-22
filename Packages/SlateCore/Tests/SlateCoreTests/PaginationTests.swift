@@ -23,7 +23,7 @@ struct PaginationTests {
     }
 
     @Test func elementSpacingComesFromTheElements() throws {
-        let script = "# INT. KITCHEN - NIGHT {#s1}\n\n\n\nRain.\nMore rain.\n\nMARA\n(quietly)\nHi.\n\nCUT TO:\n\n# EXT. ROOF - DAY {#s2}\n\nWind."
+        let script = "INT. KITCHEN - NIGHT {#s1}\n\n\n\nRain.\nMore rain.\n\nMARA\n(quietly)\nHi.\n\nCUT TO:\n\nEXT. ROOF - DAY {#s2}\n\nWind."
         let page = try #require(paginate(script).pages.first)
         let rows = page.rows.map { ($0.row, $0.line.text) }
         #expect(rows.map(\.0) == [0, 2, 3, 5, 6, 7, 9, 12, 14])
@@ -39,14 +39,14 @@ struct PaginationTests {
     }
 
     @Test func boneyardSynopsisTagsAndLinksDoNotPrint() throws {
-        let script = "# INT. A {#s001}\n\n= synopsis\n\n/* cut\nthis */\n\nShe holds [[The Brass Key|the key]] and [[Mara]]. /* aside */"
+        let script = "INT. A {#s001}\n\n= synopsis\n\n/* cut\nthis */\n\nShe holds [[The Brass Key|the key]] and [[Mara]]. /* aside */"
         let page = try #require(paginate(script).pages.first)
         #expect(texts(page) == ["INT. A", "She holds the key and Mara. "])
     }
 
     @Test func headingNeverEndsAPage() throws {
         // 26 filler paragraphs use rows 0–50; a heading would land on 53.
-        let script = filler(26) + "\n\n# INT. LATE {#s1}\n\nShe arrives.\nAnd waits.\nAnd waits."
+        let script = filler(26) + "\n\nINT. LATE {#s1}\n\nShe arrives.\nAnd waits.\nAnd waits."
         let pages = paginate(script).pages
         #expect(pages.count == 2)
         #expect(texts(pages[1]).first == "INT. LATE")
@@ -100,7 +100,7 @@ struct PaginationTests {
     }
 
     @Test func automaticContd() throws {
-        let script = "# INT. A {#s1}\n\nMARA\nHi.\n\nShe sits.\n\nMARA\nAgain.\n\nMARA (CONT'D)\nThird.\n\n# INT. B {#s2}\n\nMARA\nNew scene."
+        let script = "INT. A {#s1}\n\nMARA\nHi.\n\nShe sits.\n\nMARA\nAgain.\n\nMARA (CONT'D)\nThird.\n\nINT. B {#s2}\n\nMARA\nNew scene."
         let cues = try #require(paginate(script).pages.first).rows.filter { $0.line.kind == .character }.map(\.line.text)
         #expect(cues == ["MARA", "MARA (CONT'D)", "MARA (CONT'D)", "MARA"])
         let off = paginate(script, settings: PublishSettings(autoContd: false)).pages[0].rows.filter { $0.line.kind == .character }.map(\.line.text)
@@ -108,7 +108,7 @@ struct PaginationTests {
     }
 
     @Test func sceneNumbersCanBeTurnedOff() throws {
-        let page = try #require(paginate("# INT. A {#s1}\n\nGo.", settings: PublishSettings(sceneNumbers: false)).pages.first)
+        let page = try #require(paginate("INT. A {#s1}\n\nGo.", settings: PublishSettings(sceneNumbers: false)).pages.first)
         #expect(page.rows[0].line.sceneNumber == nil)
     }
 
@@ -134,7 +134,7 @@ struct PaginationTests {
     }
 
     @Test func eighthsPerScene() {
-        let script = "# INT. A {#s1}\n\n" + filler(26) + "\n\n# INT. B {#s2}\n\nShort."
+        let script = "INT. A {#s1}\n\n" + filler(26) + "\n\nINT. B {#s2}\n\nShort."
         let result = paginate(script)
         #expect(result.sceneEighths.count == 2)
         #expect(result.sceneEighths[0] == 8) // a full page
@@ -216,7 +216,7 @@ struct PublishSettingsTests {
 @Suite("Exact timings")
 struct ExactTimingTests {
     @Test func bookUsesThePaginatorWhenGiven() {
-        let text = "# INT. A {#s1}\n\n" + (1...26).map { "Line \($0)." }.joined(separator: "\n\n") + "\n\n# INT. B {#s2}\n\nShort."
+        let text = "INT. A {#s1}\n\n" + (1...26).map { "Line \($0)." }.joined(separator: "\n\n") + "\n\nINT. B {#s2}\n\nShort."
         let estimate = ScriptBook(texts: [("s.md", text)])
         let exact = ScriptBook(texts: [("s.md", text)], paginator: Paginator())
         #expect(!estimate.isExact)

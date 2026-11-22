@@ -131,7 +131,7 @@ public enum ScriptEstimate {
     public static func lines(for line: ScriptLine) -> Int {
         let width: Int
         switch line.kind {
-        case .boneyard, .synopsis, .pageBreak: return 0
+        case .boneyard, .synopsis, .section, .pageBreak: return 0
         case .blank, .character: return 1
         case .dialogue, .lyric: width = 35
         case .parenthetical: width = 20
@@ -143,7 +143,7 @@ public enum ScriptEstimate {
 
     public static func words(in line: ScriptLine) -> Int {
         switch line.kind {
-        case .boneyard, .synopsis, .pageBreak, .blank: return 0
+        case .boneyard, .synopsis, .section, .pageBreak, .blank: return 0
         default: return printedText(of: line).split(whereSeparator: \.isWhitespace).count
         }
     }

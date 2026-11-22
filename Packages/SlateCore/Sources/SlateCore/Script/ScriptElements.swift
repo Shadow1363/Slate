@@ -16,6 +16,9 @@ public enum ScriptElementKind: String, Sendable, CaseIterable, Codable {
     case synopsis
     /// `/* … */`, left out of Publish.
     case boneyard
+    /// `# Act One`, `## Sequence`: Fountain sections, for structure only.
+    /// Left out of Publish.
+    case section
     /// `===`
     case pageBreak
     case blank
@@ -37,6 +40,7 @@ public enum ScriptElementKind: String, Sendable, CaseIterable, Codable {
         case .lyric: "Lyric"
         case .synopsis: "Synopsis"
         case .boneyard: "Boneyard"
+        case .section: "Section"
         case .pageBreak: "Page Break"
         case .blank: "Blank"
         }

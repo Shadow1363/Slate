@@ -27,8 +27,8 @@ struct ScriptParserTests {
         #expect(parsed.characterCues == ["MARA", "OLDER MARA"])
     }
 
-    @Test func headingsWithAndWithoutHash() {
-        #expect(kinds("# a kitchen") == [.sceneHeading])
+    @Test func headingsFollowFountain() {
+        #expect(kinds(".a kitchen") == [.sceneHeading])
         #expect(kinds("INT. KITCHEN - DAY") == [.sceneHeading])
         #expect(kinds("ext. roof - night") == [.sceneHeading])
         #expect(kinds("INT./EXT. CAR - MOVING") == [.sceneHeading])
@@ -37,30 +37,48 @@ struct ScriptParserTests {
         #expect(kinds(".FLASHBACK") == [.sceneHeading])
         #expect(kinds("INTERIOR DESIGN IS HARD") == [.action])
         #expect(kinds("...and then") == [.action])
-        // Auto-detected headings need a blank line before them; `#` doesn't.
+        // Auto-detected headings need a blank line before them; `.` doesn't.
         #expect(kinds("She runs.\nINT. HALL - DAY") == [.action, .action])
-        #expect(kinds("She runs.\n# INT. HALL - DAY") == [.action, .sceneHeading])
+        #expect(kinds("She runs.\n.INT. HALL - DAY") == [.action, .sceneHeading])
+        // A section above counts as a break.
+        #expect(kinds("# ACT ONE\nINT. HALL - DAY") == [.section, .sceneHeading])
+    }
+
+    @Test func hashLinesAreSections() throws {
+        let parsed = ScriptParser.parse("# Act One\n\n## The heist\n\nINT. VAULT - NIGHT {#s001}\n\nAlarms.")
+        #expect(parsed.lines.map(\.kind) == [.section, .blank, .section, .blank, .sceneHeading, .blank, .action])
+        #expect(parsed.lines[2].markerLength == 3)
+        #expect(parsed.scenes.count == 1)
+        #expect(parsed.scenes[0].heading == "INT. VAULT - NIGHT")
+    }
+
+    @Test func fountainSceneNumbers() throws {
+        let heading = SceneHeading.parse("INT. HOUSE - DAY #1A# {#s003}")
+        #expect(heading.heading == "INT. HOUSE - DAY")
+        #expect(heading.sceneID == "s003")
+        #expect(heading.attributes["number"] == "1A")
+        #expect(SceneHeading.parse(".SNOWGLOBE #12#").heading == "SNOWGLOBE")
     }
 
     @Test func sceneTagsAndDurations() throws {
-        let parsed = ScriptParser.parse("# INT. KITCHEN - NIGHT {#s014 dur=2:30}\n\nAction.")
+        let parsed = ScriptParser.parse("INT. KITCHEN - NIGHT {#s014 dur=2:30}\n\nAction.")
         let scene = try #require(parsed.scenes.first)
         #expect(scene.sceneID == "s014")
         #expect(scene.heading == "INT. KITCHEN - NIGHT")
         #expect(scene.durationOverride == 150)
         let line = parsed.lines[0]
-        #expect(line.markerLength == 2)
-        #expect(line.tagRange == NSRange(location: 22, length: 17))
+        #expect(line.markerLength == 0)
+        #expect(line.tagRange == NSRange(location: 20, length: 17))
         #expect(ScriptEstimate.printedText(of: line) == "INT. KITCHEN - NIGHT")
     }
 
     @Test func headingParts() {
-        let parts = SceneHeading.parse("# EXT. ROOF - LATER - NIGHT {#s1}").parts
+        let parts = SceneHeading.parse("EXT. ROOF - LATER - NIGHT {#s1}").parts
         #expect(parts.prefix == "EXT.")
         #expect(parts.location == "ROOF - LATER")
         #expect(parts.time == "NIGHT")
-        #expect(SceneHeading.parse("# INT./EXT. CAR").parts.prefix == "INT./EXT.")
-        #expect(SceneHeading.parse("# THE VOID").parts.location == "THE VOID")
+        #expect(SceneHeading.parse("INT./EXT. CAR").parts.prefix == "INT./EXT.")
+        #expect(SceneHeading.parse(".THE VOID").parts.location == "THE VOID")
     }
 
     @Test func durations() {
@@ -126,12 +144,12 @@ struct ScriptParserTests {
     }
 
     @Test func lineEndingsAndUnicode() {
-        let parsed = ScriptParser.parse("# INT. CAFÉ — DAY {#s1}\r\n\r\nZoë waves. 🎬\r\n")
+        let parsed = ScriptParser.parse("INT. CAFÉ — DAY {#s1}\r\n\r\nZoë waves. 🎬\r\n")
         #expect(parsed.lines.map(\.kind) == [.sceneHeading, .blank, .action, .blank])
-        #expect(parsed.lines[0].text == "# INT. CAFÉ — DAY {#s1}")
+        #expect(parsed.lines[0].text == "INT. CAFÉ — DAY {#s1}")
         #expect(parsed.lines[2].text == "Zoë waves. 🎬")
         // Ranges are UTF-16 and skip the \r\n.
-        let ns = "# INT. CAFÉ — DAY {#s1}\r\n\r\nZoë waves. 🎬\r\n" as NSString
+        let ns = "INT. CAFÉ — DAY {#s1}\r\n\r\nZoë waves. 🎬\r\n" as NSString
         #expect(ns.substring(with: parsed.lines[2].range) == "Zoë waves. 🎬")
         #expect(parsed.scenes[0].heading == "INT. CAFÉ — DAY")
     }
@@ -145,12 +163,12 @@ struct ScriptParserTests {
     }
 
     @Test func scenesSpanToTheNextHeading() {
-        let text = "Preamble.\n\n# INT. A {#s1}\n\nOne.\n\n# INT. B {#s2}\n\nTwo.\n"
+        let text = "Preamble.\n\nINT. A {#s1}\n\nOne.\n\nINT. B {#s2}\n\nTwo.\n"
         let parsed = ScriptParser.parse(text)
         let ns = text as NSString
         #expect(parsed.scenes.map(\.sceneID) == ["s1", "s2"])
-        #expect(ns.substring(with: parsed.scenes[0].range) == "# INT. A {#s1}\n\nOne.\n\n")
-        #expect(ns.substring(with: parsed.scenes[1].range) == "# INT. B {#s2}\n\nTwo.\n")
+        #expect(ns.substring(with: parsed.scenes[0].range) == "INT. A {#s1}\n\nOne.\n\n")
+        #expect(ns.substring(with: parsed.scenes[1].range) == "INT. B {#s2}\n\nTwo.\n")
         #expect(parsed.sceneIndex(containingLine: 0) == nil)
         #expect(parsed.sceneIndex(containingLine: 4) == 0)
         #expect(parsed.sceneIndex(containingLine: 8) == 1)
@@ -161,8 +179,8 @@ struct ScriptParserTests {
 struct ScriptBookTests {
     @Test func joinsFilesAndNumbersScenes() {
         let book = ScriptBook(texts: [
-            ("script/01-act-one.md", "# INT. KITCHEN - NIGHT {#s001}\n\nMARA\nHi.\n\n# EXT. ROOF - DAY {#s002}\n\nWind."),
-            ("script/02-act-two.md", "# INT. KITCHEN - DAY {#s003}\n\nMARA\nAgain.\n\nOLDER MARA\nYes."),
+            ("script/01-act-one.md", "INT. KITCHEN - NIGHT {#s001}\n\nMARA\nHi.\n\nEXT. ROOF - DAY {#s002}\n\nWind."),
+            ("script/02-act-two.md", "INT. KITCHEN - DAY {#s003}\n\nMARA\nAgain.\n\nOLDER MARA\nYes."),
         ])
         #expect(book.scenes.map(\.number) == [1, 2, 3])
         #expect(book.scenes.map(\.file) == ["script/01-act-one.md", "script/01-act-one.md", "script/02-act-two.md"])
@@ -175,15 +193,15 @@ struct ScriptBookTests {
     }
 
     @Test func durationOverrideWins() {
-        let book = ScriptBook(texts: [("s.md", "# MONTAGE {#s1 dur=2:30}\n\nThings happen.")])
+        let book = ScriptBook(texts: [("s.md", ".MONTAGE {#s1 dur=2:30}\n\nThings happen.")])
         #expect(book.scenes[0].duration == 150)
-        let plain = ScriptBook(texts: [("s.md", "# INT. A {#s1}\n\nThings happen.")])
+        let plain = ScriptBook(texts: [("s.md", "INT. A {#s1}\n\nThings happen.")])
         #expect(plain.scenes[0].duration == Double(plain.scenes[0].eighths) / 8 * 60)
     }
 
     @Test func aFullPageIsEightEighths() {
         let action = Array(repeating: "Short line.\n", count: 54).joined()
-        let book = ScriptBook(texts: [("s.md", "# INT. A {#s1}\n" + action)])
+        let book = ScriptBook(texts: [("s.md", "INT. A {#s1}\n" + action)])
         #expect(book.scenes[0].eighths == 8)
         #expect(ScriptEstimate.formatEighths(11) == "1 3/8")
         #expect(ScriptEstimate.formatEighths(3) == "3/8")

@@ -211,7 +211,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         case .dialogue, .lyric: theme.script.dialogue
         case .transition: theme.script.transition
         case .centered: theme.script.centered
-        case .boneyard, .synopsis, .pageBreak: theme.script.boneyard
+        case .boneyard, .synopsis, .section, .pageBreak: theme.script.boneyard
         }
     }
 
@@ -232,6 +232,8 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         var font = NSFont.slate(style.font, size: style.size, weight: style.weight)
         if kind == .boneyard || kind == .synopsis || kind == .lyric {
             font = NSFontManager.shared.convert(font, toHaveTrait: .italicFontMask)
+        } else if kind == .section {
+            font = NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask)
         }
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineHeightMultiple = theme.editor.lineSpacing
@@ -389,9 +391,18 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         suggestion = range
     }
 
-    /// Gives the heading on `index` a scene tag if it has none (or a duplicate).
+    /// Finishes the heading on `index`: a `.` in front if Fountain wouldn't
+    /// recognise it on its own, and a scene tag if it has none (or a duplicate).
     private func commitSceneTag(line index: Int) {
         guard parsed.lines.indices.contains(index), parsed.lines[index].kind == .sceneHeading else { return }
+        if let fix = ScriptEditing.headingMarkerEdit(in: parsed, line: index) {
+            var selection = textView.selectedRange()
+            if selection.location >= fix.range.upperBound {
+                selection.location += fix.replacement.utf16.count - fix.range.length
+            }
+            replace(fix.range, with: fix.replacement, selection: selection)
+            guard parsed.lines.indices.contains(index), parsed.lines[index].kind == .sceneHeading else { return }
+        }
         let existing = config.workspace.sceneIDs(excluding: path)
         guard let edit = ScriptEditing.missingSceneTags(in: parsed, existing: existing, onlyLine: index).first else { return }
         var selection = textView.selectedRange()

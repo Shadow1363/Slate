@@ -78,7 +78,7 @@ struct PDFTests {
     @Test func exportsGoToTheExportsFolderWithoutOverwriting() throws {
         let folder = try TempDir()
         let root = try ProjectCreator.create(title: "Film", template: .short, in: folder.url)
-        let source = ScriptSource(projectName: "Film", titlePage: "Title: Film\n", files: [("script.md", "# INT. A {#s001}\n\nGo.\n")], settings: PublishSettings())
+        let source = ScriptSource(projectName: "Film", titlePage: "Title: Film\n", files: [("script.md", "INT. A {#s001}\n\nGo.\n")], settings: PublishSettings())
         let date = Date(timeIntervalSince1970: 1_795_000_000)
         let first = Publisher.destination(for: .pdf, projectName: "Film", projectRoot: root, date: date)
         try Data("x".utf8).write(to: first)
@@ -100,8 +100,10 @@ struct FountainTests {
         #expect(imported.files.map(\.name) == ["01-act-i.md", "02-act-ii-a-new-day.md", "03-act-iii-the-showdown.md"])
         #expect(TitlePage.parse(imported.titlePage).title == "**THE LAST BIRTHDAY CARD**")
         let first = imported.files[0].text
-        #expect(first.contains("/* ## Meet Scott */"))
-        #expect(first.contains("# BACK IN THE APARTMENT {#"))
+        // Sections stay Fountain sections; forced headings stay forced.
+        #expect(first.hasPrefix("# ACT I\n\n"))
+        #expect(first.contains("\n## Meet Scott\n"))
+        #expect(first.contains("\n.BACK IN THE APARTMENT {#"))
         // Scene IDs are unique across all act files.
         let ids = imported.files.flatMap { ScriptParser.parse($0.text).scenes.compactMap(\.sceneID) }
         #expect(ids.count == Set(ids).count)
@@ -134,8 +136,8 @@ struct FountainTests {
     }
 
     @Test func exportUsesPlainFountain() {
-        let out = FountainExporter.export(titlePage: "Title: A\n", files: [("script.md", "# INT. A {#s001}\n\nSee [[Mara|her]].\n\n# MONTAGE {#s002}\n\nThings.\n")])
-        #expect(out == "Title: A\n\nINT. A\n\nSee her.\n\n.MONTAGE\n\nThings.\n")
+        let out = FountainExporter.export(titlePage: "Title: A\n", files: [("script.md", "# Act One\n\nINT. A {#s001}\n\nSee [[Mara|her]].\n\n.MONTAGE {#s002}\n\nThings.\n")])
+        #expect(out == "Title: A\n\n# Act One\n\nINT. A\n\nSee her.\n\n.MONTAGE\n\nThings.\n")
     }
 }
 
@@ -183,7 +185,7 @@ struct FDXTests {
         </FinalDraft>
         """
         let imported = try FDXImporter.convert(Data(xml.utf8))
-        #expect(imported.files[0].text == "# INT. KITCHEN - NIGHT {#s001 number=14}\n\nShe sees **THE KEY**.\n\nMARA\n(quietly)\nHi.\n\n>FADE OUT.\n")
+        #expect(imported.files[0].text == "INT. KITCHEN - NIGHT {#s001 number=14}\n\nShe sees **THE KEY**.\n\nMARA\n(quietly)\nHi.\n\n>FADE OUT.\n")
     }
 
     @Test func rejectsOtherXML() {

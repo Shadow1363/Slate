@@ -283,7 +283,7 @@ final class ScriptWorkspace {
         }
     }
 
-    /// Adds `# HEADING {#sNNN}` at the end of the last act file (Rough draft
+    /// Adds `HEADING {#sNNN}` (forced with `.` if needed) at the end of the last act file (Rough draft
     /// › Turn into Scene). Returns the file it went into.
     @discardableResult
     func appendSceneStub(heading: String) -> String? {
@@ -294,8 +294,9 @@ final class ScriptWorkspace {
         var text = document.text
         if !text.isEmpty, !text.hasSuffix("\n") { text += "\n" }
         if !text.isEmpty, !text.hasSuffix("\n\n") { text += "\n" }
-        let stub = "# \(title) {#\(id)}\n"
-        let location = (text as NSString).length + 2 + (title as NSString).length
+        let heading = ScriptEditing.convert(title, to: .sceneHeading)
+        let stub = "\(heading) {#\(id)}\n"
+        let location = (text as NSString).length + (heading as NSString).length
         document.text = text + stub
         reveal(file: path, location: location)
         return path

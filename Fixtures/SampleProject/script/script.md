@@ -1,4 +1,4 @@
-# INT. KITCHEN - NIGHT {#s014}
+INT. KITCHEN - NIGHT {#s014}
 
 Rain hammers the window. MARA (34) stares at [[The Brass Key|a brass key]] on the table.
 

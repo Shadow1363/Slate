@@ -22,8 +22,9 @@ public struct ImportedScript: Sendable, Equatable {
         where name != "title-page.md" && ["md", "fountain", "txt"].contains((name as NSString).pathExtension) {
             let url = script.appending(path: name)
             let existing = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
-            // Only template starters (empty or a lone boneyard label) are replaced.
-            if existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || existing.hasPrefix("/*") {
+            // Only template starters (empty, or a lone act section or label) are replaced.
+            let content = existing.trimmingCharacters(in: .whitespacesAndNewlines)
+            if content.isEmpty || (!content.contains("\n") && (content.hasPrefix("#") || content.hasPrefix("/*"))) {
                 try fm.removeItem(at: url)
             }
         }
@@ -39,9 +40,9 @@ public struct ImportedScript: Sendable, Equatable {
 /// Fountain (`.fountain`, or a plain `.txt`/`.md` screenplay) → Slate.
 ///
 /// - The title page becomes `title-page.md`.
-/// - Top-level `# Sections` start numbered act files (`01-act-one.md`);
-///   deeper sections become `/* ## … */` comments.
-/// - `.FORCED HEADING` becomes `# FORCED HEADING`.
+/// - Top-level `# Sections` start numbered act files (`01-act-one.md`) and
+///   stay as the first line of that file; deeper sections stay where they are.
+/// - Headings, forced (`.HEADING`) or not, stay as written.
 /// - Fountain `[[notes]]` become `/* note: … */`, since Slate uses `[[…]]` for links.
 /// - Every scene heading gets a Slate scene ID.
 public enum FountainImporter {
@@ -71,16 +72,13 @@ public enum FountainImporter {
                 let level = trimmed.prefix { $0 == "#" }.count
                 let title = trimmed.dropFirst(level).trimmingCharacters(in: .whitespaces)
                 if level == 1 {
-                    acts.append((title, []))
+                    acts.append((title, [trimmed]))
                 } else {
-                    acts[acts.count - 1].lines.append("/* \(String(repeating: "#", count: level)) \(title) */")
+                    acts[acts.count - 1].lines.append(line)
                 }
                 continue
             }
             var converted = line
-            if trimmed.hasPrefix("."), !trimmed.hasPrefix(".."), trimmed.count > 1 {
-                converted = "# " + trimmed.dropFirst()
-            }
             if converted.contains("[[") {
                 converted = converted.replacingOccurrences(of: #"\[\[(.*?)\]\]"#, with: "/* note: $1 */", options: .regularExpression)
             }
@@ -101,6 +99,11 @@ public enum FountainImporter {
             var body = act.lines
             while body.first?.trimmingCharacters(in: .whitespaces).isEmpty == true { body.removeFirst() }
             while body.last?.trimmingCharacters(in: .whitespaces).isEmpty == true { body.removeLast() }
+            // One blank line between the act's section and what follows.
+            if act.title != nil, body.count > 1 {
+                while body.count > 1, body[1].trimmingCharacters(in: .whitespaces).isEmpty { body.remove(at: 1) }
+                body.insert("", at: 1)
+            }
             let tagged = ScriptEditing.assigningSceneIDs(to: body.joined(separator: "\n") + "\n", existing: usedIDs)
             usedIDs.formUnion(ScriptParser.parse(tagged).scenes.compactMap(\.sceneID))
             let name: String
@@ -151,12 +154,13 @@ public enum FountainExporter {
             output.append("")
         }
         for (index, file) in files.enumerated() {
-            if files.count > 1 {
-                if index > 0 { output.append("") }
+            let parsed = ScriptParser.parse(file.text)
+            let opensWithAct = parsed.lines.first { $0.kind != .blank }.map { $0.kind == .section && !$0.text.hasPrefix("##") } ?? false
+            if index > 0 { output.append("") }
+            if files.count > 1, !opensWithAct {
                 output.append("# " + sectionTitle(for: file.name))
                 output.append("")
             }
-            let parsed = ScriptParser.parse(file.text)
             for line in parsed.lines {
                 output.append(fountainLine(line))
             }
@@ -170,7 +174,7 @@ public enum FountainExporter {
         case .sceneHeading:
             let heading = ScriptEstimate.printedText(of: line)
             return ScriptParser.isHeading(heading) ? heading : "." + heading
-        case .boneyard:
+        case .boneyard, .section:
             return line.text
         default:
             return Emphasis.printable(line.text, keepingComments: true)
@@ -200,7 +204,7 @@ public enum MarkdownExporter {
                 switch line.kind {
                 case .sceneHeading:
                     output.append("## " + ScriptEstimate.printedText(of: line))
-                case .boneyard, .synopsis:
+                case .boneyard, .synopsis, .section:
                     continue
                 case .character:
                     output.append("**" + ScriptEstimate.printedText(of: line) + "**  ")

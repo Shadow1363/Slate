@@ -37,9 +37,10 @@ struct ScriptEditingTests {
 
     @Test(arguments: [
         ("she runs", ScriptElementKind.character, "SHE RUNS"),
-        ("mara", .sceneHeading, "# MARA"),
-        ("# INT. KITCHEN {#s014}", .action, "!INT. KITCHEN"),
-        ("# the void {#s2}", .action, "the void"),
+        ("mara", .sceneHeading, ".MARA"),
+        ("int. hall", .sceneHeading, "INT. HALL"),
+        ("INT. KITCHEN {#s014}", .action, "!INT. KITCHEN"),
+        (".the void {#s2}", .action, "the void"),
         ("MARA", .transition, ">MARA"),
         ("cut to:", .transition, "CUT TO:"),
         (">FADE OUT.", .action, "!FADE OUT."),
@@ -62,35 +63,49 @@ struct ScriptEditingTests {
     }
 
     @Test func markersAndCapitals() {
-        #expect(ScriptEditing.marker(forTypingInto: .sceneHeading) == "# ")
+        #expect(ScriptEditing.marker(forTypingInto: .sceneHeading) == "")
         #expect(ScriptEditing.marker(forTypingInto: .transition) == ">")
         #expect(ScriptEditing.marker(forTypingInto: .character) == "")
         #expect(ScriptEditing.typesInCapitals(.character))
         #expect(!ScriptEditing.typesInCapitals(.dialogue))
     }
 
+    @Test func headingMarkersFollowFountain() {
+        func fixed(_ text: String, line: Int) -> String {
+            let parsed = ScriptParser.parse(text, hint: .init(line: line, kind: .sceneHeading))
+            guard let edit = ScriptEditing.headingMarkerEdit(in: parsed, line: line) else { return text }
+            return (text as NSString).replacingCharacters(in: edit.range, with: edit.replacement)
+        }
+        #expect(fixed("Action.\n\nTHE VAULT", line: 2) == "Action.\n\n.THE VAULT")
+        #expect(fixed("Action.\n\nINT. VAULT", line: 2) == "Action.\n\nINT. VAULT")
+        #expect(fixed("Action.\n\n.INT. VAULT", line: 2) == "Action.\n\nINT. VAULT")
+        #expect(fixed("Action.\nINT. VAULT", line: 1) == "Action.\n.INT. VAULT")
+        #expect(fixed("Action.\n\n", line: 2) == "Action.\n\n")
+        #expect(fixed("Action.\n\nint. vault {#s001}", line: 2) == "Action.\n\nINT. VAULT {#s001}")
+    }
+
     @Test func missingTagsAreAppended() {
-        let text = "# INT. A\n\nOne.\n\n# INT. B {#s004}\n\nTwo.\n\n#  \n"
+        let text = "INT. A\n\nOne.\n\nINT. B {#s004}\n\nTwo.\n\n.  \n"
         let result = ScriptEditing.assigningSceneIDs(to: text, existing: ["s007"])
-        #expect(result == "# INT. A {#s008}\n\nOne.\n\n# INT. B {#s004}\n\nTwo.\n\n#  \n")
+        #expect(result == "INT. A {#s008}\n\nOne.\n\nINT. B {#s004}\n\nTwo.\n\n.  \n")
     }
 
     @Test func duplicateTagsAreReplaced() {
-        let text = "# INT. A {#s001}\n\n# INT. A AGAIN {#s001}\n"
-        #expect(ScriptEditing.assigningSceneIDs(to: text) == "# INT. A {#s001}\n\n# INT. A AGAIN {#s002}\n")
+        let text = "INT. A {#s001}\n\nINT. A AGAIN {#s001}\n"
+        #expect(ScriptEditing.assigningSceneIDs(to: text) == "INT. A {#s001}\n\nINT. A AGAIN {#s002}\n")
     }
 
     @Test func onlyLineLimitsTagging() {
-        let parsed = ScriptParser.parse("# INT. A\n\n# INT. B\n")
+        let parsed = ScriptParser.parse("INT. A\n\nINT. B\n")
         let edits = ScriptEditing.missingSceneTags(in: parsed, existing: [], onlyLine: 2)
         #expect(edits.map(\.sceneID) == ["s001"])
-        #expect(edits[0].range == NSRange(location: 18, length: 0))
+        #expect(edits[0].range == NSRange(location: 14, length: 0))
     }
 
     @Test func movingScenes() {
-        let text = "Title card.\n\n# INT. A {#s1}\n\nOne.\n\n# INT. B {#s2}\n\nTwo.\n\n# INT. C {#s3}\nThree."
+        let text = "Title card.\n\nINT. A {#s1}\n\nOne.\n\nINT. B {#s2}\n\nTwo.\n\nINT. C {#s3}\nThree."
         let movedDown = ScriptEditing.movingScene(in: text, from: 0, to: 2)
-        #expect(movedDown == "Title card.\n\n# INT. B {#s2}\n\nTwo.\n\n# INT. A {#s1}\n\nOne.\n\n# INT. C {#s3}\nThree.\n")
+        #expect(movedDown == "Title card.\n\nINT. B {#s2}\n\nTwo.\n\nINT. A {#s1}\n\nOne.\n\nINT. C {#s3}\nThree.\n")
         let movedUp = ScriptEditing.movingScene(in: text, from: 2, to: 0)
         #expect(ScriptParser.parse(movedUp).scenes.map(\.sceneID) == ["s3", "s1", "s2"])
         #expect(ScriptEditing.movingScene(in: text, from: 1, to: 1) == text)
@@ -114,15 +129,15 @@ struct ScriptCompletionTests {
     }
 
     @Test func headings() {
-        #expect(ScriptCompletion.completion(afterTyping: "# I", in: .sceneHeading, sources: sources) == "NT. ")
-        #expect(ScriptCompletion.completion(afterTyping: "# INT./", in: .sceneHeading, sources: sources) == "EXT. ")
-        #expect(ScriptCompletion.completion(afterTyping: "# E", in: .sceneHeading, sources: sources) == "XT. ")
-        #expect(ScriptCompletion.completion(afterTyping: "# INT. K", in: .sceneHeading, sources: sources) == "ITCHEN")
-        #expect(ScriptCompletion.completion(afterTyping: "# INT. KE", in: .sceneHeading, sources: sources) == "Y ROOM")
-        #expect(ScriptCompletion.completion(afterTyping: "# INT. KITCHEN - N", in: .sceneHeading, sources: sources) == "IGHT")
-        #expect(ScriptCompletion.completion(afterTyping: "# INT. KITCHEN - D", in: .sceneHeading, sources: sources) == "AY")
-        #expect(ScriptCompletion.completion(afterTyping: "# INT. KITCHEN - ", in: .sceneHeading, sources: sources) == nil)
-        #expect(ScriptCompletion.completion(afterTyping: "# ", in: .sceneHeading, sources: sources) == nil)
+        #expect(ScriptCompletion.completion(afterTyping: ".I", in: .sceneHeading, sources: sources) == "NT. ")
+        #expect(ScriptCompletion.completion(afterTyping: "INT./", in: .sceneHeading, sources: sources) == "EXT. ")
+        #expect(ScriptCompletion.completion(afterTyping: ".E", in: .sceneHeading, sources: sources) == "XT. ")
+        #expect(ScriptCompletion.completion(afterTyping: "INT. K", in: .sceneHeading, sources: sources) == "ITCHEN")
+        #expect(ScriptCompletion.completion(afterTyping: "INT. KE", in: .sceneHeading, sources: sources) == "Y ROOM")
+        #expect(ScriptCompletion.completion(afterTyping: "INT. KITCHEN - N", in: .sceneHeading, sources: sources) == "IGHT")
+        #expect(ScriptCompletion.completion(afterTyping: "INT. KITCHEN - D", in: .sceneHeading, sources: sources) == "AY")
+        #expect(ScriptCompletion.completion(afterTyping: "INT. KITCHEN - ", in: .sceneHeading, sources: sources) == nil)
+        #expect(ScriptCompletion.completion(afterTyping: ".", in: .sceneHeading, sources: sources) == nil)
         #expect(ScriptCompletion.completion(afterTyping: "INT. K", in: .sceneHeading, sources: sources) == "ITCHEN")
     }
 }
@@ -140,12 +155,12 @@ struct ScriptSpellingTests {
     }
 
     @Test func protectedRangesCoverTagsMarkersAndLinks() {
-        let text = "# INT. KITCHEN {#s014}\n\nSee [[The Brass Key]] now."
+        let text = ".KITCHEN {#s014}\n\nSee [[The Brass Key]] now."
         let parsed = ScriptParser.parse(text)
         let ns = text as NSString
         let protected = ScriptSpelling.protectedRanges(in: parsed, text: text).map { ns.substring(with: $0) }
         #expect(protected.contains(" {#s014}"))
-        #expect(protected.contains("# "))
+        #expect(protected.contains("."))
         #expect(protected.contains("[[The Brass Key]]"))
     }
 

@@ -308,7 +308,7 @@ struct RenameTests {
         let graph = LinkGraph(files: [
             IndexedFile.index(path: "universe/items/key.md", text: "---\nname: Key\naliases: [the key]\n---\n"),
             IndexedFile.index(path: "universe/a.md", text: "[[Key]] and [[key|it]] and [[the key]] and [[Key#Origin]]\n```\n[[Key]]\n```\n"),
-            IndexedFile.index(path: "script/script.md", text: "# INT. ROOM {#s001}\n\nShe holds [[Key]].\n"),
+            IndexedFile.index(path: "script/script.md", text: "INT. ROOM {#s001}\n\nShe holds [[Key]].\n"),
         ])
         let plan = try #require(RenameRefactor.plan(renaming: "universe/items/key.md", to: "Brass Key", in: graph, existingPaths: ["universe/items/key.md"]))
         #expect(plan.edits.count == 4)

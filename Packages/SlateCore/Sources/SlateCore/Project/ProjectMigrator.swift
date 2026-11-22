@@ -13,9 +13,13 @@ public enum MigrationError: Error, Equatable, LocalizedError {
 
 /// Brings an older `project.json` up to `ProjectManifest.currentSchemaVersion`.
 ///
-/// Before changing anything it copies the original manifest to
-/// `.slate/backups/`. No real migrations exist yet (schema 1 is the first),
-/// so an older file only gets its version number bumped.
+/// Before changing anything it copies the original manifest, and any script
+/// file it rewrites, to `.slate/backups/`.
+///
+/// - 1 → 2: Slate switched to standard Fountain. In schema 1 a `#` line was a
+///   scene heading; now it's a section. Each such line in the act files
+///   becomes a plain heading (`INT. KITCHEN - NIGHT {#s014}`) when Fountain
+///   recognises it, or a forced one (`.THE VAULT {#s015}`) when not.
 public enum ProjectMigrator {
     /// One step per version: `migrations[n]` upgrades a manifest from n to n + 1.
     static let migrations: [Int: @Sendable (inout ProjectManifest) -> Void] = [:]
@@ -40,6 +44,10 @@ public enum ProjectMigrator {
             .appending(path: "project-v\(manifest.schemaVersion)-\(stamp).json")
         try CoordinatedFileIO.write(originalData, to: backup, presenter: presenter)
 
+        if manifest.schemaVersion < 2 {
+            try migrateHashHeadings(projectRoot: projectRoot, backupFolder: "script-v\(manifest.schemaVersion)-\(stamp)", presenter: presenter)
+        }
+
         var migrated = manifest
         while migrated.schemaVersion < current {
             migrations[migrated.schemaVersion]?(&migrated)
@@ -51,5 +59,51 @@ public enum ProjectMigrator {
             presenter: presenter
         )
         return migrated
+    }
+
+    // MARK: - 1 → 2
+
+    private static func migrateHashHeadings(projectRoot: URL, backupFolder: String, presenter: (any NSFilePresenter)?) throws {
+        let script = projectRoot.appending(path: ProjectLayout.script, directoryHint: .isDirectory)
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: script.path)) ?? []
+        for name in names.sorted() where name != "title-page.md" && ["md", "fountain", "txt"].contains((name as NSString).pathExtension.lowercased()) {
+            let url = script.appending(path: name)
+            guard let text = try? CoordinatedFileIO.readText(url, presenter: presenter) else { continue }
+            let converted = fountainHeadings(from: text)
+            guard converted != text else { continue }
+            let backup = projectRoot.appending(path: ProjectLayout.backups, directoryHint: .isDirectory)
+                .appending(path: backupFolder, directoryHint: .isDirectory).appending(path: name)
+            try CoordinatedFileIO.writeText(text, to: backup, presenter: presenter)
+            try CoordinatedFileIO.writeText(converted, to: url, presenter: presenter)
+        }
+    }
+
+    /// Schema 1 → 2 for one act file: `# HEADING` lines become Fountain headings.
+    static func fountainHeadings(from text: String) -> String {
+        var lines = text.components(separatedBy: "\n")
+        var inBoneyard = false
+        for index in lines.indices {
+            let line = lines[index]
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if inBoneyard {
+                if line.contains("*/") { inBoneyard = false }
+                continue
+            }
+            if trimmed.hasPrefix("/*") {
+                if !trimmed.dropFirst(2).contains("*/") { inBoneyard = true }
+                continue
+            }
+            guard trimmed.hasPrefix("#") else { continue }
+            let body = String(trimmed.drop { $0 == "#" }.drop { $0 == " " || $0 == "\t" })
+            let afterBlank = index == 0 || lines[index - 1].trimmingCharacters(in: .whitespaces).isEmpty
+            let carriageReturn = body.hasSuffix("\r") ? "\r" : ""
+            let clean = carriageReturn.isEmpty ? body : String(body.dropLast())
+            if afterBlank, ScriptParser.isHeading(clean) {
+                lines[index] = clean + carriageReturn
+            } else {
+                lines[index] = "." + clean + carriageReturn
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 }

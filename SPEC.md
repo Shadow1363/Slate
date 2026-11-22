@@ -469,7 +469,7 @@ The spec picks a default for each of these; change them here before Milestone 1 
 | Decision             | Default in this spec                            | Alternative                                                 |
 | -------------------- | ----------------------------------------------- | ----------------------------------------------------------- |
 | App name             | Slate (placeholder)                             | Your choice                                                 |
-| Scene heading marker | `#` line, plus auto-detected `INT./EXT.`        | Pure Fountain                                               |
+| Scene heading marker | Pure Fountain: auto-detected `INT./EXT.`, `.` forces a heading, `#` is a section | `#` line as a scene heading |
 | Acts                 | Optional split into numbered files in `script/` | `## Act` headings inside one file                           |
 | Minimum macOS        | 15 (Sequoia)                                    | 26 (Tahoe) for the newest SwiftUI and Liquid Glass styling  |
 | Distribution         | Developer ID, unsandboxed                       | Mac App Store (sandboxed; needs bookmarks, already planned) |

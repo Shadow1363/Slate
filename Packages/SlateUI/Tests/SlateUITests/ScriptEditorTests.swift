@@ -94,7 +94,7 @@ struct ScriptEditorTests {
         h.type("cut to:")
 
         #expect(h.text == """
-        # INT. KITCHEN - NIGHT {#s001}
+        INT. KITCHEN - NIGHT {#s001}
 
         Rain hammers the window. MARA (34) stares at a brass key on the table.
 
@@ -120,11 +120,11 @@ struct ScriptEditorTests {
         h.returnKey()
         h.type("ext. roof - day")
         h.returnKey()
-        #expect(h.text.hasPrefix("Action.\n\n>CUT TO:\n\n# EXT. ROOF - DAY {#s001}\n\n"))
+        #expect(h.text.hasPrefix("Action.\n\n>CUT TO:\n\nEXT. ROOF - DAY {#s001}\n\n"))
     }
 
     @Test func autocompleteOffersAKnownCueAndReturnAcceptsIt() throws {
-        let h = try EditorHarness(text: "# INT. A {#s001}\n\nMARA\nHello.\n\n")
+        let h = try EditorHarness(text: "INT. A {#s001}\n\nMARA\nHello.\n\n")
         h.textView.setSelectedRange(NSRange(location: (h.text as NSString).length, length: 0))
         h.tab()
         h.type("m")
@@ -136,7 +136,7 @@ struct ScriptEditorTests {
     }
 
     @Test func typingThroughASuggestionKeepsWhatYouType() throws {
-        let h = try EditorHarness(text: "# INT. A {#s001}\n\nMARA\nHello.\n\n")
+        let h = try EditorHarness(text: "INT. A {#s001}\n\nMARA\nHello.\n\n")
         h.textView.setSelectedRange(NSRange(location: (h.text as NSString).length, length: 0))
         h.tab()
         h.type("max")
@@ -144,7 +144,7 @@ struct ScriptEditorTests {
     }
 
     @Test func escapeDropsTheSuggestion() throws {
-        let h = try EditorHarness(text: "# INT. A {#s001}\n\nMARA\nHello.\n\n")
+        let h = try EditorHarness(text: "INT. A {#s001}\n\nMARA\nHello.\n\n")
         h.textView.setSelectedRange(NSRange(location: (h.text as NSString).length, length: 0))
         h.tab()
         h.type("m")
@@ -153,7 +153,7 @@ struct ScriptEditorTests {
     }
 
     @Test func headingAutocompleteUsesKnownLocations() throws {
-        let h = try EditorHarness(text: "# INT. KITCHEN - NIGHT {#s001}\n\nRain.\n\n")
+        let h = try EditorHarness(text: "INT. KITCHEN - NIGHT {#s001}\n\nRain.\n\n")
         h.textView.setSelectedRange(NSRange(location: (h.text as NSString).length, length: 0))
         h.tab(); h.tab(); h.tab()
         h.type("e")
@@ -162,16 +162,38 @@ struct ScriptEditorTests {
         h.tab()                                   // accept "ITCHEN"
         h.type(" - d")
         h.tab()                                   // accept "AY"
-        #expect(h.text.hasSuffix("\n\n# EXT. KITCHEN - DAY"))
+        #expect(h.text.hasSuffix("\n\nEXT. KITCHEN - DAY"))
+    }
+
+    @Test func headingsWithoutIntExtAreForcedWithADot() throws {
+        let h = try EditorHarness(text: "INT. A {#s001}\n\nOne.\n\n")
+        h.textView.setSelectedRange(NSRange(location: (h.text as NSString).length, length: 0))
+        h.tab(); h.tab(); h.tab()
+        h.type("the vault")
+        h.returnKey()
+        #expect(h.text.hasPrefix("INT. A {#s001}\n\nOne.\n\n.THE VAULT {#s002}\n\n"))
+        #expect(ScriptParser.parse(h.text).scenes.map(\.heading) == ["INT. A", "THE VAULT"])
+    }
+
+    @Test func hashLinesStaySections() throws {
+        let h = try EditorHarness(text: "")
+        h.type("# Act One")
+        h.returnKey()
+        h.returnKey()
+        h.type("int. vault - night")
+        h.returnKey()
+        #expect(h.text.hasPrefix("# Act One\n\nINT. VAULT - NIGHT {#s001}\n\n"))
+        #expect(ScriptParser.parse(h.text).lines.first?.kind == .section)
+        #expect(ScriptParser.parse(h.text).scenes.count == 1)
     }
 
     @Test func leavingAHeadingTagsIt() throws {
-        let h = try EditorHarness(text: "# INT. A {#s001}\n\nOne.\n\n")
+        let h = try EditorHarness(text: "INT. A {#s001}\n\nOne.\n\n")
         h.textView.setSelectedRange(NSRange(location: (h.text as NSString).length, length: 0))
         h.tab(); h.tab(); h.tab()
         h.type("int. b")
         h.press(#selector(NSResponder.moveUp(_:)))
-        #expect(h.text == "# INT. A {#s001}\n\nOne.\n\n# INT. B {#s002}")
+        #expect(h.text == "INT. A {#s001}\n\nOne.\n\nINT. B {#s002}")
     }
 
     @Test func shiftTabCyclesBackwards() throws {
@@ -210,7 +232,7 @@ struct ScriptEditorTests {
     }
 
     @Test func spellCheckSkipsTagsAndTerms() throws {
-        let h = try EditorHarness(text: "# INT. KITCHEN {#s014}\n\nMARA (CONT'D)\nZorblax.")
+        let h = try EditorHarness(text: "INT. KITCHEN {#s014}\n\nMARA (CONT'D)\nZorblax.")
         let ns = h.text as NSString
         let tag = ns.range(of: "s014")
         let cont = ns.range(of: "CONT'D")
@@ -246,7 +268,7 @@ struct ScriptEditorSpeedTests {
         var scenes: [String] = []
         for n in 1...45 {
             scenes.append("""
-            # INT. ROOM \(n) - NIGHT {#s\(String(format: "%03d", n))}
+            INT. ROOM \(n) - NIGHT {#s\(String(format: "%03d", n))}
 
             Rain hammers the window. Mara stares at a brass key on the table, turning it over.
 
@@ -270,6 +292,12 @@ struct ScriptEditorSpeedTests {
         let elapsed = clock.measure { h.type(keys) }
         let perKey = elapsed / keys.count
         print("Per keystroke on ~\(Int(book.pageCount)) pages: \(perKey)")
+        // One frame in release (measured about 9 ms); unoptimised debug
+        // builds get two, so the check isn't flaky on a busy machine.
+        #if DEBUG
+        #expect(perKey < .milliseconds(33))
+        #else
         #expect(perKey < .milliseconds(16))
+        #endif
     }
 }

@@ -1,5 +1,18 @@
 # Changes
 
+## Standard Fountain scripts (2026-11-22, after Milestone 4)
+
+You asked to drop `#` scene headings and use standard Fountain.
+- **Scene headings:** `INT.`, `EXT.`, `INT./EXT.`, `I/E` and `EST.` lines after a blank line are headings. Anything else is forced with a leading `.` (`.THE VAULT`). These headings are what create scenes in the navigator and, from Milestone 9, in the storyboard.
+- **Sections:** `#`, `##`, … lines are Fountain sections. They're styled bold and grey in the editor, and left out of PDF, Final Draft and Markdown exports.
+- **Typing a heading:** when you leave the line, the editor capitalises it and adds the `.` if Fountain would need it, or removes it if not.
+- **Scene numbers:** Fountain's `#1A#` scene numbers are read.
+- **Scene tags:** `{#s014}` stays as Slate's only addition to Fountain, because it keeps storyboards attached to scenes.
+- **Older projects:** opening a project from before this change rewrites its `# HEADING` lines once, after backing the files up to `.slate/backups/script-v1-<date>/`. `project.json` goes to schema 2.
+- **New projects:** act files start with `# ACT ONE`-style sections.
+- **Fountain import and export:** import keeps sections and forced headings as written. Export no longer adds a duplicate section.
+- **Tests:** 206 pass: 158 in SlateCore, 32 in SlateUI and 16 in SlateExport. The editor's speed test now allows 33 ms per keystroke in debug builds and keeps 16 ms for release builds (measured at about 9 ms).
+
 ## Milestone 4 — Universe notes (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

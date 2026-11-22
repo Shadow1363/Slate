@@ -75,6 +75,52 @@ struct MigrationTests {
         #expect(try Data(contentsOf: folder.file(".slate/backups/\(backups[0])")) == original)
     }
 
+    @Test func hashHeadingsBecomeFountainHeadings() {
+        let old = """
+        # INT. KITCHEN - NIGHT {#s014}
+
+        Rain.
+        # THE VAULT {#s015}
+
+        /*
+        # not a heading, in the boneyard
+        */
+
+        ## EXT. ROOF - DAY {#s016}
+        """
+        #expect(ProjectMigrator.fountainHeadings(from: old) == """
+        INT. KITCHEN - NIGHT {#s014}
+
+        Rain.
+        .THE VAULT {#s015}
+
+        /*
+        # not a heading, in the boneyard
+        */
+
+        EXT. ROOF - DAY {#s016}
+        """)
+    }
+
+    @Test func schemaOneScriptsAreMigratedWithBackups() throws {
+        let folder = try TempFolder()
+        let old = ProjectManifest(name: "Old", schemaVersion: 1)
+        let original = try old.encoded()
+        try original.write(to: folder.file("project.json"))
+        try folder.write("# INT. KITCHEN - NIGHT {#s014}\n\nRain.\n", to: "script/script.md")
+        try folder.write("Title: Old\n", to: "script/title-page.md")
+        try folder.write("Already fine.\n", to: "script/02-act-two.md")
+
+        _ = try ProjectMigrator.migrateIfNeeded(old, originalData: original, projectRoot: folder.url)
+
+        #expect(try folder.read("script/script.md") == "INT. KITCHEN - NIGHT {#s014}\n\nRain.\n")
+        #expect(try folder.read("script/title-page.md") == "Title: Old\n")
+        let backups = try FileManager.default.contentsOfDirectory(atPath: folder.file(".slate/backups").path)
+        let scriptBackup = try #require(backups.first { $0.hasPrefix("script-v1-") })
+        #expect(try folder.read(".slate/backups/\(scriptBackup)/script.md") == "# INT. KITCHEN - NIGHT {#s014}\n\nRain.\n")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.file(".slate/backups/\(scriptBackup)").path) == ["script.md"])
+    }
+
     @Test func currentSchemaIsLeftAlone() throws {
         let folder = try TempFolder()
         let manifest = ProjectManifest(name: "Now")

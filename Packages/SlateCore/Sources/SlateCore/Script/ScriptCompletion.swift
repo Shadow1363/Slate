@@ -43,10 +43,8 @@ public enum ScriptCompletion {
 
     static func headingCompletion(_ typed: String, sources: Sources) -> String? {
         var body = typed
-        if body.hasPrefix("#") {
-            body = String(body.drop { $0 == "#" }.drop { $0 == " " })
-        } else if body.hasPrefix(".") {
-            body.removeFirst()
+        if body.hasPrefix("."), !body.hasPrefix("..") {
+            body = String(body.dropFirst())
         }
         let upper = body.uppercased()
         guard !upper.isEmpty else { return nil }

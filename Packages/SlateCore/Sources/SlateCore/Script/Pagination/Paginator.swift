@@ -122,7 +122,7 @@ public struct Paginator: Sendable {
                 let line = lines[i]
                 let source = SourceRef(file: fileIndex, line: i)
                 switch line.kind {
-                case .blank, .boneyard, .synopsis:
+                case .blank, .boneyard, .synopsis, .section:
                     i += 1
 
                 case .pageBreak:

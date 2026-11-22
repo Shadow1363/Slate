@@ -218,11 +218,11 @@ struct UniverseSessionTests {
         let path = h.session.script.appendSceneStub(heading: "Act one")
         #expect(path == "script/script.md")
         let text = try #require(h.store.documents["script/script.md"]).text
-        #expect(text.hasSuffix("CUT TO:\n\n# ACT ONE {#s015}\n"))
+        #expect(text.hasSuffix("CUT TO:\n\n.ACT ONE {#s015}\n"))
     }
 
     @Test func scriptLinksAreFollowable() throws {
-        let h = try EditorHarness(text: "# INT. ROOM {#s001}\n\nShe holds [[Key]].\n")
+        let h = try EditorHarness(text: "INT. ROOM {#s001}\n\nShe holds [[Key]].\n")
         h.workspace.followLink = { $0 == "Key" }
         let storage = try #require(h.textView.textStorage)
         let location = (h.text as NSString).range(of: "[[Key]]").location + 2

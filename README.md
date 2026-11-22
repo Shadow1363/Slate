@@ -69,7 +69,11 @@ Tests use Swift Testing and work on temp copies of the sample project in `Fixtur
 
 ## Writing a script
 
-Scripts are plain Fountain text in `script/`. Act files (`01-act-one.md`, …) join in name order. A line starting with `#` is a scene heading.
+Scripts are standard [Fountain](https://fountain.io/syntax) in `script/`. Act files (`01-act-one.md`, …) join in name order.
+
+- A scene heading is a line starting with `INT.`, `EXT.`, `INT./EXT.`, `I/E` or `EST.` after a blank line. Any other heading is forced with a leading `.` (`.THE VAULT`). The editor adds or removes that `.` for you, and capitalises the heading, when you leave the line.
+- `#`, `##`, … lines are Fountain sections (acts, sequences). They organise the script but never print.
+- Each scene heading becomes a scene in the navigator and, from Milestone 9, a scene in the storyboard.
 
 | Key | In the script editor |
 | --- | --- |
@@ -79,7 +83,7 @@ Scripts are plain Fountain text in `script/`. Act files (`01-act-one.md`, …) j
 | Esc | Dismiss the autocomplete |
 | ⌥Return | Plain line break |
 
-Scene IDs such as `{#s014}` are added when you finish typing a heading. They show as a small grey tag.
+Scene IDs such as `{#s014}` are added when you finish typing a heading. They show as a small grey tag. They're Slate's one addition to Fountain: they keep each storyboard attached to its scene when you rename or move it. Fountain scene numbers (`#1A#`) are read too. Exports to Fountain, Final Draft and PDF leave the tags out.
 
 ## Publishing
 

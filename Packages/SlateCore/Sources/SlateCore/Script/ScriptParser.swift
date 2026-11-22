@@ -2,10 +2,12 @@ import Foundation
 
 /// Turns a script file into classified lines and scenes.
 ///
-/// It follows the Fountain rules (https://fountain.io/syntax) with Slate's
-/// change: a line starting with `#` is a scene heading, not a section.
-/// Lines starting with `INT.`, `EXT.`, `INT./EXT.`, `I/E` or `EST.` after a
-/// blank line are headings too.
+/// It follows the Fountain rules (https://fountain.io/syntax): a scene
+/// heading is a line starting with `INT.`, `EXT.`, `INT./EXT.`, `I/E` or
+/// `EST.` after a blank line, or any line forced with a leading `.`.
+/// `#` lines are sections (acts, sequences), which never print.
+/// Slate adds one thing: a scene tag such as `{#s014}` at the end of a
+/// heading, which gives the scene a stable ID for the storyboard.
 public enum ScriptParser {
     /// What the editor knows about the line being typed. An empty line can't
     /// say what it will become, and a character cue has no dialogue under it
@@ -34,7 +36,7 @@ public enum ScriptParser {
             let t = texts[i]
             let trim = trimmed[i]
             let previous: ScriptElementKind = i > 0 ? kinds[i - 1] : .blank
-            let afterBlank = previous == .blank || previous == .pageBreak
+            let afterBlank = previous == .blank || previous == .pageBreak || previous == .section
             let hinted = hint?.line == i ? hint?.kind : nil
             let kind: ScriptElementKind
 
@@ -56,7 +58,7 @@ public enum ScriptParser {
             } else if trim.hasPrefix("===") {
                 kind = .pageBreak
             } else if trim.hasPrefix("#") {
-                kind = .sceneHeading
+                kind = .section
             } else if trim.hasPrefix("."), !trim.hasPrefix(".."), trim.count > 1 {
                 kind = .sceneHeading
             } else if trim.hasPrefix("!") {
@@ -77,6 +79,10 @@ public enum ScriptParser {
                 kind = .character
             } else if hinted == .transition, !trim.contains(where: \.isLowercase) {
                 kind = .transition
+            } else if hinted == .sceneHeading {
+                // Typed as a heading; the editor adds a `.` if it needs one
+                // when the caret leaves the line.
+                kind = .sceneHeading
             } else if afterBlank {
                 if isHeading(trim) {
                     kind = .sceneHeading
@@ -111,6 +117,12 @@ public enum ScriptParser {
                 marker = markerLength(texts[i], markers: kind.markers)
             case .centered:
                 marker = markerLength(texts[i], markers: [">"])
+            case .section:
+                let leading = texts[i].prefix { $0 == " " || $0 == "\t" }
+                let rest = texts[i].dropFirst(leading.count)
+                let hashes = rest.prefix { $0 == "#" }
+                let spaces = rest.dropFirst(hashes.count).prefix { $0 == " " || $0 == "\t" }
+                marker = (leading + hashes + spaces).utf16.count
             default:
                 break
             }
@@ -230,13 +242,15 @@ private extension ScriptElementKind {
     }
 }
 
-/// The parts of a scene heading line: `# INT. KITCHEN - NIGHT {#s014 dur=2:30}`.
+/// The parts of a scene heading line: `INT. KITCHEN - NIGHT #14# {#s014 dur=2:30}`.
 public struct SceneHeading: Sendable, Equatable {
-    /// UTF-16 length of `# ` or `.` at the start (with leading whitespace).
+    /// UTF-16 length of a forcing `.` at the start (with leading whitespace).
     public let markerLength: Int
     /// The heading as printed: `INT. KITCHEN - NIGHT`.
     public let heading: String
     public let sceneID: String?
+    /// Tag attributes (`dur=2:30`). A Fountain scene number (`#14#`) is
+    /// stored as `number`.
     public let attributes: [String: String]
     /// Range of the tag within the line, including whitespace before it.
     public let tagRange: NSRange?
@@ -273,11 +287,7 @@ public struct SceneHeading: Sendable, Equatable {
         var marker = 0
         let leading = line.prefix { $0 == " " || $0 == "\t" }.utf16.count
         let afterLeading = ns.substring(from: leading)
-        if afterLeading.hasPrefix("#") {
-            let hashes = afterLeading.prefix { $0 == "#" }.utf16.count
-            let spaces = afterLeading.dropFirst(hashes).prefix { $0 == " " || $0 == "\t" }.utf16.count
-            marker = leading + hashes + spaces
-        } else if afterLeading.hasPrefix("."), !afterLeading.hasPrefix("..") {
+        if afterLeading.hasPrefix("."), !afterLeading.hasPrefix("..") {
             marker = leading + 1
         }
 
@@ -297,6 +307,11 @@ public struct SceneHeading: Sendable, Equatable {
             tagRange = NSRange(location: marker + match.range.location, length: match.range.length)
             body = bodyNS.substring(to: match.range.location)
         }
+        let numberNS = body as NSString
+        if let match = numberPattern.firstMatch(in: body, range: NSRange(location: 0, length: numberNS.length)) {
+            if attributes["number"] == nil { attributes["number"] = numberNS.substring(with: match.range(at: 1)) }
+            body = numberNS.substring(to: match.range.location)
+        }
         return SceneHeading(
             markerLength: marker,
             heading: body.trimmingCharacters(in: .whitespaces),
@@ -312,6 +327,9 @@ public struct SceneHeading: Sendable, Equatable {
         guard !parts.isEmpty, parts.count <= 3, parts.allSatisfy({ $0 != nil && $0! >= 0 }) else { return nil }
         return parts.reduce(0) { $0 * 60 + $1! }
     }
+
+    /// Fountain's scene number at the end of a heading: ` #14#`, ` #1A#`.
+    static let numberPattern = try! NSRegularExpression(pattern: #"\s*#([A-Za-z0-9.-]+)#\s*$"#)
 
     /// ` {#s014}` or ` {#s014 dur=2:30}` at the end of the line.
     static let tagPattern = try! NSRegularExpression(

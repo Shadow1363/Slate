@@ -85,7 +85,7 @@ public enum FDXExporter {
                     }
                 case .parenthetical, .dialogue:
                     content.addChild(self.paragraph("Dialogue", text))
-                case .blank, .boneyard, .synopsis:
+                case .blank, .boneyard, .synopsis, .section:
                     break
                 }
                 i += 1
@@ -182,7 +182,7 @@ public enum FDXImporter {
                 blankBefore()
                 pendingTags.append((lines.count, paragraph.attribute(forName: "SlateSceneID")?.stringValue,
                                     paragraph.attribute(forName: "Number")?.stringValue))
-                lines.append("# " + text.uppercased())
+                lines.append(ScriptEditing.convert(text, to: .sceneHeading))
             case "Character":
                 blankBefore()
                 var cue = ScriptParser.isCharacterCue(text) ? text : "@" + text

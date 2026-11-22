@@ -53,7 +53,8 @@ public enum ScriptEditing {
         let base = plainText(of: line)
         switch kind {
         case .sceneHeading:
-            return "# " + base.uppercased()
+            let upper = base.uppercased()
+            return upper.isEmpty || ScriptParser.isHeading(upper) ? upper : "." + upper
         case .character:
             let upper = base.uppercased()
             return upper.isEmpty || ScriptParser.isCharacterCue(upper) ? upper : "@" + upper
@@ -81,9 +82,7 @@ public enum ScriptEditing {
     /// A line without its marker or scene tag.
     static func plainText(of line: String) -> String {
         var text = line.trimmingCharacters(in: .whitespaces)
-        if text.hasPrefix("#") {
-            text = SceneHeading.parse(text).heading
-        } else if text.hasPrefix("."), !text.hasPrefix("..") {
+        if (text.hasPrefix(".") && !text.hasPrefix("..")) || ScriptParser.isHeading(text) {
             text = SceneHeading.parse(text).heading
         } else if let first = text.first, "!@>~".contains(first) {
             text.removeFirst()
@@ -96,7 +95,6 @@ public enum ScriptEditing {
     /// so the file reads back as the same kind.
     public static func marker(forTypingInto kind: ScriptElementKind) -> String {
         switch kind {
-        case .sceneHeading: "# "
         case .transition: ">"
         default: ""
         }
@@ -105,6 +103,34 @@ public enum ScriptEditing {
     /// Kinds whose text is typed in capitals.
     public static func typesInCapitals(_ kind: ScriptElementKind) -> Bool {
         kind == .sceneHeading || kind == .character || kind == .transition
+    }
+
+    /// The edit that finishes a heading line once the caret leaves it: capitals,
+    /// plus a `.` in front when Fountain wouldn't recognise it on its own (no
+    /// `INT.`/`EXT.`, or no blank line above), or no `.` when it would.
+    /// The scene tag is left alone. Nil if the line is fine as it is.
+    public static func headingMarkerEdit(in parsed: ParsedScript, line index: Int) -> TagEdit? {
+        guard parsed.lines.indices.contains(index), parsed.lines[index].kind == .sceneHeading else { return nil }
+        let line = parsed.lines[index]
+        let ns = line.text as NSString
+        let leading = line.text.prefix { $0 == " " || $0 == "\t" }.utf16.count
+        let end = line.tagRange.map { $0.location - line.range.location } ?? ns.length
+        guard end > leading else { return nil }
+        let region = NSRange(location: leading, length: end - leading)
+        let body = ns.substring(with: region)
+        let forced = body.hasPrefix(".") && !body.hasPrefix("..")
+        let plain = forced ? String(body.dropFirst()) : body
+        guard !plain.trimmingCharacters(in: .whitespaces).isEmpty else { return nil }
+        let previous = index > 0 ? parsed.lines[index - 1].kind : .blank
+        let detectable = previous == .blank || previous == .pageBreak || previous == .section
+        let recognised = detectable && ScriptParser.isHeading(plain)
+        let fixed = (recognised ? "" : ".") + plain.uppercased()
+        guard fixed != body else { return nil }
+        return TagEdit(
+            range: NSRange(location: line.range.location + region.location, length: region.length),
+            replacement: fixed,
+            sceneID: SceneHeading.parse(line.text).sceneID ?? ""
+        )
     }
 
     /// An edit that gives a heading its scene tag.

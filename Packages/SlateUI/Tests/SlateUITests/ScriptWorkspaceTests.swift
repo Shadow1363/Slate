@@ -19,7 +19,7 @@ struct ScriptWorkspaceTests {
 
     @Test func timingsBecomeExactAfterTypingStops() async throws {
         let filler = (1...26).map { "Line \($0)." }.joined(separator: "\n\n")
-        let (workspace, _) = try makeWorkspace("# INT. A {#s001}\n\n" + filler + "\n\n# INT. B {#s002}\n\nShort.\n")
+        let (workspace, _) = try makeWorkspace("INT. A {#s001}\n\n" + filler + "\n\nINT. B {#s002}\n\nShort.\n")
         #expect(!workspace.book.isExact)
         let exact = await waitFor { workspace.book.isExact }
         #expect(exact)
@@ -33,7 +33,7 @@ struct ScriptWorkspaceTests {
     }
 
     @Test func publishSettingsAreSavedPerProject() throws {
-        let (workspace, root) = try makeWorkspace("# INT. A {#s001}\n\nGo.\n")
+        let (workspace, root) = try makeWorkspace("INT. A {#s001}\n\nGo.\n")
         workspace.updatePublishSettings { $0.sceneNumbers = false; $0.pageSize = .a4 }
         let manifest = try ProjectManifest.decode(Data(contentsOf: root.appending(path: "project.json")))
         #expect(PublishSettings(manifest: manifest).sceneNumbers == false)
@@ -42,7 +42,7 @@ struct ScriptWorkspaceTests {
     }
 
     @Test func exportsEveryFormatIntoTheProject() throws {
-        let (workspace, root) = try makeWorkspace("# INT. KITCHEN - NIGHT {#s001}\n\nRain.\n\nMARA\nHi.\n")
+        let (workspace, root) = try makeWorkspace("INT. KITCHEN - NIGHT {#s001}\n\nRain.\n\nMARA\nHi.\n")
         for format in ExportFormat.allCases where format.isAvailable {
             let url = try workspace.export(format)
             #expect(url.deletingLastPathComponent().standardizedFileURL == root.appending(path: "exports").standardizedFileURL)
