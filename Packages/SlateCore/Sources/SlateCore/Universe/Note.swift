@@ -103,7 +103,8 @@ public struct Note: Sendable, Equatable, Codable, Identifiable {
         let stem = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
         self.name = !named.isEmpty ? named : !h1.isEmpty ? h1 : stem
         self.noteID = value("id").map(\.text).flatMap { $0.isEmpty ? nil : $0 }
-        self.type = value("type").map(\.text).flatMap { $0.isEmpty ? nil : $0 }
+        // `infobox: Character` (the wiki-infobox format) names the type too.
+        self.type = (value("type") ?? value("infobox")).map(\.text).flatMap { $0.isEmpty ? nil : $0 }
         self.aliases = value("aliases")?.items ?? []
         self.tags = value("tags")?.items ?? []
         self.fields = fields
@@ -113,6 +114,11 @@ public struct Note: Sendable, Equatable, Codable, Identifiable {
 
     public func value(_ key: String) -> YAMLValue? {
         fields.first { $0.key == key }?.value
+    }
+
+    /// The line under the name in the infobox (`subtitle:`).
+    public var subtitle: String? {
+        value("subtitle").map(\.text).flatMap { $0.isEmpty ? nil : $0 }
     }
 }
 

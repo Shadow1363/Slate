@@ -193,6 +193,7 @@ struct ProjectContent: View {
             case .addMarginNote(let sceneID, let quote): MarginNoteSheet(session: session, editing: nil, sceneID: sceneID, quote: quote)
             case .editNote(let note): MarginNoteSheet(session: session, editing: note, sceneID: nil, quote: nil)
             case .wordEntry(let entry, let word): WordEntrySheet(session: session, editing: entry, word: word)
+            case .templates(let selected): TemplatesSheet(session: session, selected: selected)
             }
         }
         .focusedSceneValue(\.projectActions, ProjectActions(

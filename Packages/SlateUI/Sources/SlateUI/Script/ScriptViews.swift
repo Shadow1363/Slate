@@ -19,6 +19,7 @@ struct ScriptNavigator: View {
                         .tag("file:" + file.path)
                     ForEach(book.scenes.filter { $0.file == file.path }) { scene in
                         SceneRow(scene: scene, isCurrent: current?.id == scene.id, isExact: book.isExact)
+                            .draggable("slate-scene:\(scene.file)#\(scene.scene.sceneID ?? "")")
                             .tag(ScriptWorkspace.row(for: scene))
                     }
                     .onMove { offsets, destination in

@@ -9,6 +9,8 @@ public struct LinkSource: Sendable, Equatable, Codable, Identifiable {
         /// The project's word book (`dictionary/words.md`): indexed for its
         /// links, but not a link target.
         case dictionary
+        /// A `.canvas` board: note cards and `[[links]]` in text cards.
+        case canvas
         /// A line in a script act file.
         case scene
         /// `script/margin/*.md`.
@@ -51,6 +53,7 @@ public struct IndexedFile: Sendable, Equatable, Codable {
         switch area {
         case "universe":
             if path == ProjectLayout.draft { return .draft }
+            if ext == "canvas" { return .canvas }
             return ["md", "markdown"].contains(ext) ? .note : nil
         case "dictionary":
             return path == WordBook.path ? .dictionary : nil
@@ -85,6 +88,20 @@ public struct IndexedFile: Sendable, Equatable, Codable {
             let outline = MarkdownOutline(parsing: text)
             return IndexedFile(path: path, modified: modified, size: size, note: nil,
                                links: WikiLink.find(in: text, excluding: outline.codeRanges).map { source($0) })
+        case .canvas:
+            // Links typed in text cards, then note cards (`"file":"universe/…md"`).
+            var links = WikiLink.find(in: text).map { source($0) }
+            let ns = text as NSString
+            for match in canvasFilePattern.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                let pathRange = match.range(at: 1)
+                let target = ns.substring(with: pathRange).replacingOccurrences(of: "\\/", with: "/")
+                guard target.hasPrefix(ProjectLayout.universe + "/"), ["md", "markdown"].contains((target as NSString).pathExtension.lowercased()) else { continue }
+                let link = WikiLink(range: match.range, targetRange: pathRange, target: target, heading: nil, shown: nil)
+                let line = lines.line(containing: match.range.location)
+                links.append(LinkSource(path: path, kind: kind, link: link, line: line, snippet: "Note card on this canvas",
+                                        sceneID: nil, sceneHeading: nil))
+            }
+            return IndexedFile(path: path, modified: modified, size: size, note: nil, links: links)
         case .scene:
             let parsed = ScriptParser.parse(text)
             let links = WikiLink.find(in: text).map { link -> LinkSource in
@@ -96,6 +113,9 @@ public struct IndexedFile: Sendable, Equatable, Codable {
         }
     }
 }
+
+/// `"file":"…"` in a canvas file; group 1 is the path.
+let canvasFilePattern = try! NSRegularExpression(pattern: #""file"\s*:\s*"((?:[^"\\]|\\.)*)""#)
 
 /// The resolved web of links: names → notes, and notes → backlinks.
 /// Pure data, rebuilt whenever a file changes.
@@ -141,6 +161,8 @@ public struct LinkGraph: Sendable, Equatable {
                 byAlias[Self.key(alias)] = path
             }
             if byStem[Self.key(note.fileStem)] == nil { byStem[Self.key(note.fileStem)] = path }
+            // A full path (a canvas note card) resolves to that note.
+            byStem[Self.key(path)] = path
         }
         self.byName = byName
         self.byAlias = byAlias
@@ -273,7 +295,7 @@ public final class LinkIndex {
 
     public static let cachePath = ".slate/index/links.json"
     /// Bump when `IndexedFile` changes shape, so old caches are ignored.
-    static let cacheVersion = 2
+    static let cacheVersion = 4
 
     public init(store: ProjectStore) {
         self.store = store

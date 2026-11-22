@@ -107,13 +107,21 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 ## Universe notes
 
 - **Notes** live in `universe/<type>/<name>.md`: YAML frontmatter for fields, then a Markdown body. Use + or ⌘N to make a note from a template: Character, Location, Rule, Faction, Item, Event or Freeform.
-- **Templates** are `.md` files too. A copy in the project's `templates/` (or in `~/Library/Application Support/Slate/Templates/`) replaces the built-in template of the same type. The sample project overrides Character.
-- **The form** above the body edits fields: text, number, date, list, link and image. Each change rewrites only that field's line, so comments and key order in the file stay as you wrote them.
+- **Templates** are `.md` files too. Make and edit them in **Universe › + › Edit Templates…**. A copy in the project's `templates/` (or in `~/Library/Application Support/Slate/Templates/`) replaces the built-in template of the same type, and Revert to Built-in removes it. The sample project overrides Character.
+- **The wiki page:** a note opens with its body on the left and an infobox on the right. **Edit** turns the infobox into a form with these field types: text, long text, number, date, choice, yes/no, list, link, links and image. Each change rewrites only that field's lines, so comments and key order in the file stay as you wrote them.
+- **Obsidian infobox notes** work as they are: `infobox: Character` picks the template, `title:` is the name, `subtitle:` sits under it, and a `layout:` list adds section headers (`type: header`, `above: key`) and columns (`type: columns`, `keys: [...]`). `||text||` is a spoiler, hidden until clicked.
 - **Links:** typing `[[` suggests notes by name or alias, and ⌘K inserts a link. ⌘-click a link to open it; clicking an unresolved link (red, dashed) offers to create the note. Links work in the script too.
 - **Links inspector** (⌥⌘0) lists backlinks from notes, scenes, margin notes and the rough draft. For a character it also lists the scenes they speak in.
 - **Renaming** a note (press Return in its name, or right-click › Rename…) offers to update every link to it, and renames the file. Its `id` stays the same.
 - **Find in Project** is ⇧⌘F. **Quick Open** (⌘P) opens any note, scene or file.
 - **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script.
+
+## Canvas
+
+- **Boards** are `universe/canvases/*.canvas` files in the open [JSON Canvas](https://jsoncanvas.org) format, so they open in Obsidian too. Use **New Canvas** in the sidebar's Canvases section or the + menu.
+- **Cards:** text (Markdown), notes (live infobox), scenes, images, web links and frames. Drag notes, draft headings and scenes in from the sidebars, or images from Finder.
+- **Moving around:** scroll to pan; pinch or ⌘-scroll to zoom; ⌥-drag to pan with a mouse. ⌘0 fits everything, ⇧⌘0 is 100%, and the minimap moves the view.
+- **Editing:** drag to move (frames carry their cards), resize from the corner, and double-click to edit or open a card. Drag a side dot onto another card to connect them, then click the connection to label or colour it. **Arrange** aligns and distributes; **Snap to Grid** uses a 20 pt grid. Everything undoes.
 
 ## Dictionary
 
@@ -158,6 +166,8 @@ Fixtures/Snapshots      Golden page layouts
 | ⌘K | Insert link |
 | ⌥⌘0 | Inspector (Links and Define) |
 | ⌃⌥⌘D | Define the selected word |
+| ⌘0 / ⇧⌘0 | Canvas: fit everything / 100% |
+| ⌘= / ⌘− | Canvas: zoom in / out |
 | ⇧⌘T | Add to-do at the caret |
 | ⌥⌘T | Add margin note at the caret |
 | ⇧⌘M | Show / hide the margin |

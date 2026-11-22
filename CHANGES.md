@@ -1,5 +1,77 @@
 # Changes
 
+## Templates rework and Milestone 7 — Canvas (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 276 pass: 203 in SlateCore, 57 in SlateUI and 16 in SlateExport.
+**Dependencies:** none added.
+
+### Templates and notes: what works
+- **Your infobox notes open as they are.** The sample project now includes the note you pasted, as `universe/characters/thomas-wiley-cade.md`, plus a Powers note so its links resolve. Opening it shows:
+  - the title, and "The Broken" under it;
+  - the Character template;
+  - your fields;
+  - a **Powers** header above two columns of links, showing their alias text;
+  - the status hidden as a spoiler until you click it.
+- **Notes look like a wiki page:** the body is on the left and the infobox card on the right (the sidebar button hides it). Empty fields are left out of the card. **Edit** turns the card into a form with a control for each field type, plus a box to add a field to just this note. Each change rewrites only that field's lines, keeping comments, line endings and your `layout:` block.
+- **New field types:**
+  - **Long text**, written as a YAML block;
+  - **Choice**, a dropdown of options you define;
+  - **Yes/No**, a checkbox;
+  - **Links**, several `[[links]]`.
+- **Universe › Templates…** opens from the + menu, or Edit Templates… in the New Note sheet.
+  - **Every template** is listed, marked Built-in, This project or Every project.
+  - **The form:** name, icon, type, folder, name field (`name` or `title`), and where to save it.
+  - **Fields:** key, label, type, choice options, a section header, and "beside previous" for columns. Drag to reorder, add and remove.
+  - **Starter headings**, and a live infobox preview.
+  - **New Template** starts blank or from a copy of another template.
+  - **Built-ins** can't be changed in place: saving one makes your own copy, and **Revert to Built-in** puts the original back. Your own templates can be deleted.
+  - **Saving** goes to the project's `templates/` by default, or to every project.
+- **Spoilers:** `||text||` is hidden in the infobox, link previews and canvas cards until clicked.
+- Custom templates appear in the New Note menu and the sidebar with their icons. Their folder is created when you make the first note.
+
+### Canvas: what works
+- **Boards** are `universe/canvases/*.canvas` files in JSON Canvas format.
+  - The sidebar has a **Canvases** section with New Canvas.
+  - The sample project has `act-two.canvas`, with one card of each type.
+- **Cards:**
+  - **text card:** rendered Markdown with clickable links; double-click to edit the raw text;
+  - **note card:** the note's infobox and the start of its body; double-click opens the note;
+  - **scene card:** number, heading and length; double-click goes to the scene;
+  - **image card**;
+  - **web link card:** shows the address; double-click opens it in the browser;
+  - **frame:** a coloured, labelled group.
+  - Cards can be coloured with the six JSON Canvas colours.
+- **Navigating:** scroll to pan; pinch or ⌘-scroll to zoom; ⌥-drag to pan with a mouse. ⌘0 fits everything, ⇧⌘0 is 100%, and ⌘= / ⌘− zoom. The minimap in the corner can be clicked or dragged, and the zoom level shows bottom-left.
+- **Selecting:** click, ⇧-click, drag a marquee on empty space, or ⌘A.
+- **Editing:**
+  - drag cards to move them (a frame takes its cards with it); resize from the corner handle; Delete removes the selection;
+  - double-click empty space to add a text card;
+  - the toolbar adds a text card, frame, note, scene, image or web link;
+  - **Arrange** aligns and distributes; **Snap to Grid** (on by default) uses a 20 pt grid.
+- **Connections:** drag a dot on a card's side onto another card. Select a connection to give it a label, a colour, and arrows at either end.
+- **Drag and drop:** notes and rough-draft headings from the Universe sidebar, scenes from the Script sidebar, and images from Finder, which are copied into `universe/canvases/images/`.
+- **Undo** works for every change; a whole drag is one step.
+- **Files:** changes are saved through the usual autosave. Editing the file elsewhere reloads the board. A board you haven't changed is never rewritten, and keys from other apps are kept.
+- **Links:** a note's inspector shows the boards it's on. Renaming or moving a note updates its cards.
+
+### Stubbed or not yet
+- Not checked by hand: I can build, test and launch the app, but I can't drag on the board or click through these screens from here. Trackpad gestures, drag and drop and the inline editors especially need trying.
+- Canvas text cards have no spell-check setting yet, and their Markdown rendering is simple: headings, lists, tasks, quotes, emphasis and links, but no tables or code blocks.
+- Web link cards show the address, not a preview of the page, because SPEC rules out web views.
+- A connection can't be re-attached to a different card; delete it and draw a new one.
+- Multi-select alignment uses the toolbar's Arrange menu. There are no alignment guides while dragging.
+- In a long-text field, each change is written as you type, like the other fields.
+
+### Please try
+1. Open **Thomas Wiley Cade**. Check the infobox, the Powers columns, and click the hidden status.
+2. Click **Edit**, change the height, then check in VS Code that only that line changed.
+3. Go to **Universe › + › Edit Templates…**. Make a new template from a copy of Character, add a Choice field and a Long text field, set one field "Beside previous", then save it to This project. Make a note from it.
+4. Edit the built-in Location template and save it, then **Revert to Built-in**.
+5. Open **act-two**. Pan, pinch, press ⌘0 and use the minimap. Drag Mara Voss in from the sidebar, connect two cards and label the connection, group cards and move the group, align three cards, then undo.
+6. Open `act-two.canvas` in Obsidian, or read the JSON: it loads, and `styleAttributes` is still there.
+7. Edit the canvas in VS Code while Slate has it open, and watch the board reload.
+
 ## Milestone 6 — Dictionary (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

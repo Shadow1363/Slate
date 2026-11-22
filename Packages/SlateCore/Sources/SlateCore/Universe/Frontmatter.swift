@@ -110,27 +110,36 @@ public enum Frontmatter {
     /// end of the block; a note without a block gets one. Nil removes the key.
     public static func setting(_ key: String, to value: YAMLValue?, in text: String) -> String {
         guard let value else { return removing(key, in: text) }
-        let newLines = emit(key: key, value: value)
+        let eol = lineEnding(of: text)
+        let newLines = emit(key: key, value: value).replacingOccurrences(of: "\n", with: eol)
         guard split(text).yaml != nil else {
-            return "---\n" + newLines + "\n---\n" + text
+            return "---" + eol + newLines + eol + "---" + eol + text
         }
-        var lines = text.components(separatedBy: "\n")
-        let closing = closingFenceIndex(lines)!
+        var lines = text.components(separatedBy: eol)
+        guard let closing = closingFenceIndex(lines) else { return text }
         if let extent = keyExtent(key, in: lines, closing: closing) {
             lines.replaceSubrange(extent, with: [newLines])
         } else {
             lines.insert(newLines, at: closing)
         }
-        return lines.joined(separator: "\n")
+        return lines.joined(separator: eol)
     }
 
     /// Removes one top-level key and its lines; nothing else changes.
     public static func removing(_ key: String, in text: String) -> String {
         guard split(text).yaml != nil else { return text }
-        var lines = text.components(separatedBy: "\n")
+        let eol = lineEnding(of: text)
+        var lines = text.components(separatedBy: eol)
         guard let closing = closingFenceIndex(lines), let extent = keyExtent(key, in: lines, closing: closing) else { return text }
         lines.removeSubrange(extent)
-        return lines.joined(separator: "\n")
+        return lines.joined(separator: eol)
+    }
+
+    /// The file's own line ending: `\r\n`, a lone `\r` (old Mac files), or `\n`.
+    public static func lineEnding(of text: String) -> String {
+        if text.contains("\r\n") { return "\r\n" }
+        if text.contains("\r"), !text.contains("\n") { return "\r" }
+        return "\n"
     }
 
     /// Replaces the body, keeping the frontmatter block byte for byte.
@@ -143,8 +152,20 @@ public enum Frontmatter {
     /// `key: value` in Slate's style: scalars and flow lists on one line,
     /// quoted only when YAML would misread them.
     public static func emit(key: String, value: YAMLValue) -> String {
+        // Several lines of text: a literal block, which reads naturally.
+        if case .string(let string) = value, string.contains("\n"), !string.contains("\r") {
+            let body = string.hasSuffix("\n") ? String(string.dropLast()) : string
+            let keep = string.hasSuffix("\n") ? "" : "-"
+            let lines = body.components(separatedBy: "\n").map { $0.isEmpty ? "" : "  " + $0 }
+            return "\(emitKey(key)): |\(keep)\n" + lines.joined(separator: "\n")
+        }
         let rendered = emit(value)
-        return rendered.isEmpty ? "\(key):" : "\(key): \(rendered)"
+        return rendered.isEmpty ? "\(emitKey(key)):" : "\(emitKey(key)): \(rendered)"
+    }
+
+    /// Keys with spaces are fine in YAML; keys YAML would misread are quoted.
+    static func emitKey(_ key: String) -> String {
+        key.contains(":") || key.hasPrefix("#") || key.hasPrefix("-") ? quotedIfNeeded(key).hasPrefix("\"") ? quotedIfNeeded(key) : "\"\(key)\"" : key
     }
 
     public static func emit(_ value: YAMLValue) -> String {

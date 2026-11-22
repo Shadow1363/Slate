@@ -25,6 +25,7 @@ struct UniverseNavigator: View {
                             .lineLimit(1)
                     }
                     .buttonStyle(.plain)
+                    .draggable("slate-heading:" + heading.title)
                     .contextMenu {
                         Button("Turn into Scene") {
                             session.area = .script
@@ -37,10 +38,25 @@ struct UniverseNavigator: View {
                 Section(group.title) {
                     ForEach(group.notes) { note in
                         NoteRow(note: note, backlinks: graph.backlinks(to: note.path).count)
+                            .draggable("slate-note:" + note.path)
                             .tag(note.path)
                             .contextMenu { noteMenu(note) }
                     }
                 }
+            }
+            let canvases = canvasFiles
+            Section("Canvases") {
+                ForEach(canvases, id: \.self) { path in
+                    Label(((path as NSString).lastPathComponent as NSString).deletingPathExtension, systemImage: "rectangle.3.group")
+                        .tag(path)
+                        .contextMenu { fileMenu(path) }
+                }
+                Button {
+                    session.createCanvas()
+                } label: {
+                    Label("New Canvas", systemImage: "plus").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
             }
             let others = otherFiles(graph)
             if !others.isEmpty {
@@ -78,8 +94,15 @@ struct UniverseNavigator: View {
             ToolbarItem {
                 Menu {
                     ForEach(session.templates) { template in
-                        Button(template.label) { session.sheet = .newNote(type: template.type, name: "") }
+                        Button {
+                            session.sheet = .newNote(type: template.type, name: "")
+                        } label: {
+                            Label(template.label, systemImage: template.icon ?? icon(for: template.type))
+                        }
                     }
+                    Divider()
+                    Button("New Canvas") { session.createCanvas() }
+                    Button("Edit Templates…") { session.sheet = .templates(nil) }
                 } label: {
                     Label("New Note", systemImage: "plus")
                 }
@@ -109,7 +132,7 @@ struct UniverseNavigator: View {
             }
         }
         for folder in byFolder.keys.sorted() {
-            result.append(Group(title: folder.isEmpty ? "Notes" : folder.capitalized, notes: byFolder[folder] ?? []))
+            result.append(Group(title: folder.isEmpty ? "Notes" : folder.replacingOccurrences(of: "-", with: " ").capitalized, notes: byFolder[folder] ?? []))
         }
         return result
     }
@@ -128,7 +151,11 @@ struct UniverseNavigator: View {
 
     private func otherFiles(_ graph: LinkGraph) -> [String] {
         (session.store.files[.universe] ?? []).map(\.relativePath)
-            .filter { $0 != ProjectLayout.draft && graph.note(at: $0) == nil }
+            .filter { $0 != ProjectLayout.draft && graph.note(at: $0) == nil && !$0.hasSuffix(".canvas") && !$0.hasPrefix("universe/canvases/images/") }
+    }
+
+    private var canvasFiles: [String] {
+        (session.store.files[.universe] ?? []).map(\.relativePath).filter { $0.hasSuffix(".canvas") }
     }
 
     @ViewBuilder
@@ -196,7 +223,9 @@ struct UniverseFilePane: View {
     var body: some View {
         Group {
             if let document {
-                if path == ProjectLayout.draft || !isMarkdown {
+                if path.hasSuffix(".canvas") {
+                    CanvasPane(session: session, document: document)
+                } else if path == ProjectLayout.draft || !isMarkdown {
                     if isMarkdown {
                         MarkdownPane(session: session, document: document)
                     } else {

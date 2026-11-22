@@ -23,6 +23,8 @@ final class ProjectSession {
         case editNote(MarginNote)
         /// Add or edit a dictionary word; `word` pre-fills a new entry.
         case wordEntry(WordEntry?, word: String)
+        /// Universe › Templates…, optionally opened on one template.
+        case templates(String?)
 
         var id: String {
             switch self {
@@ -36,6 +38,7 @@ final class ProjectSession {
             case .addMarginNote: "addMarginNote"
             case .editNote(let note): "editNote:" + note.id
             case .wordEntry(let entry, let word): "word:\(entry?.id ?? ""):\(word)"
+            case .templates: "templates"
             }
         }
     }
@@ -116,7 +119,7 @@ final class ProjectSession {
     }
 
     func template(for type: String?) -> NoteTemplate? {
-        templates.first { $0.type == type } ?? templates.first { $0.type == "note" }
+        NoteTemplates.matching(type, in: templates) ?? templates.first { $0.type == "note" }
     }
 
     var allPaths: [String] { store.files.values.flatMap { $0 }.map(\.relativePath) }

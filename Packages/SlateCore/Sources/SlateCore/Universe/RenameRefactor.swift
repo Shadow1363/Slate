@@ -52,25 +52,28 @@ public enum RenameRefactor {
     public static func plan(renaming notePath: String, to newName: String, in graph: LinkGraph, existingPaths: Set<String>) -> Plan? {
         let newName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let note = graph.note(at: notePath), !newName.isEmpty else { return nil }
-        var edits: [FileEdit] = []
-        for path in graph.files.keys.sorted() {
-            for source in graph.files[path]?.links ?? [] {
-                guard let resolution = graph.resolve(source.link.target), resolution.path == notePath,
-                      resolution.via != .alias, source.link.target != newName else { continue }
-                edits.append(FileEdit(
-                    path: path,
-                    range: source.link.targetRange,
-                    original: source.link.target,
-                    replacement: newName,
-                    context: source.snippet
-                ))
-            }
-        }
         let folder = (notePath as NSString).deletingLastPathComponent
         let stem = Slug.make(newName)
         var newPath: String?
         if stem != note.fileStem {
             newPath = NoteTemplate.uniquePath(folder: folder, stem: stem, existing: existingPaths.subtracting([notePath]))
+        }
+        var edits: [FileEdit] = []
+        for path in graph.files.keys.sorted() {
+            for source in graph.files[path]?.links ?? [] {
+                guard let resolution = graph.resolve(source.link.target), resolution.path == notePath,
+                      resolution.via != .alias, source.link.target != newName else { continue }
+                // A canvas note card names the file, so it follows the move.
+                let isPath = source.link.target == notePath
+                if isPath, newPath == nil { continue }
+                edits.append(FileEdit(
+                    path: path,
+                    range: source.link.targetRange,
+                    original: source.link.target,
+                    replacement: isPath ? newPath! : newName,
+                    context: source.snippet
+                ))
+            }
         }
         return Plan(notePath: notePath, oldName: note.name, newName: newName, edits: edits, newPath: newPath)
     }
@@ -82,7 +85,10 @@ public enum RenameRefactor {
     public static func apply(_ plan: Plan, updateLinks: Bool, store: ProjectStore) throws -> String {
         if updateLinks { try store.applyEdits(plan.edits) }
         let document = try store.document(at: plan.notePath)
-        let renamed = Frontmatter.setting("name", to: .string(plan.newName), in: document.text)
+        // Notes named by `title:` (the wiki-infobox format) keep that key.
+        let fields = (try? Frontmatter.fields(in: document.text)) ?? []
+        let key = fields.contains { $0.key == "name" } || !fields.contains { $0.key == "title" } ? "name" : "title"
+        let renamed = Frontmatter.setting(key, to: .string(plan.newName), in: document.text)
         if renamed != document.text { document.text = renamed }
         store.save(document)
         guard let newPath = plan.newPath else { return plan.notePath }

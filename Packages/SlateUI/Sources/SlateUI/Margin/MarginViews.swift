@@ -334,24 +334,19 @@ struct NotePreviewCard: View {
             let body = Frontmatter.split(text).body.trimmingCharacters(in: .whitespacesAndNewlines)
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
-                    Image(systemName: icon(for: note.type)).foregroundStyle(.secondary)
+                    Image(systemName: session.template(for: note.type)?.icon ?? icon(for: note.type)).foregroundStyle(.secondary)
                     Text(note.name).font(.headline)
                     Spacer()
                     Text(session.template(for: note.type)?.label ?? "Note")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                let fields = note.fields.filter { !["type", "id", "name"].contains($0.key) && !$0.value.isEmpty }
-                if !fields.isEmpty {
-                    Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 3) {
-                        ForEach(fields.prefix(bodyLimit == nil ? 50 : 4), id: \.key) { field in
-                            GridRow {
-                                Text(field.key).foregroundStyle(.secondary)
-                                Text(LinkURL.attributed(field.value.text)).lineLimit(2)
-                            }
-                        }
-                    }
-                    .font(.caption)
+                // The infobox, without its own title (the header above has it).
+                let content = InfoboxContent.make(note: note, template: session.template(for: note.type), store: session.store)
+                    .limited(to: bodyLimit == nil ? nil : 6)
+                if let subtitle = content.subtitle {
+                    SpoilerText(text: subtitle).font(.caption.italic()).foregroundStyle(.secondary)
                 }
+                InfoboxRows(content: content)
                 if !body.isEmpty {
                     Divider()
                     let shown = bodyLimit.map { body.count > $0 ? String(body.prefix($0)) + "…" : body } ?? body

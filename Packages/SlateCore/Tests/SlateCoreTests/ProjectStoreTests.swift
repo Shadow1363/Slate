@@ -15,7 +15,9 @@ struct ProjectStoreTests {
             "script/margin/notes.md", "script/margin/todos.md", "script/script.md", "script/title-page.md",
         ])
         #expect(store.files[.universe]?.map(\.pathInArea) == [
-            "characters/mara-voss.md", "draft.md", "items/the-brass-key.md", "locations/the-station.md", "rules/time-travel.md",
+            "canvases/act-two.canvas", "canvases/images/station-sketch.png",
+            "characters/mara-voss.md", "characters/thomas-wiley-cade.md", "draft.md", "items/the-brass-key.md",
+            "locations/the-station.md", "rules/powers.md", "rules/time-travel.md",
         ])
         #expect(store.files[.dictionary]?.map(\.name) == ["words.md"])
         // Hidden files (.gitkeep) are not listed.

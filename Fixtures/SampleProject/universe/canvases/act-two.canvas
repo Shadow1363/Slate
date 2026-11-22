@@ -1,0 +1,14 @@
+{
+	"nodes":[
+		{"id":"g1a2b3c4d5e6f7a8","type":"group","x":-60,"y":-80,"width":760,"height":420,"label":"The kitchen night","color":"4"},
+		{"id":"t1a2b3c4d5e6f7a8","type":"text","text":"## Why the key matters\n\nMara must **not** open it. See [[The Brass Key]].","x":-20,"y":-20,"width":300,"height":160},
+		{"id":"n1a2b3c4d5e6f7a8","type":"file","file":"universe/characters/mara-voss.md","x":380,"y":-20,"width":280,"height":200,"styleAttributes":{}},
+		{"id":"s1a2b3c4d5e6f7a8","type":"file","file":"script/script.md","subpath":"#s014","x":-20,"y":180,"width":300,"height":120,"color":"2"},
+		{"id":"i1a2b3c4d5e6f7a8","type":"file","file":"universe/canvases/images/station-sketch.png","x":760,"y":-20,"width":240,"height":150},
+		{"id":"l1a2b3c4d5e6f7a8","type":"link","url":"https://jsoncanvas.org","x":760,"y":180,"width":240,"height":80}
+	],
+	"edges":[
+		{"id":"e1a2b3c4d5e6f7a8","fromNode":"t1a2b3c4d5e6f7a8","fromSide":"right","toNode":"n1a2b3c4d5e6f7a8","toSide":"left","label":"drives","color":"1"},
+		{"id":"e2a2b3c4d5e6f7a8","fromNode":"t1a2b3c4d5e6f7a8","fromSide":"bottom","toNode":"s1a2b3c4d5e6f7a8","toSide":"top","toEnd":"none"}
+	]
+}

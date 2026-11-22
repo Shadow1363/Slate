@@ -118,6 +118,7 @@ private struct BacklinkRow: View {
         case .margin: "Margin · " + (source.path as NSString).lastPathComponent
         case .draft: "Rough Draft"
         case .dictionary: "Dictionary"
+        case .canvas: "Canvas · " + ((source.path as NSString).lastPathComponent as NSString).deletingPathExtension
         case .note: graph.note(at: source.path)?.name ?? source.path
         }
     }
@@ -128,6 +129,7 @@ private struct BacklinkRow: View {
         case .margin: "note.text"
         case .draft: "doc.richtext"
         case .dictionary: "character.book.closed"
+        case .canvas: "rectangle.3.group"
         case .note: icon(for: graph.note(at: source.path)?.type)
         }
     }
@@ -222,7 +224,7 @@ struct NewNoteSheet: View {
             Form {
                 Picker("Template", selection: $type) {
                     ForEach(session.templates) { template in
-                        Label(template.label, systemImage: icon(for: template.type)).tag(template.type)
+                        Label(template.label, systemImage: template.icon ?? icon(for: template.type)).tag(template.type)
                     }
                 }
                 TextField("Name", text: $name)
@@ -234,6 +236,11 @@ struct NewNoteSheet: View {
                     .textSelection(.enabled)
             }
             HStack {
+                Button("Edit Templates…") {
+                    let type = type
+                    dismiss()
+                    DispatchQueue.main.async { session.sheet = .templates(type) }
+                }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)

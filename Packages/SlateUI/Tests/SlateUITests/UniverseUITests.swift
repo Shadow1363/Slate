@@ -192,7 +192,7 @@ struct UniverseSessionTests {
         let session = h.session
         session.universeSelection = "universe/locations/the-station.md"
         let plan = try #require(session.renamePlan(for: "universe/locations/the-station.md", to: "Grand Station"))
-        #expect(plan.edits.count == 2) // the brass key and the dictionary
+        #expect(plan.edits.count == 3) // the brass key, powers and the dictionary
         session.rename(plan, updateLinks: true)
         #expect(session.dictionary.entry(for: "Chronoshift")?.links.map(\.target).contains("Grand Station") == true)
         #expect(session.universeSelection == "universe/locations/grand-station.md")

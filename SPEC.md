@@ -179,14 +179,15 @@ Universe is where the film is thought through before and while it is written: a 
 **Templated notes**
 
 - Built-in templates: Character, Location, Rule (how something works), Faction, Item, Event, Freeform.
-- A template is itself a `.md` file: frontmatter defines fields (text, number, date, list, link, image) and the body holds starter headings. Built-ins ship in the app; copies in `templates/` override them per project, and in `~/Library/Application Support/Slate/Templates/` globally.
-- Each note opens as a form of its fields on top and a Markdown body below. Editing either side rewrites the same file.
+- A template is itself a `.md` file: frontmatter defines fields (text, long text, number, date, choice, yes/no, list, link, links, image), an optional `layout:` and an icon, and the body holds starter headings. Built-ins ship in the app; copies in `templates/` override them per project, and in `~/Library/Application Support/Slate/Templates/` globally. Universe › Templates… creates and edits them in a form with a live preview.
+- Each note opens as a wiki page: the Markdown body, with an infobox card beside it (title, subtitle, picture, fields, section headers and columns). Edit turns the infobox into a form. Editing either side rewrites the same file.
+- Notes in the wiki-infobox format are read as they are: `infobox: Character` names the template, `title:` the name, `subtitle:` the line under it, and a `layout:` list (`header` with `above:`, `columns` with `keys:`) arranges the infobox. `||text||` is a spoiler, hidden until clicked.
 - Inspector shows backlinks (every note, scene and margin note that links here) and, for characters, scenes appeared in and line count, pulled from the script.
 - Renaming a note offers to update every `[[link]]` to it across the project.
 
 **Canvas** — an infinite board for connecting ideas, saved in the open [JSON Canvas](https://jsoncanvas.org) format so it also opens in Obsidian.
 
-- Card types: note card (live embed of a universe note), text card, image, scene card (links to a scene in the script), group frame.
+- Card types: note card (live embed of a universe note), text card, image, scene card (links to a scene in the script), web link, group frame. In the file, note, image and scene cards are `file` nodes (a scene card adds `subpath: "#s014"`), so the board opens in Obsidian with the project folder as the vault.
 - Connections: arrows with optional labels and colours; drag from a card edge to connect.
 - Zoom, pan, multi-select, align/distribute, snap to grid, minimap. Dropping a note from the sidebar creates its card.
 
