@@ -1,0 +1,104 @@
+import Foundation
+
+public enum ProjectCreationError: Error, Equatable, LocalizedError {
+    case emptyTitle
+    case folderNotEmpty(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .emptyTitle: "Give the project a title."
+        case .folderNotEmpty(let path): "A folder already exists at \(path) and isn't empty. Pick another title or location."
+        }
+    }
+}
+
+public enum ProjectCreator {
+    /// A Finder-safe folder name for a title: slashes and colons become dashes,
+    /// and a leading dot is dropped so the folder isn't hidden.
+    public static func folderName(for title: String) -> String {
+        var name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "/", with: "-")
+            .replacingOccurrences(of: ":", with: "-")
+        while name.hasPrefix(".") { name.removeFirst() }
+        name = String(name.prefix(200)).trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? "Untitled" : name
+    }
+
+    /// Creates `<parent>/<title>/` with the template's folders and starter files.
+    /// Returns the new project folder.
+    @discardableResult
+    public static func create(
+        title: String,
+        template: ProjectTemplate,
+        in parent: URL,
+        date: Date = .now
+    ) throws -> URL {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw ProjectCreationError.emptyTitle }
+
+        let fm = FileManager.default
+        let root = parent.appending(path: folderName(for: trimmed), directoryHint: .isDirectory)
+        if fm.fileExists(atPath: root.path) {
+            let contents = (try? fm.contentsOfDirectory(atPath: root.path)) ?? []
+            if contents.contains(where: { $0 != ".DS_Store" }) {
+                throw ProjectCreationError.folderNotEmpty(root.path)
+            }
+        }
+
+        for folder in template.folders {
+            try fm.createDirectory(at: root.appending(path: folder, directoryHint: .isDirectory), withIntermediateDirectories: true)
+        }
+        for (path, contents) in template.starterFiles(title: trimmed, date: date) {
+            try CoordinatedFileIO.writeText(contents, to: root.appending(path: path))
+        }
+        let manifest = ProjectManifest(name: trimmed)
+        try CoordinatedFileIO.write(try manifest.encoded(), to: root.appending(path: ProjectLayout.manifest))
+        return root
+    }
+}
+
+/// What a project card shows on the home screen.
+public struct ProjectSummary: Sendable, Equatable {
+    public var name: String
+    public var lastEdited: Date?
+
+    /// Reads `project.json` and finds the newest file modification date,
+    /// skipping `.slate/` and `exports/`. Safe to call off the main thread.
+    public static func load(at root: URL) -> ProjectSummary? {
+        guard let data = try? CoordinatedFileIO.read(root.appending(path: ProjectLayout.manifest)),
+              let manifest = try? ProjectManifest.decode(data)
+        else { return nil }
+
+        var newest: Date?
+        let keys: [URLResourceKey] = [.contentModificationDateKey, .isRegularFileKey]
+        if let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: keys, options: [.skipsHiddenFiles]) {
+            for case let url as URL in enumerator {
+                if url.lastPathComponent == ProjectLayout.exports, url.deletingLastPathComponent().standardizedFileURL == root.standardizedFileURL {
+                    enumerator.skipDescendants()
+                    continue
+                }
+                guard let values = try? url.resourceValues(forKeys: Set(keys)), values.isRegularFile == true,
+                      let date = values.contentModificationDate else { continue }
+                if newest == nil || date > newest! { newest = date }
+            }
+        }
+        return ProjectSummary(name: manifest.name, lastEdited: newest)
+    }
+}
+
+public enum ProjectScanner {
+    /// Folders directly inside `folder` that contain a `project.json`.
+    public static func projects(in folder: URL) -> [URL] {
+        let fm = FileManager.default
+        guard let children = try? fm.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]) else {
+            return []
+        }
+        return children
+            .filter { fm.fileExists(atPath: $0.appending(path: ProjectLayout.manifest).path) }
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+    }
+
+    public static func isProject(_ folder: URL) -> Bool {
+        FileManager.default.fileExists(atPath: folder.appending(path: ProjectLayout.manifest).path)
+    }
+}

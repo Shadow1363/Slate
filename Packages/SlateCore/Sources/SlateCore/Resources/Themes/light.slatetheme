@@ -1,0 +1,153 @@
+{
+  "appearance": "light",
+  "canvas": {
+    "branchColors": [
+      "#1D1D1F",
+      "#7A4FD1",
+      "#0E7490",
+      "#B45309"
+    ],
+    "connector": "#6B6A66",
+    "groupFill": "#2F6FDE14",
+    "imageCard": "#FFFFFF",
+    "jumpArc": "#C2410C",
+    "laneColors": [
+      "#2F6FDE",
+      "#C2410C",
+      "#15803D",
+      "#7A4FD1",
+      "#B45309",
+      "#0E7490"
+    ],
+    "noteCard": "#EEF3FF",
+    "pin": "#D93025",
+    "sceneCard": "#FFF1E6",
+    "textCard": "#FFFFFF"
+  },
+  "chrome": {
+    "accent": "#2F6FDE",
+    "selection": "#C9DBFA",
+    "separator": "#D6D3CC",
+    "sidebarBackground": "#ECEAE5",
+    "toolbar": "#F5F4F1",
+    "windowBackground": "#F5F4F1"
+  },
+  "editor": {
+    "background": "#F5F4F1",
+    "caret": "#2F6FDE",
+    "currentLine": "#F3F1EC",
+    "font": "Courier Prime",
+    "lineSpacing": 1.2,
+    "page": "#FFFFFF",
+    "pageWidth": 612,
+    "selection": "#C9DBFA",
+    "size": 13,
+    "spellError": "#D93025",
+    "text": "#1D1D1F"
+  },
+  "margin": {
+    "anchorHighlight": "#FFE89A",
+    "done": "#A3A19B",
+    "noteBackground": "#FFF6D6",
+    "overdue": "#D93025",
+    "todo": "#1D1D1F"
+  },
+  "markdown": {
+    "brokenLink": "#D93025",
+    "checkbox": "#2F6FDE",
+    "codeBackground": "#EFEDE8",
+    "codeFont": "SF Mono",
+    "emphasis": "#1D1D1F",
+    "font": "New York",
+    "h1Size": 26,
+    "h2Size": 20,
+    "h3Size": 17,
+    "heading": "#1D1D1F",
+    "link": "#2F6FDE",
+    "quote": "#6B6A66",
+    "size": 15,
+    "text": "#1D1D1F",
+    "wikiLink": "#7A4FD1"
+  },
+  "name": "Light",
+  "script": {
+    "action": {
+      "color": "#1D1D1F",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 1,
+      "uppercase": false,
+      "weight": "regular"
+    },
+    "boneyard": {
+      "color": "#A3A19B",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 0,
+      "uppercase": false,
+      "weight": "regular"
+    },
+    "centered": {
+      "color": "#1D1D1F",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 1,
+      "uppercase": false,
+      "weight": "regular"
+    },
+    "character": {
+      "color": "#1D1D1F",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 1,
+      "uppercase": true,
+      "weight": "regular"
+    },
+    "dialogue": {
+      "color": "#1D1D1F",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 0,
+      "uppercase": false,
+      "weight": "regular"
+    },
+    "parenthetical": {
+      "color": "#6B6A66",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 0,
+      "uppercase": false,
+      "weight": "regular"
+    },
+    "sceneChip": {
+      "color": "#6B6A66",
+      "font": "SF Pro",
+      "size": 10,
+      "spaceBefore": 0,
+      "uppercase": false,
+      "weight": "semibold"
+    },
+    "sceneHeading": {
+      "color": "#1D1D1F",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 2,
+      "uppercase": true,
+      "weight": "bold"
+    },
+    "transition": {
+      "color": "#1D1D1F",
+      "font": "Courier Prime",
+      "size": 13,
+      "spaceBefore": 1,
+      "uppercase": true,
+      "weight": "regular"
+    }
+  },
+  "storyboard": {
+    "background": "#ECEAE5",
+    "frameBorder": "#D6D3CC",
+    "overlayText": "#FFFFFF",
+    "selectedFrame": "#2F6FDE"
+  }
+}

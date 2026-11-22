@@ -1,0 +1,12 @@
+{
+  "id" : "p-fixture-0001",
+  "name" : "The Brass Key",
+  "pageSize" : "letter",
+  "schemaVersion" : 1,
+  "settings" : {
+    "reminders" : "lastProject"
+  },
+  "studio" : {
+    "note" : "Unknown keys like this one must survive a save."
+  }
+}
