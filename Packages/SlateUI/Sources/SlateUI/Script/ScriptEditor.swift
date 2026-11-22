@@ -35,7 +35,9 @@ struct ScriptEditor: NSViewRepresentable {
 final class ScriptEditorController: NSObject, NSTextViewDelegate {
     private var config: ScriptEditor!
     private var scrollView: NSScrollView!
-    private(set) var textView: NSTextView!
+    private(set) var textView: SlateTextView!
+    /// `[[` autocomplete over the project's notes.
+    let linkCompletion = LinkCompletion()
 
     private var parsed = ParsedScript.empty
     private var protectedRanges: [NSRange] = []
@@ -72,10 +74,8 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
 
     func makeView(for config: ScriptEditor) -> NSScrollView {
         self.config = config
-        let scrollView = NSTextView.scrollableTextView()
-        scrollView.hasVerticalScroller = true
+        let (scrollView, textView) = SlateTextView.scrollable()
         scrollView.drawsBackground = true
-        guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
         self.scrollView = scrollView
         self.textView = textView
 
@@ -98,6 +98,12 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         textView.textContainer?.lineFragmentPadding = 0
         textView.postsFrameChangedNotifications = true
         textView.setAccessibilityLabel("Script")
+        textView.followLink = { [weak self] target in self?.config.workspace.followLink(target) ?? false }
+        textView.insertLinkAction = { [weak self] in
+            guard let self else { return }
+            self.linkCompletion.insertLink(in: self.textView)
+        }
+        linkCompletion.graph = { [weak self] in self?.config.workspace.linkGraph() ?? .empty }
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main
@@ -121,6 +127,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     }
 
     func teardown() {
+        linkCompletion.hide()
         if let frameObserver { NotificationCenter.default.removeObserver(frameObserver) }
         frameObserver = nil
     }
@@ -299,8 +306,11 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
                 ], range: tag)
             }
             if line.text.contains("[[") {
-                for match in ScriptSpelling.linkPattern.matches(in: line.text, range: NSRange(location: 0, length: line.range.length)) {
-                    storage.addAttribute(.foregroundColor, value: link, range: NSRange(location: line.range.location + match.range.location, length: match.range.length))
+                for found in WikiLink.find(in: line.text) {
+                    storage.addAttributes([
+                        .foregroundColor: link,
+                        .slateLinkTarget: found.target,
+                    ], range: NSRange(location: line.range.location + found.range.location, length: found.range.length))
                 }
             }
         }
@@ -507,6 +517,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
             wantsCompletion = false
             offerCompletion()
         }
+        linkCompletion.update(in: textView)
     }
 
     func textViewDidChangeSelection(_ notification: Notification) {
@@ -521,6 +532,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
             }
         }
         caretMoved()
+        linkCompletion.update(in: textView)
     }
 
     /// Clears a stale hint and tags the heading the caret just left.
@@ -540,6 +552,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     }
 
     func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+        if linkCompletion.handle(selector) { return true }
         switch selector {
         case #selector(NSResponder.insertNewline(_:)):
             return handleReturn()

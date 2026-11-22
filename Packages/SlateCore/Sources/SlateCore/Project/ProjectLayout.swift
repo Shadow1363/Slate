@@ -4,6 +4,8 @@ import Foundation
 public enum ProjectLayout {
     public static let manifest = "project.json"
     public static let universe = "universe"
+    /// The rough draft.
+    public static let draft = "universe/draft.md"
     public static let script = "script"
     public static let storyboard = "storyboard"
     public static let dictionary = "dictionary"

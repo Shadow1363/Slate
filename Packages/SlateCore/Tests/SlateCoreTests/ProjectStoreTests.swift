@@ -14,7 +14,9 @@ struct ProjectStoreTests {
         #expect(store.files[.script]?.map(\.relativePath) == [
             "script/margin/notes.md", "script/margin/todos.md", "script/script.md", "script/title-page.md",
         ])
-        #expect(store.files[.universe]?.map(\.pathInArea) == ["characters/mara-voss.md", "draft.md"])
+        #expect(store.files[.universe]?.map(\.pathInArea) == [
+            "characters/mara-voss.md", "draft.md", "items/the-brass-key.md", "locations/the-station.md", "rules/time-travel.md",
+        ])
         #expect(store.files[.dictionary]?.map(\.name) == ["words.txt"])
         // Hidden files (.gitkeep) are not listed.
         #expect(store.files[.storyboard]?.map(\.name) == ["storyboard.json"])
@@ -138,7 +140,7 @@ struct ProjectStoreTests {
 
         #expect(doc.diskState == .deletedOnDisk)
         #expect(doc.text.hasPrefix("# The Brass Key"))
-        #expect(store.files[.universe]?.map(\.name) == ["mara-voss.md"])
+        #expect(store.files[.universe]?.contains { $0.name == "draft.md" } == false)
 
         store.keepMine(doc)
         #expect(FileManager.default.fileExists(atPath: root.appending(path: "universe/draft.md").path))

@@ -50,4 +50,32 @@ public enum CoordinatedFileIO {
     public static func writeText(_ text: String, to url: URL, presenter: (any NSFilePresenter)? = nil) throws {
         try write(Data(text.utf8), to: url, presenter: presenter)
     }
+
+    /// Moves a file, coordinated for both places. Fails if `destination` exists.
+    public static func move(_ source: URL, to destination: URL, presenter: (any NSFilePresenter)? = nil) throws {
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let coordinator = NSFileCoordinator(filePresenter: presenter)
+        var coordinationError: NSError?
+        var result: Result<Void, any Error> = .success(())
+        coordinator.coordinate(writingItemAt: source, options: [.forMoving], writingItemAt: destination, options: [.forReplacing], error: &coordinationError) { from, to in
+            result = Result {
+                try FileManager.default.moveItem(at: from, to: to)
+                coordinator.item(at: from, didMoveTo: to)
+            }
+        }
+        if let coordinationError { throw coordinationError }
+        try result.get()
+    }
+
+    /// Moves a file to the Trash (never deletes it outright).
+    public static func trash(_ url: URL, presenter: (any NSFilePresenter)? = nil) throws {
+        let coordinator = NSFileCoordinator(filePresenter: presenter)
+        var coordinationError: NSError?
+        var result: Result<Void, any Error> = .success(())
+        coordinator.coordinate(writingItemAt: url, options: [.forDeleting], error: &coordinationError) { url in
+            result = Result { try FileManager.default.trashItem(at: url, resultingItemURL: nil) }
+        }
+        if let coordinationError { throw coordinationError }
+        try result.get()
+    }
 }

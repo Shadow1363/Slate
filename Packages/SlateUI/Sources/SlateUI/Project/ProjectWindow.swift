@@ -12,6 +12,10 @@ public struct ProjectActions {
     public let publish: @MainActor (ExportFormat) -> Void
     public let printScript: @MainActor () -> Void
     public let togglePageView: @MainActor () -> Void
+    public let quickOpen: @MainActor () -> Void
+    public let findInProject: @MainActor () -> Void
+    public let newNote: @MainActor () -> Void
+    public let toggleInspector: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -74,20 +78,17 @@ public struct ProjectWindow: View {
 
 struct ProjectContent: View {
     let store: ProjectStore
-
-    @State private var area: ProjectArea? = .script
-    @State private var selectedFile: String?
-    @State private var script: ScriptWorkspace
-    @State private var showingJump = false
+    @State private var session: ProjectSession
 
     init(store: ProjectStore) {
         self.store = store
-        _script = State(initialValue: ScriptWorkspace(store: store))
+        _session = State(initialValue: ProjectSession(store: store))
     }
 
     var body: some View {
+        @Bindable var session = session
         NavigationSplitView {
-            List(ProjectArea.allCases, selection: $area) { area in
+            List(ProjectArea.allCases, selection: $session.area) { area in
                 Label(area.title, systemImage: area.systemImage)
                     .badge(Text("⌘\(area.shortcutNumber)").foregroundStyle(.tertiary))
                     .tag(area)
@@ -95,21 +96,41 @@ struct ProjectContent: View {
             .navigationSplitViewColumnWidth(min: 170, ideal: 190)
         } content: {
             Group {
-                if area == .script {
-                    ScriptNavigator(workspace: script)
-                } else {
-                    AreaFileList(store: store, area: area ?? .script, selection: $selectedFile)
+                switch session.area ?? .script {
+                case .script: ScriptNavigator(workspace: session.script)
+                case .universe: UniverseNavigator(session: session)
+                case let area: AreaFileList(store: store, area: area, selection: $session.selectedFile)
                 }
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 260)
         } detail: {
-            if area == .script {
-                ScriptDetail(workspace: script)
-            } else if let selectedFile {
-                DocumentPane(store: store, relativePath: selectedFile, close: { self.selectedFile = nil })
-                    .id(selectedFile)
-            } else {
-                AreaPlaceholder(area: area ?? .script)
+            Group {
+                switch session.area ?? .script {
+                case .script:
+                    ScriptDetail(workspace: session.script)
+                case .universe:
+                    UniverseDetail(session: session)
+                case let area:
+                    if let selectedFile = session.selectedFile {
+                        DocumentPane(store: store, relativePath: selectedFile, close: { session.selectedFile = nil })
+                            .id(selectedFile)
+                    } else {
+                        AreaPlaceholder(area: area)
+                    }
+                }
+            }
+            .inspector(isPresented: $session.showingInspector) {
+                LinksInspector(session: session)
+            }
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        session.showingInspector.toggle()
+                    } label: {
+                        Label("Links", systemImage: "sidebar.trailing")
+                    }
+                    .help("Show backlinks (⌥⌘0)")
+                }
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -117,31 +138,38 @@ struct ProjectContent: View {
                 Banner(systemImage: "exclamationmark.triangle.fill", message: error) {}
             }
         }
-        .onChange(of: area) { selectedFile = nil }
-        .onChange(of: store.files) {
-            script.refreshFiles()
-            script.refreshAuxiliary()
-        }
-        .sheet(isPresented: $showingJump) {
-            JumpToSceneSheet(workspace: script)
+        .onChange(of: session.area) { session.selectedFile = nil }
+        .onChange(of: store.files) { session.filesChanged() }
+        .sheet(item: $session.sheet) { sheet in
+            switch sheet {
+            case .jumpToScene: JumpToSceneSheet(workspace: session.script)
+            case .quickOpen: QuickOpenSheet(session: session)
+            case .search: ProjectSearchSheet(session: session)
+            case .rename(let path, let proposed): RenameNoteSheet(session: session, path: path, proposed: proposed)
+            case .newNote(let type, let name): NewNoteSheet(session: session, type: type, name: name)
+            }
         }
         .focusedSceneValue(\.projectActions, ProjectActions(
-            selectArea: { area = $0 },
+            selectArea: { session.area = $0 },
             save: { store.saveAll() },
             jumpToScene: {
-                area = .script
-                showingJump = true
+                session.area = .script
+                session.sheet = .jumpToScene
             },
             moveScene: { delta in
-                guard area == .script else { return }
-                script.moveCurrentScene(by: delta)
+                guard session.area == .script else { return }
+                session.script.moveCurrentScene(by: delta)
             },
-            publish: { script.publish($0) },
-            printScript: { script.printScript() },
+            publish: { session.script.publish($0) },
+            printScript: { session.script.printScript() },
             togglePageView: {
-                area = .script
-                script.showingPages.toggle()
-            }
+                session.area = .script
+                session.script.showingPages.toggle()
+            },
+            quickOpen: { session.sheet = .quickOpen },
+            findInProject: { session.sheet = .search },
+            newNote: { session.sheet = .newNote(type: nil, name: "") },
+            toggleInspector: { session.showingInspector.toggle() }
         ))
     }
 }
@@ -159,7 +187,7 @@ extension ProjectArea {
     /// Which milestone brings the real editor for this area.
     var comingIn: String {
         switch self {
-        case .universe: "Notes, templates and links arrive in Milestone 4; canvas, timeline and map in 7–8."
+        case .universe: "Canvas, timeline and map arrive in Milestones 7–8."
         case .script: "The screenplay editor arrives in Milestone 2."
         case .storyboard: "Boards arrive in Milestone 9 and the animatic player in Milestone 10."
         case .dictionary: "Terms and project spell check arrive in Milestone 6."

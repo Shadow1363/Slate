@@ -8,6 +8,10 @@ A native macOS app for writing films. One project holds the world-building, the 
 - Xcode 16 or later (Swift 6)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
 
+Swift Package Manager fetches two dependencies the first time you build. Both are used only by SlateCore and pinned to exact versions in `Packages/SlateCore/Package.swift`:
+- [Yams](https://github.com/jpsim/Yams) 6.2.2 (MIT) reads note frontmatter.
+- Apple's [swift-markdown](https://github.com/swiftlang/swift-markdown) 0.9.0 (Apache 2.0, brings cmark-gfm) supplies note outlines and finds code blocks.
+
 ## Set up
 
 The Xcode project isn't committed. Generate it from `project.yml`:
@@ -87,6 +91,17 @@ Scene IDs such as `{#s014}` are added when you finish typing a heading. They sho
 
 Publish always uses Courier Prime 12 pt and the industry layout, whatever the editor theme. Courier Prime is bundled under the SIL Open Font License (`Packages/SlateExport/Sources/SlateExport/Resources/Fonts/OFL.txt`).
 
+## Universe notes
+
+- **Notes** live in `universe/<type>/<name>.md`: YAML frontmatter for fields, then a Markdown body. Use + or ⌘N to make a note from a template: Character, Location, Rule, Faction, Item, Event or Freeform.
+- **Templates** are `.md` files too. A copy in the project's `templates/` (or in `~/Library/Application Support/Slate/Templates/`) replaces the built-in template of the same type. The sample project overrides Character.
+- **The form** above the body edits fields: text, number, date, list, link and image. Each change rewrites only that field's line, so comments and key order in the file stay as you wrote them.
+- **Links:** typing `[[` suggests notes by name or alias, and ⌘K inserts a link. ⌘-click a link to open it; clicking an unresolved link (red, dashed) offers to create the note. Links work in the script too.
+- **Links inspector** (⌥⌘0) lists backlinks from notes, scenes, margin notes and the rough draft. For a character it also lists the scenes they speak in.
+- **Renaming** a note (press Return in its name, or right-click › Rename…) offers to update every link to it, and renames the file. Its `id` stays the same.
+- **Find in Project** is ⇧⌘F. **Quick Open** (⌘P) opens any note, scene or file.
+- **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script.
+
 ## Layout
 
 ```
@@ -105,7 +120,12 @@ Fixtures/Snapshots      Golden page layouts
 
 | Shortcut | Action |
 | --- | --- |
-| ⌘N | New Project |
+| ⌘N | New Note (in a project window) / New Project (elsewhere) |
+| ⌥⌘N | New Project (from a project window) |
+| ⌘P | Quick Open |
+| ⇧⌘F | Find in Project |
+| ⌘K | Insert link |
+| ⌥⌘0 | Links inspector |
 | ⌘O | Open a project folder |
 | ⇧⌘L | Project Library |
 | ⌘S | Save |

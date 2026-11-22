@@ -28,12 +28,12 @@ Slate is a native Mac app where one film project holds everything: the world-bui
 
 A project has four areas, switched from the sidebar (Cmd-1 to Cmd-4):
 
-| Area | What it is for | Stored as |
-| --- | --- | --- |
-| Universe | Rough draft, characters, locations, rules of the world, idea canvases, timelines (including time travel), maps | `.md` with frontmatter, `.canvas`, `.json` |
-| Script | The official screenplay with live formatting, timings, a margin for to-dos and notes, and Publish | `.md` (Fountain-flavoured) |
-| Storyboard | Frames per scene, created automatically from the script's scene headings, with a player to watch them | scene folders of images/clips + `.json` |
-| Dictionary | In-world terms and custom spellings that feed spell check | `.md` + `words.txt` |
+| Area       | What it is for                                                                                                 | Stored as                                  |
+| ---------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Universe   | Rough draft, characters, locations, rules of the world, idea canvases, timelines (including time travel), maps | `.md` with frontmatter, `.canvas`, `.json` |
+| Script     | The official screenplay with live formatting, timings, a margin for to-dos and notes, and Publish              | `.md` (Fountain-flavoured)                 |
+| Storyboard | Frames per scene, created automatically from the script's scene headings, with a player to watch them          | scene folders of images/clips + `.json`    |
+| Dictionary | In-world terms and custom spellings that feed spell check                                                      | `.md` + `words.txt`                        |
 
 Goals:
 
@@ -48,19 +48,19 @@ Not in v1: real-time collaboration, iPad/iPhone apps, cloud sync of its own (iCl
 
 SwiftUI for the app shell and most views, AppKit for the parts that need the full Mac text system, and no database: the folder is the database, with a rebuildable index in `.slate/`.
 
-| Concern | Choice | Why |
-| --- | --- | --- |
-| Language / UI | Swift 6, SwiftUI, macOS 15+ | Native, modern concurrency, Observation framework |
-| Text editing | `NSTextView` on TextKit 2, wrapped in `NSViewRepresentable` | SwiftUI `TextEditor` can't do per-element screenplay styling, margins, inline chips or spell-check control |
-| Spell check / Look Up | `NSSpellChecker`, built-in force-click Look Up, Dictionary Services | Free with NSTextView; per-project learned words |
-| File watching | `NSFilePresenter` / `NSFileCoordinator` + FSEvents | Safe with iCloud Drive and external editors |
-| Markdown | swift-markdown (Apple) for parsing; custom Fountain-style parser for the script | Apple-maintained; the script grammar is small enough to own |
-| Frontmatter | YAML via Yams | Readable fields on notes |
-| Canvas, timeline, map | SwiftUI `Canvas` + gestures, custom layout | Smooth zoom/pan at hundreds of nodes |
-| PDF | Own pagination engine, drawn with Core Text into a PDF context | Exact control over screenplay page breaks |
-| Animatic | AVFoundation (`AVMutableComposition`, `AVPlayer`, `AVAssetExportSession`) | Plays images and clips as one timeline, exports .mov |
-| Reminders | `UserNotifications` + an on-launch sheet | To-dos surface when you open the app |
-| Project file | XcodeGen `project.yml`; Swift packages SlateCore, SlateUI, SlateExport | Reproducible builds, testable core |
+| Concern               | Choice                                                                          | Why                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Language / UI         | Swift 6, SwiftUI, macOS 15+                                                     | Native, modern concurrency, Observation framework                                                          |
+| Text editing          | `NSTextView` on TextKit 2, wrapped in `NSViewRepresentable`                     | SwiftUI `TextEditor` can't do per-element screenplay styling, margins, inline chips or spell-check control |
+| Spell check / Look Up | `NSSpellChecker`, built-in force-click Look Up, Dictionary Services             | Free with NSTextView; per-project learned words                                                            |
+| File watching         | `NSFilePresenter` / `NSFileCoordinator` + FSEvents                              | Safe with iCloud Drive and external editors                                                                |
+| Markdown              | swift-markdown (Apple) for parsing; custom Fountain-style parser for the script | Apple-maintained; the script grammar is small enough to own                                                |
+| Frontmatter           | YAML via Yams                                                                   | Readable fields on notes                                                                                   |
+| Canvas, timeline, map | SwiftUI `Canvas` + gestures, custom layout                                      | Smooth zoom/pan at hundreds of nodes                                                                       |
+| PDF                   | Own pagination engine, drawn with Core Text into a PDF context                  | Exact control over screenplay page breaks                                                                  |
+| Animatic              | AVFoundation (`AVMutableComposition`, `AVPlayer`, `AVAssetExportSession`)       | Plays images and clips as one timeline, exports .mov                                                       |
+| Reminders             | `UserNotifications` + an on-launch sheet                                        | To-dos surface when you open the app                                                                       |
+| Project file          | XcodeGen `project.yml`; Swift packages SlateCore, SlateUI, SlateExport          | Reproducible builds, testable core                                                                         |
 
 Key services in SlateCore:
 
@@ -125,10 +125,13 @@ aliases: [Mara, The Courier]
 age: 34
 tags: [lead]
 ---
+
 ## Want
+
 To undo the night at the station.
 
 ## Secret
+
 She has already met her future self. See [[The Brass Key]].
 ```
 
@@ -157,14 +160,14 @@ The home screen is a library of project folders that can live anywhere on disk; 
 
 **Import**
 
-| Source | Becomes |
-| --- | --- |
-| An existing Slate folder | Added to the library in place (or copied, if chosen) |
-| `.zip` of a Slate project | Unzipped into the default folder, then added |
-| Fountain (`.fountain`) | New project; script converted to Slate's format, scene IDs assigned |
-| Final Draft (`.fdx`) | New project; elements, scene numbers and title page mapped |
-| A folder of Markdown (e.g. an Obsidian vault) | Copied into `universe/`; `[[links]]` kept, `.canvas` files kept |
-| Plain `.txt` / `.md` screenplay | Parsed with the Fountain rules |
+| Source                                        | Becomes                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------- |
+| An existing Slate folder                      | Added to the library in place (or copied, if chosen)                |
+| `.zip` of a Slate project                     | Unzipped into the default folder, then added                        |
+| Fountain (`.fountain`)                        | New project; script converted to Slate's format, scene IDs assigned |
+| Final Draft (`.fdx`)                          | New project; elements, scene numbers and title page mapped          |
+| A folder of Markdown (e.g. an Obsidian vault) | Copied into `universe/`; `[[links]]` kept, `.canvas` files kept     |
+| Plain `.txt` / `.md` screenplay               | Parsed with the Fountain rules                                      |
 
 Inside a project, the window has a sidebar (Universe, Script, Storyboard, Dictionary), the main editor, and an optional inspector on the right. Global shortcuts: Cmd-P quick open any file, Cmd-Shift-F search the whole project, Cmd-K insert a link, Cmd-Shift-O jump to scene.
 
@@ -204,10 +207,22 @@ Universe is where the film is thought through before and while it is written: a 
   "lanes": [{ "id": "mara", "name": "Mara", "note": "c-7f3a" }],
   "branches": [{ "id": "prime" }, { "id": "b2", "forksFrom": "e-07" }],
   "events": [
-    { "id": "e-07", "title": "Station fire", "world": "2031-03-14T22:10",
-      "lane": "mara", "branch": "prime", "scenes": ["s014"] },
-    { "id": "e-12", "title": "Mara arrives in 1998", "world": "1998-06-02T09:00",
-      "lane": "mara", "branch": "prime", "scenes": ["s003"] }
+    {
+      "id": "e-07",
+      "title": "Station fire",
+      "world": "2031-03-14T22:10",
+      "lane": "mara",
+      "branch": "prime",
+      "scenes": ["s014"]
+    },
+    {
+      "id": "e-12",
+      "title": "Mara arrives in 1998",
+      "world": "1998-06-02T09:00",
+      "lane": "mara",
+      "branch": "prime",
+      "scenes": ["s003"]
+    }
   ],
   "jumps": [{ "from": "e-07", "to": "e-12", "traveller": "mara" }]
 }
@@ -222,12 +237,12 @@ Universe is where the film is thought through before and while it is written: a 
 
 ## Script
 
-The script is plain text that follows the [Fountain](https://fountain.io/syntax) screenplay rules, with one Slate addition: a line starting with `#` is a scene heading, and that heading is what creates the scene in the storyboard.
+The script is plain text that follows the [Fountain](https://fountain.io/syntax) screenplay rules and with a scene converted that creates the scene in the storyboard.
 
 **Syntax**
 
 ```markdown
-# INT. KITCHEN - NIGHT {#s014}
+INT. KITCHEN - NIGHT {#s014}
 
 Rain hammers the window. MARA (34) stares at a brass key on the table.
 
@@ -266,7 +281,7 @@ CUT TO:
 
 **Margin** — a collapsible column to the right of the page with two tabs.
 
-*To-dos*
+_To-dos_
 
 - Add with Cmd-Shift-T at the cursor; the to-do is anchored to that scene (and optionally the selected words).
 - Stored as a Markdown task list, readable anywhere:
@@ -281,7 +296,7 @@ CUT TO:
 - Optional macOS notification for to-dos with a due date.
 - A project-wide to-do list view with filters (open, done, by scene, by due date).
 
-*Notes*
+_Notes_
 
 - Margin notes anchored to a scene or a selection, shown beside the line they belong to.
 - Notes can hold `[[links]]` back to the universe; hovering a link shows a preview of the note, clicking opens it in a side panel without leaving the script.
@@ -289,21 +304,22 @@ CUT TO:
 
 ```markdown
 ## @s014
+
 - "I haven't opened it yet" — she has, in the 1998 loop. See [[The Brass Key]] and [[Time Loop Rules]].
 ```
 
 **Publish** — output a production can use as is. The editor theme never affects Publish; it always uses the industry layout.
 
-| Element | Layout (US Letter, Courier Prime 12 pt, 6 lines per inch) |
-| --- | --- |
-| Page | Margins: left 1.5", right 1", top 1", bottom 1"; about 55 lines per page |
-| Page number | Top right, 0.5" from top, followed by a period; none on page 1 |
-| Scene heading | Left 1.5", ALL CAPS; scene numbers left and right in production drafts |
-| Action | 1.5" to 7.5" |
+| Element       | Layout (US Letter, Courier Prime 12 pt, 6 lines per inch)                 |
+| ------------- | ------------------------------------------------------------------------- |
+| Page          | Margins: left 1.5", right 1", top 1", bottom 1"; about 55 lines per page  |
+| Page number   | Top right, 0.5" from top, followed by a period; none on page 1            |
+| Scene heading | Left 1.5", ALL CAPS; scene numbers left and right in production drafts    |
+| Action        | 1.5" to 7.5"                                                              |
 | Character cue | Starts 3.7" from the left edge, ALL CAPS, with (V.O.) / (O.S.) / (CONT'D) |
-| Parenthetical | Starts 3.1", about 2" wide |
-| Dialogue | 2.5" to about 6" |
-| Transition | Right-aligned to 7.5" |
+| Parenthetical | Starts 3.1", about 2" wide                                                |
+| Dialogue      | 2.5" to about 6"                                                          |
+| Transition    | Right-aligned to 7.5"                                                     |
 
 - Page-break rules: no scene heading alone at a page foot; dialogue split across pages gets (MORE) at the bottom and CHARACTER (CONT'D) at the top; never break inside a parenthetical.
 - Title page from `title-page.md`: title, "written by", authors, draft date centred; contact bottom-left.
@@ -322,10 +338,22 @@ The storyboard mirrors the script: every `#` scene heading becomes a scene row a
 {
   "scene": "s014",
   "frames": [
-    { "file": "01.png", "duration": 3.0, "shot": "WS", "move": "static",
-      "caption": "Rain on the window", "scriptRange": "action-1" },
-    { "file": "02.mov", "in": 1.2, "out": 4.8, "shot": "CU",
-      "caption": "The key", "audio": true }
+    {
+      "file": "01.png",
+      "duration": 3.0,
+      "shot": "WS",
+      "move": "static",
+      "caption": "Rain on the window",
+      "scriptRange": "action-1"
+    },
+    {
+      "file": "02.mov",
+      "in": 1.2,
+      "out": 4.8,
+      "shot": "CU",
+      "caption": "The key",
+      "audio": true
+    }
   ]
 }
 ```
@@ -382,15 +410,15 @@ Themes are JSON files of named tokens; Light and Dark ship built in, and every c
 - Import / export `.slatetheme` files to share themes.
 - Themes change the editor and app only. Publish and print always use the industry layout.
 
-| Token group | What it controls |
-| --- | --- |
-| App chrome | Window and sidebar background, accent, selection, separators, toolbar |
-| Editor | Background, page colour, text, caret, selection, current-line highlight, line spacing, page width, spell-error underline |
-| Screenplay elements | Font, size, weight, colour, case and spacing for each of scene heading, action, character, parenthetical, dialogue, transition, centred, boneyard, scene-number chip |
-| Markdown | Body font, H1–H3, bold/italic, links, `[[wiki links]]`, broken links, code, quotes, task checkboxes |
-| Margin | To-do, done, overdue, note background, anchor highlight |
-| Canvas / timeline / map | Card fills by type, connector colours, lane colours, jump-arc colour, branch colours, pin styles |
-| Storyboard | Board background, frame border, selected frame, player overlay text |
+| Token group             | What it controls                                                                                                                                                     |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App chrome              | Window and sidebar background, accent, selection, separators, toolbar                                                                                                |
+| Editor                  | Background, page colour, text, caret, selection, current-line highlight, line spacing, page width, spell-error underline                                             |
+| Screenplay elements     | Font, size, weight, colour, case and spacing for each of scene heading, action, character, parenthetical, dialogue, transition, centred, boneyard, scene-number chip |
+| Markdown                | Body font, H1–H3, bold/italic, links, `[[wiki links]]`, broken links, code, quotes, task checkboxes                                                                  |
+| Margin                  | To-do, done, overdue, note background, anchor highlight                                                                                                              |
+| Canvas / timeline / map | Card fills by type, connector colours, lane colours, jump-arc colour, branch colours, pin styles                                                                     |
+| Storyboard              | Board background, frame border, selected frame, player overlay text                                                                                                  |
 
 ```json
 {
@@ -398,7 +426,12 @@ Themes are JSON files of named tokens; Light and Dark ship built in, and every c
   "base": "dark",
   "editor": { "background": "#14161A", "text": "#E6E2D8", "lineSpacing": 1.4 },
   "script": {
-    "sceneHeading": { "font": "Courier Prime", "size": 13, "weight": "bold", "color": "#F2C46D" },
+    "sceneHeading": {
+      "font": "Courier Prime",
+      "size": 13,
+      "weight": "bold",
+      "color": "#F2C46D"
+    },
     "character": { "color": "#9CC3FF" },
     "dialogue": { "font": "Courier Prime", "size": 13 }
   }
@@ -433,16 +466,16 @@ Testing throughout: SlateCore has unit tests for every parser and file format (r
 
 The spec picks a default for each of these; change them here before Milestone 1 if you want something different.
 
-| Decision | Default in this spec | Alternative |
-| --- | --- | --- |
-| App name | Slate (placeholder) | Your choice |
-| Scene heading marker | `#` line, plus auto-detected `INT./EXT.` | Pure Fountain (`#` = section, `.` forces a heading) |
-| Acts | Optional split into numbered files in `script/` | `## Act` headings inside one file |
-| Minimum macOS | 15 (Sequoia) | 26 (Tahoe) for the newest SwiftUI and Liquid Glass styling |
-| Distribution | Developer ID, unsandboxed | Mac App Store (sandboxed; needs bookmarks, already planned) |
-| Default page size | US Letter | A4 |
-| Storyboard storage | Scene folders + `frames.json` | One `.slateboard` package per scene |
-| Sketch pad | Simple built-in (pen, eraser, greys) | Import-only; draw in another app |
+| Decision             | Default in this spec                            | Alternative                                                 |
+| -------------------- | ----------------------------------------------- | ----------------------------------------------------------- |
+| App name             | Slate (placeholder)                             | Your choice                                                 |
+| Scene heading marker | `#` line, plus auto-detected `INT./EXT.`        | Pure Fountain                                               |
+| Acts                 | Optional split into numbered files in `script/` | `## Act` headings inside one file                           |
+| Minimum macOS        | 15 (Sequoia)                                    | 26 (Tahoe) for the newest SwiftUI and Liquid Glass styling  |
+| Distribution         | Developer ID, unsandboxed                       | Mac App Store (sandboxed; needs bookmarks, already planned) |
+| Default page size    | US Letter                                       | A4                                                          |
+| Storyboard storage   | Scene folders + `frames.json`                   | One `.slateboard` package per scene                         |
+| Sketch pad           | Simple built-in (pen, eraser, greys)            | Import-only; draw in another app                            |
 
 - [ ] Confirm the defaults above, or note changes
 - [ ] Pick the app name

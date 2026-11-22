@@ -56,50 +56,13 @@ public enum ScriptSpelling {
     }
 }
 
-/// Reads names from character notes (`universe/characters/*.md`) without a
-/// full YAML parser: just `name:` and `aliases:` in the frontmatter.
+/// Names from character notes (`universe/characters/*.md`): the
+/// frontmatter `name:` and `aliases:`, for autocomplete and spell check.
 public enum CharacterNotes {
     public static func names(inNote text: String) -> [String] {
-        let lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map(String.init)
-        guard lines.first?.trimmingCharacters(in: .whitespaces) == "---" else { return [] }
-        var names: [String] = []
-        var inAliasList = false
-        for line in lines.dropFirst() {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed == "---" || trimmed == "..." { break }
-            if inAliasList {
-                if trimmed.hasPrefix("- ") {
-                    names.append(unquote(String(trimmed.dropFirst(2))))
-                    continue
-                }
-                inAliasList = false
-            }
-            if let value = value(of: "name", in: trimmed) {
-                if !value.isEmpty { names.append(unquote(value)) }
-            } else if let value = value(of: "aliases", in: trimmed) {
-                if value.hasPrefix("[") {
-                    let inner = value.dropFirst().prefix { $0 != "]" }
-                    names += inner.split(separator: ",").map { unquote($0.trimmingCharacters(in: .whitespaces)) }
-                } else if value.isEmpty {
-                    inAliasList = true
-                } else {
-                    names.append(unquote(value))
-                }
-            }
-        }
-        return names.filter { !$0.isEmpty }
-    }
-
-    private static func value(of key: String, in line: String) -> String? {
-        guard line.hasPrefix(key + ":") else { return nil }
-        return line.dropFirst(key.count + 1).trimmingCharacters(in: .whitespaces)
-    }
-
-    private static func unquote(_ text: String) -> String {
-        var text = text
-        if text.count >= 2, let first = text.first, first == "\"" || first == "'", text.last == first {
-            text = String(text.dropFirst().dropLast())
-        }
-        return text
+        guard let fields = try? Frontmatter.fields(in: text) else { return [] }
+        let name = fields.first { $0.key == "name" }?.value.text ?? ""
+        let aliases = fields.first { $0.key == "aliases" }?.value.items ?? []
+        return ([name] + aliases).filter { !$0.isEmpty }
     }
 }

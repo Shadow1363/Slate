@@ -52,6 +52,11 @@ final class ScriptWorkspace {
     @ObservationIgnored private var paginationTask: Task<Void, Never>?
     /// The row a reveal came from, so the navigator doesn't reveal it twice.
     @ObservationIgnored var lastRevealedRow: String?
+    /// Links: the project's link graph, and what ⌘-click on a link does.
+    @ObservationIgnored var linkGraph: () -> LinkGraph = { .empty }
+    @ObservationIgnored var followLink: (String) -> Bool = { _ in false }
+    /// Told about every edit to an act file, for the link index.
+    @ObservationIgnored var textDidChange: ((String, String) -> Void)?
 
     static let titlePagePath = "script/title-page.md"
 
@@ -199,6 +204,7 @@ final class ScriptWorkspace {
     /// Lets the editor share its fresh parse instead of parsing twice.
     func cache(_ parsed: ParsedScript, text: String, for path: String) {
         parseCache[path] = (text, parsed)
+        textDidChange?(path, text)
     }
 
     var completionSources: ScriptCompletion.Sources {
@@ -244,6 +250,14 @@ final class ScriptWorkspace {
         reveal = RevealRequest(file: scene.file, location: location, focus: focus)
     }
 
+    /// Shows an act file with the caret at a UTF-16 location.
+    func reveal(file path: String, location: Int, focus: Bool = true) {
+        showingTitlePage = false
+        showingPages = false
+        currentFile = path
+        reveal = RevealRequest(file: path, location: location, focus: focus)
+    }
+
     static func row(for scene: ScriptBook.Scene) -> String {
         "scene:" + (scene.scene.sceneID ?? scene.id)
     }
@@ -267,6 +281,24 @@ final class ScriptWorkspace {
         if let scene = book.scenes.filter({ $0.file == caret.file }).dropFirst(target).first {
             reveal(scene, focus: true)
         }
+    }
+
+    /// Adds `# HEADING {#sNNN}` at the end of the last act file (Rough draft
+    /// › Turn into Scene). Returns the file it went into.
+    @discardableResult
+    func appendSceneStub(heading: String) -> String? {
+        if scriptFiles.isEmpty { createScriptFile() }
+        guard let path = scriptFiles.last?.relativePath, let document = store.documents[path] ?? (try? store.document(at: path)) else { return nil }
+        let id = ScriptBook.nextSceneID(existing: book.sceneIDs)
+        let title = heading.trimmingCharacters(in: .whitespaces).uppercased()
+        var text = document.text
+        if !text.isEmpty, !text.hasSuffix("\n") { text += "\n" }
+        if !text.isEmpty, !text.hasSuffix("\n\n") { text += "\n" }
+        let stub = "# \(title) {#\(id)}\n"
+        let location = (text as NSString).length + 2 + (title as NSString).length
+        document.text = text + stub
+        reveal(file: path, location: location)
+        return path
     }
 
     func createScriptFile() {

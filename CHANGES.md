@@ -1,5 +1,79 @@
 # Changes
 
+## Milestone 4 — Universe notes (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 199 pass: 153 in SlateCore, 30 in SlateUI and 16 in SlateExport.
+**Dependencies:** Yams 6.2.2 and swift-markdown 0.9.0, both used only by SlateCore and pinned exactly.
+
+### What works
+- **Universe area:**
+  - The navigator shows the rough draft with its heading outline, then notes grouped by type with backlink counts, then any other files.
+  - + (or ⌘N) makes a note from a template, with the name field ready to type.
+  - Right-click a note for Rename…, Show in Finder or Move to Trash.
+- **Templates:**
+  - Seven built-ins: Character, Location, Rule, Faction, Item, Event, Freeform.
+  - A template is a plain `.md` file with a `fields:` map and starter headings.
+  - Copies in project `templates/` or `~/Library/Application Support/Slate/Templates/` override built-ins of the same type.
+- **Note form:**
+  - The name, plus each template field: text, number, date (with a calendar), list (as chips), link (with suggestions and an open button) and image (copied next to the note, with a thumbnail).
+  - Keys that aren't in the template still show, in italics.
+  - Each edit rewrites only that key's lines, keeping comments, key order and quoting. Unchanged files stay byte-identical.
+  - If the YAML is broken, the file opens as plain text with a warning, and nothing is hidden.
+- **Markdown editor** (styled source, TextKit 2):
+  - Headings at theme sizes; bold, italic, strikethrough and code styled; markers dimmed; quotes, lists, task lists and code blocks styled.
+  - Return continues a list.
+  - Spell check skips links and code.
+  - Only changed lines are restyled while typing.
+  - For notes it edits only the body, below the form.
+- **Links:**
+  - `[[Name]]`, `[[Name|shown]]` and `[[Name#Heading]]` are tinted chips. Unresolved links are red with a dashed underline.
+  - Typing `[[` suggests names and aliases: ↑/↓ choose, Return or Tab insert, Esc dismisses. ⌘K inserts a link.
+  - ⌘-click opens the target. An unresolved link offers to create the note, with its name already filled in.
+  - The same works in the script editor.
+- **LinkIndex:**
+  - Resolves by name, then alias, then file name, ignoring case and accents.
+  - Indexes notes, dictionary terms, act files (each link tied to its scene), margin notes and the draft.
+  - Unsaved edits count after a short pause.
+  - Its cache in `.slate/index/links.json` can be deleted at any time.
+- **Links inspector** (⌥⌘0):
+  - Backlinks with context; clicking one jumps to that line or scene.
+  - For a character, the scenes they speak in, with speech counts.
+  - Unresolved links in the note, each with a Create… button.
+- **Rename:**
+  - Shows a sheet: "Update N links in M files?", with a preview of each edit.
+  - Update Links / Rename Only / Cancel.
+  - The file follows the new name, and the `id` stays the same.
+  - Alias links and links in code are left alone. Open documents change in memory; closed files are rewritten atomically.
+- **Find in Project (⇧⌘F):**
+  - Ignores case and accents; `"quotes"` give an exact phrase.
+  - Results are grouped by file, with the match highlighted. Return opens the note or act file at the match.
+  - Searches unsaved edits too.
+- **Quick Open (⌘P):** fuzzy matching over note names, aliases, scenes and files.
+- **Rough draft:**
+  - Its outline is in the sidebar; click a heading to jump to it.
+  - Right-click › Turn into Scene appends `# HEADING {#sNNN}` to the last act file.
+- **Files:**
+  - Notes are moved with NSFileCoordinator when renamed, and Move to Trash never deletes outright.
+  - Outside edits reload the form and the body like any other file.
+- **Sample project:** now has The Brass Key (item), The Station (location), Loop Rules (rule, with a hand-written YAML comment), alias and unresolved links, a script link, and a project Character template.
+
+### Stubbed or not yet
+- Dragging draft headings onto a canvas waits for the canvas (Milestone 7). Canvas, timeline and map files appear under "Other Files".
+- Dictionary terms are indexed as link targets, but the Dictionary area is still a file list (Milestone 6).
+- The list field edits chips; you can't drag them to reorder yet.
+- Link suggestions rank by prefix, then name order, not by recent use.
+- Rename doesn't merge two notes, and renaming to an existing name is allowed (links then resolve to the first by path).
+- Search is plain text; there's no regex or replace.
+- Not checked by hand yet, since I can't drive the UI here. Please try these:
+  1. Open the sample project and press ⌘1. Mara Voss opens as a form with the body below.
+  2. Change Age, then check the file in another editor: only that line changed.
+  3. In the draft, type `[[Br`, accept "The Brass Key", then ⌘-click it.
+  4. Open the inspector (⌥⌘0) on The Brass Key. You should see Mara's note, the kitchen scene, the margin note and the draft.
+  5. Rename The Station and accept Update Links.
+  6. Search with ⇧⌘F for "rain", and open a scene with ⌘P.
+  7. Edit a note in VS Code while it's open, and watch the form reload.
+
 ## Milestone 3 — Pagination and Publish (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

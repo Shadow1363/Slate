@@ -260,6 +260,63 @@ public final class ProjectStore {
         }
     }
 
+    // MARK: - Moving, trashing and multi-file edits
+
+    /// Moves a file inside the project. An open document is saved first and
+    /// reopened at its new path, which is returned.
+    @discardableResult
+    public func moveFile(from source: String, to destination: String) throws -> TextDocument? {
+        let from = try url(for: source)
+        let to = try url(for: destination)
+        guard !FileManager.default.fileExists(atPath: to.path) || from.path.lowercased() == to.path.lowercased() else {
+            throw CocoaError(.fileWriteFileExists, userInfo: [NSFilePathErrorKey: to.path])
+        }
+        let open = documents[source]
+        if let open {
+            if open.isDirty, open.diskState == .inSync { write(open) }
+            open.autosaveTask?.cancel()
+            documents[source] = nil
+        }
+        try CoordinatedFileIO.move(from, to: to, presenter: watcher.filePresenter)
+        rescan()
+        guard let open else { return nil }
+        let moved = try document(at: destination)
+        // Keep edits that couldn't be saved (a conflict) in the new buffer.
+        if moved.text != open.text { moved.text = open.text }
+        return moved
+    }
+
+    /// Moves a file to the Trash and closes its document.
+    public func trashFile(_ relativePath: String) throws {
+        if let open = documents[relativePath] {
+            open.autosaveTask?.cancel()
+            documents[relativePath] = nil
+        }
+        try CoordinatedFileIO.trash(try url(for: relativePath), presenter: watcher.filePresenter)
+        rescan()
+    }
+
+    /// Applies text edits across files: open documents change in memory (and
+    /// autosave as usual), closed files are rewritten atomically. Each edit's
+    /// `original` must still be at its range, or that file is left alone.
+    /// Returns the paths that changed.
+    @discardableResult
+    public func applyEdits(_ edits: [FileEdit]) throws -> [String] {
+        var changed: [String] = []
+        for (path, fileEdits) in Dictionary(grouping: edits, by: \.path).sorted(by: { $0.key < $1.key }) {
+            let text = try readText(at: path)
+            guard let updated = FileEdit.apply(fileEdits, to: text), updated != text else { continue }
+            if let open = documents[path] {
+                open.text = updated
+            } else {
+                try CoordinatedFileIO.writeText(updated, to: try url(for: path), presenter: watcher.filePresenter)
+            }
+            changed.append(path)
+        }
+        if !changed.isEmpty { rescan() }
+        return changed
+    }
+
     // MARK: - Manifest
 
     /// Changes `project.json` (atomically, keeping unknown keys).

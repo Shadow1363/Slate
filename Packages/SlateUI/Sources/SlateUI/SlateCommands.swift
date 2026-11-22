@@ -1,3 +1,4 @@
+import AppKit
 import SlateCore
 import SlateExport
 import SwiftUI
@@ -14,17 +15,31 @@ public struct SlateCommands: Commands {
 
     public var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("New Project…") {
-                openWindow(id: SlateWindowID.home)
-                model.showingNewProject = true
+            // ⌘N makes a note inside a project window, a project elsewhere.
+            if actions != nil {
+                Button("New Note…") { actions?.newNote() }
+                    .keyboardShortcut("n")
+                Button("New Project…") {
+                    openWindow(id: SlateWindowID.home)
+                    model.showingNewProject = true
+                }
+                .keyboardShortcut("n", modifiers: [.command, .option])
+            } else {
+                Button("New Project…") {
+                    openWindow(id: SlateWindowID.home)
+                    model.showingNewProject = true
+                }
+                .keyboardShortcut("n")
             }
-            .keyboardShortcut("n")
             Button("Open Folder…") {
                 if let url = model.chooseProjectFolder() {
                     openWindow(id: SlateWindowID.project, value: url)
                 }
             }
             .keyboardShortcut("o")
+            Button("Quick Open…") { actions?.quickOpen() }
+                .keyboardShortcut("p")
+                .disabled(actions == nil)
             Button("Import Screenplay…") {
                 if let url = model.importScreenplay() {
                     openWindow(id: SlateWindowID.project, value: url)
@@ -43,7 +58,7 @@ public struct SlateCommands: Commands {
                 .disabled(actions == nil)
         }
         CommandGroup(replacing: .printItem) {
-            // ⌘P is Quick Open (Milestone 4), so Print uses ⌥⌘P.
+            // ⌘P is Quick Open, so Print uses ⌥⌘P.
             Button("Print Script…") { actions?.printScript() }
                 .keyboardShortcut("p", modifiers: [.command, .option])
                 .disabled(actions == nil)
@@ -72,12 +87,25 @@ public struct SlateCommands: Commands {
                 .keyboardShortcut(.downArrow, modifiers: [.command, .control])
                 .disabled(actions == nil)
         }
+        CommandGroup(after: .textEditing) {
+            Divider()
+            Button("Find in Project…") { actions?.findInProject() }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Button("Insert Link") {
+                NSApp.sendAction(#selector(SlateTextView.insertWikiLink(_:)), to: nil, from: nil)
+            }
+            .keyboardShortcut("k")
+        }
         CommandGroup(before: .sidebar) {
             ForEach(ProjectArea.allCases) { area in
                 Button(area.title) { actions?.selectArea(area) }
                     .keyboardShortcut(KeyEquivalent(Character(String(area.shortcutNumber))), modifiers: .command)
                     .disabled(actions == nil)
             }
+            Button("Toggle Links Inspector") { actions?.toggleInspector() }
+                .keyboardShortcut("0", modifiers: [.command, .option])
+                .disabled(actions == nil)
             Divider()
         }
     }
