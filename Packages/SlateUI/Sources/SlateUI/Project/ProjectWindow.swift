@@ -242,12 +242,20 @@ struct ProjectContent: View {
         }
         .onChange(of: model.jumpRequests[SlateAppModel.key(store.rootURL)], initial: true) { _, request in
             guard request != nil, let jump = model.takeJump(for: store.rootURL) else { return }
-            session.area = .script
-            if let id = jump.sceneID { session.script.reveal(sceneID: id, quote: jump.quote) }
+            if let path = jump.path, let range = jump.range {
+                // A TODO: comment: open its file with the comment selected.
+                session.open(path, location: range.location)
+                if path.hasPrefix(ProjectLayout.universe + "/") {
+                    session.noteReveal = RevealRequest(file: path, location: range.location, focus: true, length: range.length)
+                }
+            } else {
+                session.area = .script
+                if let id = jump.sceneID { session.script.reveal(sceneID: id, quote: jump.quote) }
+            }
         }
-        .onChange(of: session.script.margin.todosText) { _, text in
-            model.reschedule(root: store.rootURL, todos: MarginTodos.parse(text))
-        }
+        // Margin to-dos, and TODO: comments in notes and the script (the link index updates as you type).
+        .onChange(of: session.script.margin.todosText) { model.reschedule(root: store.rootURL) }
+        .onChange(of: session.links.version) { model.reschedule(root: store.rootURL) }
         .onChange(of: store.files) { session.filesChanged() }
         .onChange(of: store.externalChangeCount) { session.contentsChanged() }
         .onChange(of: session.dictionary.projectText) { session.dictionary.refresh() }

@@ -59,7 +59,7 @@ SwiftUI for the app shell and most views, AppKit for the parts that need the ful
 | Canvas, timeline, map | SwiftUI `Canvas` + gestures, custom layout                                      | Smooth zoom/pan at hundreds of nodes                                                                       |
 | PDF                   | Own pagination engine, drawn with Core Text into a PDF context                  | Exact control over screenplay page breaks                                                                  |
 | Animatic              | AVFoundation (`AVMutableComposition`, `AVPlayer`, `AVAssetExportSession`)       | Plays images and clips as one timeline, exports .mov                                                       |
-| Reminders             | `UserNotifications` + an on-launch sheet                                        | To-dos surface when you open the app                                                                       |
+| Reminders             | `UserNotifications` + Home › Pending                                            | Every open to-do in one list, a click from where it was written                                            |
 | Speech to text        | SlateVoice package: Apple Speech (on-device), whisper.cpp (an optional download, opened at run time), or OpenAI's transcription API | Apple works offline with nothing to download; Whisper and OpenAI are opt-in |
 | Project file          | XcodeGen `project.yml`; Swift packages SlateCore, SlateUI, SlateExport, SlateVoice | Reproducible builds, testable core                                                                         |
 
@@ -149,7 +149,8 @@ The home screen is a library of project folders that can live anywhere on disk; 
 
 **Layout**
 
-- Sidebar: All Projects, Recent, Pinned, and Watched Folders (any folder Slate scans for projects; default `~/Documents/Slate`).
+- Sidebar: All Projects, Recent, Pinned, **Pending**, and Watched Folders (any folder Slate scans for projects; default `~/Documents/Slate`; the + to add one sits right after the heading).
+- **Pending** lists every open to-do in the library (margin to-dos and `TODO:` comments), grouped by project, dated ones first, with a badge of the count (red when any is overdue). Each row shows the words, where they are (scene heading or note name) and the due date; All / Overdue / Due This Week, and the toolbar search filters it. Clicking a row opens the project at that scene or note with the comment selected; the circle marks it done. It replaces the launch sheet.
 - Main grid of project cards: cover image (first storyboard frame or a chosen image), title, last edited, page count, estimated runtime, open to-dos count.
 - Toolbar: New Project, Open Folder, Import, search, grid/list toggle.
 - Right-click a card: Show in Finder, Rename, Duplicate, Export as .zip, Remove from Library (keeps files), Move to Trash.
@@ -312,8 +313,10 @@ _To-dos_
 - [x] Rename the courier @s021
 ```
 
-- On launch: a sheet lists open to-dos (overdue first) for the last project, or all projects, with "Go to scene" and "Done". Setting: Off / Last project / All projects.
-- Optional macOS notification for to-dos with a due date.
+- **TODO comments:** a comment whose words start with `TODO:` is a to-do, written where the work is. In the script only Fountain's `/* TODO: … */` counts (it never prints); in notes and the draft, `%% TODO: … %%` (Obsidian) or `<!-- TODO: … -->`. They can span lines and take `due:YYYY-MM-DD`. A script comment belongs to the scene it sits in. Ticking one (margin, Pending, or right-click › Mark To-do Done in the editor) changes `TODO:` to `DONE:` in place. Notes dim their comments and pick out the `TODO`/`DONE` word. ⇧⌘T in a note writes `%% TODO:  %%` at the caret; in the script it still adds a margin to-do. Comments in revisions, the title page and the margin files aren't read.
+- The margin's To-dos tab lists the script's TODO comments under their own heading, following the same scope and filter.
+- Every open to-do is listed in Home › Pending (see Home). There is no launch sheet.
+- Optional macOS notification for to-dos (margin or comment) with a due date; clicking it opens the scene, or the note at the comment.
 - A project-wide to-do list view with filters (open, done, by scene, by due date).
 
 _Notes_
@@ -501,7 +504,7 @@ Thirteen milestones, ordered so the script is writable and printable early and t
 3. **Pagination and Publish** — page engine, Page view, PDF export with title page, (MORE)/(CONT'D), timings in eighths, Fountain and FDX import/export.
    - Done when: a Fountain sample script exports to a PDF whose page breaks match Final Draft or Highland within a line or two.
 4. **Universe notes** — Markdown editor, templates with frontmatter forms, `[[links]]` with autocomplete, LinkIndex, backlinks, rename-refactor, project search, quick open.
-5. **Margin** — anchored to-dos and notes, link previews, launch-reminder sheet, due-date notifications, project to-do list.
+5. **Margin** — anchored to-dos and notes, link previews, TODO comments, Home › Pending, due-date notifications, project to-do list.
 6. **Dictionary** — the `words.md` book (A–Z, search, meanings, links), merged spell-check ignore lists, hover definitions, Look Up / Define panel.
 7. **Canvas** — JSON Canvas read/write, cards, connections, groups, zoom/pan, minimap.
 8. **Timeline and map** — lanes, branches, jumps, the three views, continuity warnings; map layers, pins, regions, links.

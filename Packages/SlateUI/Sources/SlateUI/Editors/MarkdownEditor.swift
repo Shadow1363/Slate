@@ -58,6 +58,8 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
     private var lastRevealToken: UUID?
     /// The whole file as last handed to the document.
     private var syncedText = ""
+    /// Comments styled by the last pass, to restore lines that stop being one.
+    private var commentRanges: [NSRange] = []
     private var programmatic = false
     private var frameObserver: (any NSObjectProtocol)?
     private(set) var terms: TermDecorator!
@@ -99,6 +101,11 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
         }
         completion.graph = { [weak self] in self?.config.session?.links.graph ?? .empty }
         textView.previewForLink = { [weak self] target in self?.config.session?.linkPreview(target) }
+        // Right-click inside a `%% TODO: … %%` comment ticks it.
+        textView.extraMenuItems = { [weak textView] index in
+            guard let textView else { return [] }
+            return CommentTodoEditing.menuItems(at: index, in: textView, script: false)
+        }
         terms = TermDecorator(textView: textView)
         terms.protectedRanges = { [weak self] in self?.protectedRanges ?? [] }
         config.session?.dictionaryActions(inScript: false).install(in: textView, decorator: terms)
@@ -265,7 +272,36 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
             guard range.length > 0 else { continue }
             style(scanned[index], in: range, storage: storage)
         }
+        styleComments(text, storage: storage)
         storage.endEditing()
+    }
+
+    /// `%% … %%` and `<!-- … -->` comments, which can span lines: dimmed, with
+    /// a `TODO:`/`DONE:` word picked out. Lines that were in a comment and
+    /// no longer are get their normal style back.
+    private func styleComments(_ text: NSString, storage: NSTextStorage) {
+        let found = CommentTodos.noteComments(in: text as String)
+        let ranges = found.map(\.range)
+        for old in commentRanges where !ranges.contains(old) {
+            for (index, lineRange) in lineRanges.enumerated() where index < lines.count {
+                var range = lineRange
+                if NSMaxRange(range) < text.length { range.length += 1 }
+                guard range.length > 0, NSIntersectionRange(range, old).length > 0 || NSLocationInRange(old.location, range) else { continue }
+                style(lines[index], in: range, storage: storage)
+            }
+        }
+        commentRanges = ranges
+        let markdown = theme.markdown
+        for comment in found where NSMaxRange(comment.range) <= text.length {
+            storage.addAttribute(.foregroundColor, value: NSColor(markdown.quote).withAlphaComponent(0.75), range: comment.range)
+            if let marker = comment.marker, NSMaxRange(marker) <= text.length {
+                let font = storage.attribute(.font, at: marker.location, effectiveRange: nil) as? NSFont ?? NSFont.systemFont(ofSize: markdown.size)
+                storage.addAttributes([
+                    .foregroundColor: NSColor(markdown.checkbox),
+                    .font: NSFontManager.shared.convert(font, toHaveTrait: .boldFontMask),
+                ], range: marker)
+            }
+        }
     }
 
     private func style(_ line: MarkdownSyntax.Line, in range: NSRange, storage: NSTextStorage) {

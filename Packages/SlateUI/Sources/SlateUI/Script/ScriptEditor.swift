@@ -120,7 +120,10 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         terms = TermDecorator(textView: textView)
         terms.protectedRanges = { [weak self] in self?.protectedRanges ?? [] }
         config.workspace.dictionaryActions.install(in: textView, decorator: terms)
-        textView.extraMenuItems = { [weak self] index in self?.storyboardMenuItems(at: index) ?? [] }
+        textView.extraMenuItems = { [weak self] index in
+            guard let self else { return [] }
+            return CommentTodoEditing.menuItems(at: index, in: self.textView, script: true) + self.storyboardMenuItems(at: index)
+        }
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main

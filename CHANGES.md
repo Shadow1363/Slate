@@ -1,5 +1,15 @@
 # Changes
 
+## TODO comments and Pending (2026-11-23)
+
+- **TODO comments.** Write `/* TODO: … */` in the script, or `%% TODO: … %%` / `<!-- TODO: … -->` in a note or the draft. Add `due:2026-12-01` if it has a date. ⇧⌘T in a note writes one at the caret. Notes dim comments and pick out the TODO word. Right-click one › **Mark To-do Done** turns it into `DONE:`.
+- **The margin** lists the script's TODO comments under their own heading, with tick boxes.
+- **Pending** in the library sidebar lists every open to-do in every project, with a count (red if any are overdue). Click one to open the project right there; tick it to finish it. Filter All / Overdue / Due This Week, or search. **The launch sheet is gone.**
+- **Due-date notifications** cover TODO comments too; clicking one opens the note at the comment.
+- The **+** for watched folders now sits right after "Watched Folders".
+- Project cards count TODO comments in "open to-dos".
+- Fixed while building: scanning a project could mangle file paths when the folder was reached through `/var` vs `/private/var`; paths now come straight from the file system.
+
 ## Areas from the title menu (2026-11-23)
 
 - **No more area column.** The window's title (**Universe ▾**) opens a menu of Universe, Script, Storyboard and Dictionary, each with its icon, the current one ticked. The title itself has no icon. ⌘1–⌘4 still switch.

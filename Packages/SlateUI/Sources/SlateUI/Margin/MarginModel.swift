@@ -103,6 +103,34 @@ final class MarginModel {
     }
 
     /// To-dos for the list, after scope, filter and order.
+    /// `/* TODO: */` comments in these script files (the open film's), per the scope and filter.
+    func visibleCommentTodos(files: [String], currentScene: String?) -> [CommentTodo] {
+        var list = files.flatMap { path in
+            (try? store.readText(at: path)).map { CommentTodos.scan(text: $0, path: path) } ?? []
+        }
+        if scope == .scene { list = list.filter { $0.sceneID != nil && $0.sceneID == currentScene } }
+        switch filter {
+        case .open: list = list.filter { !$0.done }
+        case .done: list = list.filter(\.done)
+        case .all: break
+        }
+        return list
+    }
+
+    /// Ticks a `TODO:` comment through its open document.
+    func toggle(_ todo: CommentTodo) {
+        do {
+            let document = try store.document(at: todo.path)
+            guard let updated = CommentTodos.toggling(todo, in: document.text) else {
+                error = "That comment changed since it was shown. The list has been refreshed."
+                return
+            }
+            document.text = updated
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
     func visibleTodos(currentScene: String?, sceneOrder: [String]) -> [MarginTodo] {
         var list = todos
         if scope == .scene { list = list.filter { $0.sceneID != nil && $0.sceneID == currentScene } }

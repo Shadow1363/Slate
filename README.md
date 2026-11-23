@@ -87,7 +87,8 @@ Tests use Swift Testing and work on temp copies of the sample project in `Fixtur
 - **Welcome window** on launch (turn it off in its corner or Settings › General; Help › Welcome to Slate brings it back): open the sample film, start a project, or open a folder.
 - **Cards or a list** (the toolbar switch). Cards show the cover, last edit, length (`12 pp · 11 min`) and open to-dos.
 - **Right-click a project:** Open, Show in Finder, Pin, Rename…, Duplicate, Export as .zip…, Remove from Library (files stay), Move to Trash….
-- **Watched folders:** the + beside "Watched Folders" (or Settings › Library) adds a folder; Slate lists every project inside it. Right-click › Stop Watching.
+- **Pending** (in the sidebar, with a count) lists every open to-do in every project: margin to-dos and `TODO:` comments. Click one to open the project right there; click its circle to mark it done. Filter All / Overdue / Due This Week, or search.
+- **Watched folders:** the + right after "Watched Folders" (or Settings › Library) adds a folder; Slate lists every project inside it. Right-click › Stop Watching.
 - **Import…** (⇧⌘I or Home's Import button) takes a Slate project folder (added in place or copied), a project `.zip`, a screenplay (Fountain, Final Draft, text, Markdown), or a folder of Markdown notes such as an Obsidian vault, which becomes a project with its notes in `universe/` (links, canvases and attachments kept; `.obsidian` left out).
 
 ## Showcase project
@@ -154,7 +155,11 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **Files:** to-dos are a Markdown task list in `script/margin/todos.md`, e.g. `- [ ] "I haven't opened it yet" — make it land @s014 due:2026-12-01`. Notes are list items under `## @s014` headings in `script/margin/notes.md`. Both read fine in any editor, and outside edits reload.
 - **All to-dos:** set the To-dos tab to All, then filter (Open / Done / All) and order (By Scene / By Due Date) from its menu. Script › Show All To-dos jumps straight there.
 - **Links:** hovering a `[[link]]` in the script or a note shows a preview. ⌘-click in the script, or a click in the margin, opens the note in the margin, so you never leave the scene.
-- **At launch,** a sheet lists open to-dos (overdue first) with Go to Scene and Done. **Settings › Reminders** chooses Off / Last project / All projects and turns due-date notifications (at 9:00) on or off.
+- **TODO comments:** write a to-do where the work is, as a comment starting with `TODO:`. In the script: `/* TODO: tighten this exchange due:2026-12-01 */` (never printed). In a note or the draft: `%% TODO: check the 1987 dates %%` or `<!-- TODO: … -->`; ⇧⌘T in a note writes one at the caret. Right-click one › Mark To-do Done (or tick it in the margin or Pending) and it becomes `DONE:`. The margin lists the script's TODO comments too.
+
+  ![A TODO comment in a note](docs/screenshots/todo-comment.png)
+
+- **Pending** in the library lists every open to-do; there's no launch sheet any more. **Settings › Reminders** turns due-date notifications (at 9:00) on or off.
 
 ## Universe notes
 
@@ -324,7 +329,7 @@ Every menu shortcut can be changed in **Settings › Shortcuts**: click one, pre
 | ⌘A, ⌘-click | Storyboard: select every frame in a row, or add one to the selection |
 | ⌥⌘↩ | Watch the animatic |
 | Space, ← / →, ⌥← / ⌥→ | Player: play/pause, previous/next frame, previous/next scene |
-| ⇧⌘T | Add to-do at the caret |
+| ⇧⌘T | Add to-do at the caret (script: margin to-do; note: `%% TODO:  %%` comment) |
 | ⌥⌘T | Add margin note at the caret |
 | ⇧⌘M | Show / hide the margin |
 | ⌘O | Open a project folder |

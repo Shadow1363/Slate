@@ -2,12 +2,13 @@ import Foundation
 import SlateCore
 @preconcurrency import UserNotifications
 
-/// Due-date notifications for margin to-dos, through UserNotifications.
+/// Due-date notifications for to-dos (margin and `TODO:` comments), through UserNotifications.
 /// Only used inside the app bundle (the notification centre needs one).
 @MainActor
 final class ReminderScheduler: NSObject, UNUserNotificationCenterDelegate {
-    /// Called when a notification is clicked: project folder and scene ID.
-    var onOpen: ((URL, String?) -> Void)?
+    /// Called when a notification is clicked: project folder, scene ID, and
+    /// for a comment to-do its file and position.
+    var onOpen: ((URL, String?, String?, Int?) -> Void)?
 
     private let center = UNUserNotificationCenter.current()
     static let prefix = "todo|"
@@ -35,7 +36,12 @@ final class ReminderScheduler: NSObject, UNUserNotificationCenterDelegate {
             content.title = reminder.title
             content.body = reminder.body
             content.sound = .default
-            content.userInfo = ["project": reminder.projectPath, "scene": reminder.sceneID ?? ""]
+            var info: [String: Any] = ["project": reminder.projectPath, "scene": reminder.sceneID ?? ""]
+            if let path = reminder.path, let location = reminder.location {
+                info["path"] = path
+                info["location"] = location
+            }
+            content.userInfo = info
             let trigger = UNCalendarNotificationTrigger(dateMatching: reminder.fireDate, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: reminder.id, content: content, trigger: trigger))
         }
@@ -52,10 +58,12 @@ final class ReminderScheduler: NSObject, UNUserNotificationCenterDelegate {
         let info = response.notification.request.content.userInfo
         let path = info["project"] as? String
         let scene = (info["scene"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let file = info["path"] as? String
+        let location = info["location"] as? Int
         completionHandler()
         guard let path else { return }
         Task { @MainActor in
-            self.onOpen?(URL(filePath: path, directoryHint: .isDirectory), scene)
+            self.onOpen?(URL(filePath: path, directoryHint: .isDirectory), scene, file, location)
         }
     }
 
