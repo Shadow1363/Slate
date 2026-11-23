@@ -446,7 +446,13 @@ Two ways to write by speaking, both in the SlateVoice package.
 
 ## Theme system
 
-Themes are JSON files of named tokens; Light and Dark ship built in, and every colour, font and spacing value can be overridden in a theme editor with live preview.
+Themes are JSON files of named tokens; four ship built in, and every colour, font and spacing value can be overridden in a theme editor with live preview:
+
+- **Light** and **Dark**, the defaults.
+- **Manuscript** (light, based on Light): a typed-manuscript look, with warm paper and ink colours, Courier Prime for the script *and* notes, and looser 1.35 line spacing.
+- **Midnight** (dark, based on Dark): near-black backgrounds, soft off-white text and a muted indigo accent, for long sessions at night.
+
+A built-in theme may build on another with `base`, storing only what differs.
 
 - Location: `~/Library/Application Support/Slate/Themes/*.slatetheme` (JSON). Built-ins are read-only; "Duplicate" makes an editable copy.
 - Appearance setting: Light, Dark, or Follow System, with a chosen theme for each.

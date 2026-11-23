@@ -1,0 +1,65 @@
+{
+  "name": "Midnight",
+  "base": "Dark",
+  "appearance": "dark",
+  "chrome": {
+    "accent": "#8C9CFF",
+    "selection": "#252B47",
+    "separator": "#22242B",
+    "sidebarBackground": "#0F1014",
+    "toolbar": "#0B0C0F",
+    "windowBackground": "#0B0C0F"
+  },
+  "editor": {
+    "background": "#0B0C0F",
+    "caret": "#8C9CFF",
+    "currentLine": "#14151A",
+    "page": "#121318",
+    "selection": "#252B47",
+    "spellError": "#E5675C",
+    "termUnderline": "#9C8BD9",
+    "text": "#CFCBC2"
+  },
+  "markdown": {
+    "brokenLink": "#E5675C",
+    "checkbox": "#8C9CFF",
+    "codeBackground": "#16171D",
+    "emphasis": "#DEDAD2",
+    "heading": "#E4E0D8",
+    "link": "#8C9CFF",
+    "quote": "#7D7A74",
+    "text": "#CFCBC2",
+    "wikiLink": "#B3A0F0"
+  },
+  "margin": {
+    "anchorHighlight": "#3A3218",
+    "done": "#55534E",
+    "noteBackground": "#1F1C12",
+    "overdue": "#E5675C",
+    "todo": "#CFCBC2"
+  },
+  "canvas": {
+    "connector": "#6C6A66",
+    "groupFill": "#8C9CFF14",
+    "imageCard": "#15161B",
+    "noteCard": "#161C2E",
+    "sceneCard": "#231A14",
+    "textCard": "#15161B"
+  },
+  "script": {
+    "action": { "color": "#CFCBC2" },
+    "boneyard": { "color": "#55534E" },
+    "centered": { "color": "#CFCBC2" },
+    "character": { "color": "#DEDAD2" },
+    "dialogue": { "color": "#CFCBC2" },
+    "parenthetical": { "color": "#86837C" },
+    "sceneChip": { "color": "#7D7A74" },
+    "sceneHeading": { "color": "#E4E0D8" },
+    "transition": { "color": "#CFCBC2" }
+  },
+  "storyboard": {
+    "background": "#0F1014",
+    "frameBorder": "#22242B",
+    "selectedFrame": "#8C9CFF"
+  }
+}

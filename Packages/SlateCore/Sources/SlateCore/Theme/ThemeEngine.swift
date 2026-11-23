@@ -159,7 +159,7 @@ public final class ThemeEngine {
         guard let folder = Bundle.module.url(forResource: "Themes", withExtension: nil) else {
             fatalError("SlateCore is missing its Themes resource folder.")
         }
-        return ["light", "dark"].map { name in
+        return ["light", "dark", "manuscript", "midnight"].map { name in
             do {
                 return try source(at: folder.appending(path: "\(name).\(fileExtension)"), isBuiltIn: true)
             } catch {
