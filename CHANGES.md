@@ -1,5 +1,17 @@
 # Changes
 
+## Developer ID signing, ready to switch on (2026-11-23)
+
+- **The release workflow signs and notarizes when it can.** With the signing secrets set, it imports the Developer ID certificate into a temporary keychain. It then signs with the hardened runtime, notarizes with an App Store Connect API key, staples the ticket and deletes the keychain. Without the secrets, releases stay ad-hoc signed, and the release notes say which kind each build is.
+- **`Scripts/release.sh`** notarizes with either a keychain profile or an API key (`NOTARY_KEY_PATH`, `NOTARY_KEY_ID`, `NOTARY_ISSUER_ID`).
+- **`Scripts/setup-signing.sh`:** the one-time setup. It finds your Developer ID identity, saves a `slate-notary` profile and checks it with Apple, then stores six GitHub secrets.
+- **Updater:** a Developer ID-signed Slate refuses an update signed by any other team.
+- **Waiting on you:**
+  1. Make the Developer ID Application certificate and an App Store Connect API key (steps in README › Distribution).
+  2. Run the setup script.
+
+  Your keychain has Apple Development and Apple Distribution certificates, but not Developer ID yet. The files in `~/Keys` are for Android and iOS and aren't needed.
+
 ## 0.9.0 beta: releases, updates and screenshots (2026-11-23)
 
 **Tests:** 440 pass: 306 in SlateCore, 107 in SlateUI and 27 in SlateExport (3 new). No compiler warnings.

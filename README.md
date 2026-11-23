@@ -337,8 +337,11 @@ Slate ships outside the Mac App Store as a Developer ID app, unsandboxed, with t
 - **Screenshots:** `Scripts/screenshots.sh` builds a Debug copy under its own bundle ID, runs a tour of the showcase and captures each step into `docs/screenshots/` (your terminal needs Screen Recording permission).
 
 - **Test the packaging without an Apple account:** `Scripts/release.sh --adhoc` makes a Release build, signs it ad hoc and writes `build/release/Slate-<version>.zip`.
-- **For real, once you have a Developer ID Application certificate in your keychain:**
-  1. Once: `xcrun notarytool store-credentials slate-notary --apple-id you@example.com --team-id TEAMID` (it asks for an app-specific password from appleid.apple.com).
-  2. Each release: `TEAM_ID=TEAMID NOTARY_PROFILE=slate-notary Scripts/release.sh`. It archives, signs with your Developer ID, notarizes, staples the ticket, checks with `spctl`, and zips the app.
+- **Developer ID signing and notarization** (no "can't verify" warning). One-time setup:
+  1. **Certificate:** Xcode › Settings › Accounts › your team › Manage Certificates › + › **Developer ID Application**. Only the account holder can make one. Then, in Keychain Access, right-click that certificate › Export… as a `.p12` with a password.
+  2. **API key:** App Store Connect › Users and Access › Integrations › App Store Connect API › Team Keys › + (Developer access). Download the `AuthKey_….p8` and note the Key ID and Issuer ID.
+  3. **Run `Scripts/setup-signing.sh`.** It saves a `slate-notary` profile on this Mac, checks that Apple accepts it, and stores the certificate and key as encrypted secrets on the GitHub repo. It never prints a secret.
+
+  From then on, every release from `main` is Developer ID signed and notarized. Without the secrets the workflow falls back to ad-hoc signing. To build a signed copy locally: `TEAM_ID=… NOTARY_PROFILE=slate-notary Scripts/release.sh`. A signed Slate only installs updates signed by the same team.
 - **App icon:** `swift Scripts/make-icon.swift` redraws `App/Assets.xcassets/AppIcon.appiconset` from code.
 

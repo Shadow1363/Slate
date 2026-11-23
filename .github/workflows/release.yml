@@ -44,11 +44,55 @@ jobs:
           xcodegen generate --quiet
           xcodebuild -project Slate.xcodeproj -scheme Slate -destination 'platform=macOS' test -quiet
 
+      # With the signing secrets set (Scripts/setup-signing.sh), releases are
+      # Developer ID signed and notarized: no "can't verify" warning. Without
+      # them they're ad-hoc signed, as before.
+      - name: Import the Developer ID certificate
+        id: signing
+        env:
+          P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+        run: |
+          if [ -z "$P12" ] || [ -z "$NOTARY_KEY" ]; then
+            echo "No signing secrets: this build is ad-hoc signed."
+            echo "mode=adhoc" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 24)
+          echo "$P12" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          echo "$NOTARY_KEY" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$KEYCHAIN" -P "$P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm "$RUNNER_TEMP/developer-id.p12"
+          echo "keychain=$KEYCHAIN" >> "$GITHUB_OUTPUT"
+          echo "mode=developer-id" >> "$GITHUB_OUTPUT"
+
       - name: Build and package
         env:
           SLATE_VERSION: ${{ steps.version.outputs.version }}
           SLATE_BUILD: ${{ steps.version.outputs.build }}
-        run: Scripts/release.sh --adhoc
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+          SIGNING_KEYCHAIN: ${{ steps.signing.outputs.keychain }}
+        run: |
+          if [ "${{ steps.signing.outputs.mode }}" = "developer-id" ]; then
+            NOTARY_KEY_PATH="$RUNNER_TEMP/AuthKey.p8" Scripts/release.sh
+          else
+            Scripts/release.sh --adhoc
+          fi
+
+      - name: Remove the signing keychain
+        if: always()
+        run: |
+          [ -n "${{ steps.signing.outputs.keychain }}" ] && security delete-keychain "${{ steps.signing.outputs.keychain }}" || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
 
       - name: Publish the prerelease
         env:
@@ -56,10 +100,16 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           ZIP="build/release/Slate-${VERSION}.zip"
+          if [ "${{ steps.signing.outputs.mode }}" = "developer-id" ]; then
+            SIGNING_NOTE="Signed with Developer ID and notarized by Apple."
+          else
+            SIGNING_NOTE="The first time, macOS says it can't verify Slate (this build isn't notarized): click Done, then System Settings › Privacy & Security › Open Anyway."
+          fi
           cat > notes.md <<NOTES
           Slate ${VERSION}: a beta build of $(git rev-parse --short HEAD).
 
-          **Install:** unzip, move Slate to Applications and open it. The first time, macOS says it can't verify Slate (it isn't notarized yet): click Done, then System Settings › Privacy & Security › Open Anyway. Needs macOS 15 or newer.
+          **Install:** unzip, move Slate to Applications and open it. Needs macOS 15 or newer.
+          ${SIGNING_NOTE}
 
           **Changes:** see CHANGES.md.
           NOTES
