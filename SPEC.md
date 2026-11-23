@@ -315,6 +315,7 @@ _To-dos_
 
 - **TODO comments:** a comment whose words start with `TODO:` is a to-do, written where the work is. In the script only Fountain's `/* TODO: … */` counts (it never prints); in notes and the draft, `%% TODO: … %%` (Obsidian) or `<!-- TODO: … -->`. They can span lines and take `due:YYYY-MM-DD`. A script comment belongs to the scene it sits in. Ticking one (margin, Pending, or right-click › Mark To-do Done in the editor) changes `TODO:` to `DONE:` in place. Notes dim their comments and pick out the `TODO`/`DONE` word. ⇧⌘T in a note writes `%% TODO:  %%` at the caret; in the script it still adds a margin to-do. Comments in revisions, the title page and the margin files aren't read.
 - The margin's To-dos tab lists the script's TODO comments under their own heading, following the same scope and filter.
+- **Universe has a margin too** (⇧⌘M or the toolbar's margin button there, remembered): **To-dos** for **This Note** or **All Notes**, filtered Open / Done / All. Each row ticks (TODO → DONE) or, clicked, opens the note with the comment selected; All Notes shows which note each is in. Its field adds `%% TODO: … %%` at the end of the open note.
 - Every open to-do is listed in Home › Pending (see Home). There is no launch sheet.
 - Optional macOS notification for to-dos (margin or comment) with a due date; clicking it opens the scene, or the note at the comment.
 - A project-wide to-do list view with filters (open, done, by scene, by due date).

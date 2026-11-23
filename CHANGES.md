@@ -1,5 +1,9 @@
 # Changes
 
+## A margin for notes' to-dos (2026-11-23)
+
+- **Universe has a margin,** like the script's: **To-dos** for **This Note** or **All Notes**, Open / Done / All, tick boxes, click to jump to the comment, and a field that adds `%% TODO: … %%` to the open note. ⇧⌘M or the toolbar's margin button shows and hides it, and it remembers.
+
 ## TODO comments and Pending (2026-11-23)
 
 - **TODO comments.** Write `/* TODO: … */` in the script, or `%% TODO: … %%` / `<!-- TODO: … -->` in a note or the draft. Add `due:2026-12-01` if it has a date. ⇧⌘T in a note writes one at the caret. Notes dim comments and pick out the TODO word. Right-click one › **Mark To-do Done** turns it into `DONE:`.

@@ -156,6 +156,7 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **All to-dos:** set the To-dos tab to All, then filter (Open / Done / All) and order (By Scene / By Due Date) from its menu. Script › Show All To-dos jumps straight there.
 - **Links:** hovering a `[[link]]` in the script or a note shows a preview. ⌘-click in the script, or a click in the margin, opens the note in the margin, so you never leave the scene.
 - **TODO comments:** write a to-do where the work is, as a comment starting with `TODO:`. In the script: `/* TODO: tighten this exchange due:2026-12-01 */` (never printed). In a note or the draft: `%% TODO: check the 1987 dates %%` or `<!-- TODO: … -->`; ⇧⌘T in a note writes one at the caret. Right-click one › Mark To-do Done (or tick it in the margin or Pending) and it becomes `DONE:`. The margin lists the script's TODO comments too.
+- **Notes have a margin as well** (⇧⌘M in Universe, or the margin button in the toolbar): their TODO comments for **This Note** or **All Notes**, with tick boxes, and a field that adds a new one to the open note.
 
   ![A TODO comment in a note](docs/screenshots/todo-comment.png)
 

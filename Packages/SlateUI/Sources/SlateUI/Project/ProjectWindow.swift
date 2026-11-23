@@ -140,7 +140,15 @@ struct ProjectContent: View {
                         }
                     }
                 case .universe:
-                    UniverseDetail(session: session)
+                    HStack(spacing: 0) {
+                        UniverseDetail(session: session)
+                            .frame(maxWidth: .infinity)
+                        if session.noteMargin.showing {
+                            Divider()
+                            NoteMarginView(session: session, margin: session.noteMargin)
+                                .frame(width: 300)
+                        }
+                    }
                 case .dictionary:
                     DictionaryDetail(session: session)
                 case .storyboard:
@@ -170,6 +178,16 @@ struct ProjectContent: View {
                 .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
             }
             .toolbar {
+                if session.area == .universe {
+                    ToolbarItem(placement: .automatic) {
+                        Button {
+                            session.noteMargin.showing.toggle()
+                        } label: {
+                            Label("Margin", systemImage: "sidebar.squares.trailing")
+                        }
+                        .help("Show or hide the margin: to-dos in notes (⇧⌘M)")
+                    }
+                }
                 ToolbarItem(placement: .automatic) {
                     Button {
                         session.showingInspector.toggle()
@@ -304,8 +322,12 @@ struct ProjectContent: View {
             addTodo: { session.addTodoAtCaret() },
             addMarginNote: { session.addMarginNoteAtCaret() },
             toggleMargin: {
-                session.area = .script
-                session.script.showingMargin.toggle()
+                if session.area == .universe {
+                    session.noteMargin.showing.toggle()
+                } else {
+                    session.area = .script
+                    session.script.showingMargin.toggle()
+                }
             },
             showAllTodos: {
                 session.area = .script

@@ -88,6 +88,8 @@ final class ProjectSession {
     /// Search text, kept between openings of Find in Project.
 
     /// An animatic or boards export in progress.
+    /// The Universe area's margin (TODO comments in notes).
+    let noteMargin: NoteMarginModel
     var exportJob: ExportJob?
     /// Import Voice Note…, while it transcribes.
     var voiceImport: VoiceImportJob?
@@ -104,6 +106,7 @@ final class ProjectSession {
         outline = OutlineState(projectRoot: store.rootURL)
         links = LinkIndex(store: store)
         script = ScriptWorkspace(store: store)
+        noteMargin = NoteMarginModel(store: store)
         dictionary = DictionaryModel(store: store, globalURL: globalWordsURL)
         storyboard = StoryboardModel(store: store, script: script)
         refreshTemplates()
