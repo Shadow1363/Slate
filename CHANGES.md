@@ -10,6 +10,7 @@
 - **Settings › Shortcuts:** every menu shortcut, grouped by menu, with a filter. Click and press keys to remap; clashes with another command or macOS are refused; Reset, None and Reset All. The menu bar and the area badges (⌘1–⌘4) follow at once.
 - **Contents** (the heading index) moved from the Universe sidebar to the fields side, under the infobox. It starts open. The sidebar lists notes only; the draft keeps its outline there.
 - **Window title:** the folder path under the area title is gone; the area's own icon (globe, script, storyboard, book) sits to its left.
+- **License:** CC BY-NC-SA 4.0 (`LICENSE`), with `THIRD_PARTY_NOTICES.md` for whisper.cpp, Yams, swift-markdown, swift-cmark and Courier Prime, and a License section in the README.
 - SPEC (new Voice section, Shortcuts, Contents, Milestone 13), README and DECISIONS 203–210 updated. README screenshots retaken.
 
 ### Checked

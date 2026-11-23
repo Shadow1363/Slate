@@ -359,3 +359,14 @@ Slate ships outside the Mac App Store as a Developer ID app, unsandboxed, with t
   From then on, every release from `main` is Developer ID signed and notarized. Without the secrets the workflow falls back to ad-hoc signing. To build a signed copy locally: `TEAM_ID=… NOTARY_PROFILE=slate-notary Scripts/release.sh`. A signed Slate only installs updates signed by the same team.
 - **App icon:** `swift Scripts/make-icon.swift` redraws `App/Assets.xcassets/AppIcon.appiconset` from code.
 
+## License
+
+Slate © 2026 Tomás Martinez, licensed under [Creative Commons Attribution-NonCommercial-ShareAlike 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) (CC BY-NC-SA 4.0). Full text: [LICENSE](LICENSE).
+
+In short, you may use, copy and change Slate as long as you:
+
+- **credit it:** name Slate and its author, link to this repository and the license, and say what you changed;
+- **don't use it commercially:** no selling it, charging for a copy or a modified version, or using it in a paid product or service;
+- **share alike:** anything you build from Slate must be released under this same license, source included.
+
+Parts made by others keep their own licenses (whisper.cpp, Yams, swift-markdown, swift-cmark, Courier Prime): see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). As the copyright holder, the author can still publish Slate elsewhere, including the Mac App Store.
