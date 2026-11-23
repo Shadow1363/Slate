@@ -42,7 +42,21 @@ jobs:
       - name: Test
         run: |
           xcodegen generate --quiet
-          xcodebuild -project Slate.xcodeproj -scheme Slate -destination 'platform=macOS' test -quiet
+          set -o pipefail
+          # Full output goes to a file; the log shows test results and errors only.
+          xcodebuild -project Slate.xcodeproj -scheme Slate -destination 'platform=macOS,arch=arm64' \
+              -resultBundlePath "$RUNNER_TEMP/Tests.xcresult" test 2>&1 | tee "$RUNNER_TEMP/test.log" \
+              | grep -E "Test run with|✘|recorded an issue|error:|crashed|TEST (SUCCEEDED|FAILED)|Failing tests|^\s+-\[|^\s+[A-Za-z]+Tests[./]"
+
+      - name: Keep the test report when tests fail
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: |
+            ${{ runner.temp }}/Tests.xcresult
+            ${{ runner.temp }}/test.log
+          retention-days: 7
 
       # With the signing secrets set (Scripts/setup-signing.sh), releases are
       # Developer ID signed and notarized: no "can't verify" warning. Without
