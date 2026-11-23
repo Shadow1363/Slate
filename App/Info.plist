@@ -28,6 +28,10 @@
 	<string>Slate keeps new projects in Documents/Slate.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Slate listens while you dictate (Edit › Dictate) and types what you say.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Slate turns your dictation and voice notes into text on this Mac.</string>
 	<key>SlateUpdateRepository</key>
 	<string>Shadow1363/Slate</string>
 </dict>

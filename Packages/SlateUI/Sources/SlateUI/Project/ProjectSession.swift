@@ -89,6 +89,8 @@ final class ProjectSession {
 
     /// An animatic or boards export in progress.
     var exportJob: ExportJob?
+    /// Import Voice Note…, while it transcribes.
+    var voiceImport: VoiceImportJob?
     @ObservationIgnored var animaticWindow: AnimaticWindowController?
 
     @ObservationIgnored private var indexTasks: [String: Task<Void, Never>] = [:]

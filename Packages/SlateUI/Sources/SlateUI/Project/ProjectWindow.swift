@@ -15,6 +15,8 @@ public struct ProjectActions {
     /// Opens Search (⌘K), optionally with a query typed (`!text `).
     public let search: @MainActor (String) -> Void
     public let newNote: @MainActor () -> Void
+    /// File › Import Voice Note…
+    public let importVoiceNote: @MainActor () -> Void
     /// "New Note…", or "Add Word…" in the Dictionary.
     public let newItemTitle: String
     public let toggleInspector: @MainActor () -> Void
@@ -55,15 +57,6 @@ public struct ProjectWindow: View {
         self.url = url
     }
 
-    /// The window subtitle shows the project's folder, except in the screenshot tour.
-    static var showsFolder: Bool {
-        #if DEBUG
-        ScreenshotTour.folder == nil
-        #else
-        true
-        #endif
-    }
-
     public var body: some View {
         Group {
             if let store {
@@ -80,7 +73,6 @@ public struct ProjectWindow: View {
         }
         .frame(minWidth: 900, minHeight: 560)
         .navigationTitle(store?.manifest.name ?? url?.lastPathComponent ?? "Slate")
-        .navigationSubtitle(Self.showsFolder ? store.map { $0.rootURL.deletingLastPathComponent().path(percentEncoded: false) } ?? "" : "")
         .slateThemed(projectOverride: store?.manifest.theme)
         .task(id: url) { open() }
         .onDisappear { store?.close() }
@@ -112,6 +104,7 @@ struct ProjectContent: View {
     @State private var session: ProjectSession
     @Environment(SlateAppModel.self) private var model
     @State private var columns: NavigationSplitViewVisibility = .all
+    @AppStorage(Shortcuts.overridesKey) private var shortcutOverrides = ""
     /// What focus mode hid, to put back when it ends.
     @State private var beforeFocus: (columns: NavigationSplitViewVisibility, margin: Bool, inspector: Bool)?
 
@@ -125,7 +118,8 @@ struct ProjectContent: View {
         NavigationSplitView(columnVisibility: $columns) {
             List(ProjectArea.allCases, selection: $session.area) { area in
                 Label(area.title, systemImage: area.systemImage)
-                    .badge(Text("⌘\(area.shortcutNumber)").foregroundStyle(.tertiary))
+                    .badge(Text(SearchShortcut(Shortcuts.text("area." + area.rawValue, overrides: Shortcuts.overrides(shortcutOverrides),
+                                                              search: ""))?.display ?? "").foregroundStyle(.tertiary))
                     .tag(area)
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190)
@@ -206,6 +200,15 @@ struct ProjectContent: View {
                 .transition(.opacity)
             }
         }
+        .toolbar {
+            // The area's icon (the same one as in the sidebar), left of its title.
+            ToolbarItem(placement: .navigation) {
+                Image(systemName: (session.area ?? .script).systemImage)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+        }
         .onChange(of: store.files) { session.spotlight?.reload() }
         .safeAreaInset(edge: .top, spacing: 0) { UpdateBanner() }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -241,6 +244,7 @@ struct ProjectContent: View {
         }
         .overlay(alignment: .bottom) {
             if let job = session.exportJob { ExportJobBar(job: job) }
+            else if let job = session.voiceImport { VoiceImportBar(job: job) }
         }
         .onDisappear {
             session.closeAnimatic()
@@ -297,6 +301,7 @@ struct ProjectContent: View {
                     session.sheet = .newNote(type: nil, name: "")
                 }
             },
+            importVoiceNote: { session.importVoiceNotes() },
             newItemTitle: session.area == .dictionary ? "Add Word…" : "New Note…",
             toggleInspector: { session.showingInspector.toggle() },
             addTodo: { session.addTodoAtCaret() },

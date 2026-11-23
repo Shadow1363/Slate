@@ -222,6 +222,11 @@ final class SlateTextView: NSTextView {
         return menu
     }
 
+    /// Edit › Dictate (⇧⌘D): start listening, or stop and insert.
+    @objc func toggleSlateDictation(_ sender: Any?) {
+        DictationController.shared.toggle(in: self)
+    }
+
     /// Edit › Insert Link (⌘K), sent down the responder chain.
     @objc func insertWikiLink(_ sender: Any?) {
         insertLinkAction?()

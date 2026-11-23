@@ -60,7 +60,8 @@ SwiftUI for the app shell and most views, AppKit for the parts that need the ful
 | PDF                   | Own pagination engine, drawn with Core Text into a PDF context                  | Exact control over screenplay page breaks                                                                  |
 | Animatic              | AVFoundation (`AVMutableComposition`, `AVPlayer`, `AVAssetExportSession`)       | Plays images and clips as one timeline, exports .mov                                                       |
 | Reminders             | `UserNotifications` + an on-launch sheet                                        | To-dos surface when you open the app                                                                       |
-| Project file          | XcodeGen `project.yml`; Swift packages SlateCore, SlateUI, SlateExport          | Reproducible builds, testable core                                                                         |
+| Speech to text        | SlateVoice package: Apple Speech (on-device), whisper.cpp (vendored `whisper.xcframework`), or OpenAI's transcription API | Apple works offline with nothing to download; Whisper and OpenAI are opt-in |
+| Project file          | XcodeGen `project.yml`; Swift packages SlateCore, SlateUI, SlateExport, SlateVoice | Reproducible builds, testable core                                                                         |
 
 Key services in SlateCore:
 
@@ -168,7 +169,9 @@ The home screen is a library of project folders that can live anywhere on disk; 
 | A folder of Markdown (e.g. an Obsidian vault) | Copied into `universe/`; `[[links]]` kept, `.canvas` files kept     |
 | Plain `.txt` / `.md` screenplay               | Parsed with the Fountain rules                                      |
 
-Inside a project, the window has a sidebar (Universe, Script, Storyboard, Dictionary), the main editor, and an optional inspector on the right. Global shortcuts: Cmd-P quick open any file, Cmd-Shift-F search the whole project, Cmd-K insert a link, Cmd-Shift-O jump to scene.
+Inside a project, the window has a sidebar (Universe, Script, Storyboard, Dictionary), the main editor, and an optional inspector on the right. The toolbar shows the area's icon (the one in the sidebar: globe for Universe, book for Dictionary…) to the left of the area's title; the project's folder path is not shown (Show in Finder and the library card have it).
+
+**Shortcuts** — every menu command's shortcut is listed in Settings › Shortcuts, grouped by menu, with a filter. Click one and press new keys to remap it; a shortcut already used by another command or by macOS is refused with a note naming it. Each can be reset, set to none, or all reset at once. Changes apply to the menu bar immediately and are stored in `UserDefaults` (`shortcuts.overrides`, JSON of command → keys; Search keeps `search.shortcut`). Editor keys (Tab cycling, ⌘B/⌘I, zoom in canvas/map/timeline) are listed as built in. Defaults include ⌘K search, ⇧⌘F search text, ⌥⌘K insert link, ⇧⌘O jump to scene, ⇧⌘D dictate, ⌘1–⌘4 areas.
 
 ## Universe (notes)
 
@@ -183,6 +186,7 @@ Universe is where the film is thought through before and while it is written: a 
 - Built-in templates: Character, Location, Rule (how something works), Faction, Item, Event, Freeform. They are only a starting set: every one can be edited, renamed or deleted (a `removed: true` template file hides a built-in), and any field, including the name field, can change.
 - A template is itself a `.md` file: frontmatter defines fields (text, long text, number, date, choice, yes/no, list, link, links, image), an optional `layout:` and an icon, and the body holds starter headings. Built-ins ship in the app; copies in `templates/` override them per project, and in `~/Library/Application Support/Slate/Templates/` globally. Universe › Templates… creates and edits them in a form with a live preview.
 - Each note opens as a wiki page: the Markdown body, with an infobox card beside it (title, subtitle, picture, fields, section headers and columns). Edit turns the infobox into a form. Editing either side rewrites the same file.
+- Under the infobox, on the same side as the fields, a **Contents** index lists the note's headings as a nested tree (a level-1 heading equal to the note's name is left out). Click a heading to jump to it; chevrons fold its children (⌥-click: every level); headings can be dragged onto a canvas. The Universe sidebar lists notes only, without their headings; the rough draft keeps its heading outline in the sidebar (with Turn into Scene).
 - Notes in the wiki-infobox format are read as they are: `infobox: Character` names the template, `title:` the name, `subtitle:` the line under it, and a `layout:` list (`header` with `above:`, `columns` with `keys:`) arranges the infobox. `||text||` is a spoiler, hidden until clicked.
 - Inspector shows backlinks (every note, scene and margin note that links here) and, for characters, scenes appeared in and line count, pulled from the script.
 - Renaming a note offers to update every `[[link]]` to it across the project.
@@ -420,6 +424,25 @@ The Dictionary area is the film's own glossary, and every word in it (plus every
 - Right-click a misspelling: suggestions, Add to Project Dictionary, Add to Every Project, Define in Dictionary (opens a new entry).
 - Settings: languages (multiple at once), auto-correct on/off (off by default for screenwriting).
 
+## Voice
+
+Two ways to write by speaking, both in the SlateVoice package.
+
+- **Dictate** (Edit › Dictate, ⇧⌘D, remappable): in any editor (script, notes, draft, dictionary book) a small panel opens at the cursor with a level meter and timer. With Apple the words appear as they are heard; with Whisper or OpenAI the text appears after stopping. Pressing the shortcut again (or Insert / Return) puts the text at the cursor as one undoable edit, with a space added where it would run into a word and a capital at the start of a sentence or line. Esc / Cancel throws it away.
+- **Import Voice Note…** (File menu and Universe's + menu): pick one or more recordings (m4a, mp3, wav, aiff, caf…). Each is transcribed and becomes a Freeform Note named after its first sentence (up to eight words; the file name if empty), tagged `voice-note`, with `recording: <file name>` in its frontmatter and the transcript as its body. A bar at the bottom of the window shows progress and can cancel. The recording itself is not copied into the project.
+- **Engines** (Settings › Voice, chosen by the user):
+
+  | Engine | Default | Where it runs | Needs |
+  | ------ | ------- | ------------- | ----- |
+  | Apple (Speech framework) | Yes, recommended | On this Mac, `requiresOnDeviceRecognition` | Nothing to download; the language's on-device model (comes with macOS Dictation) |
+  | Whisper (whisper.cpp, Metal) | | On this Mac | A model downloaded in Settings › Voice from Hugging Face (`ggerganov/whisper.cpp`) to `~/Library/Application Support/Slate/Whisper/`: Base (142 MB, default), Small (466 MB), Large Turbo q5 (547 MB), English-only or multilingual |
+  | OpenAI (`/v1/audio/transcriptions`) | | Online | An API key, stored in the login keychain; models `gpt-4o-transcribe` (default), `gpt-4o-mini-transcribe`, `whisper-1`; files over 25 MB are refused |
+
+- Language: automatic (system language for Apple, detection for Whisper/OpenAI) or a fixed one.
+- Transcripts are tidied: Whisper's non-speech markers (`[BLANK_AUDIO]`, `(music)`) are removed and spacing collapsed.
+- Permissions: microphone (`NSMicrophoneUsageDescription`, plus the `com.apple.security.device.audio-input` entitlement for the hardened runtime) and speech recognition (`NSSpeechRecognitionUsageDescription`). Denials show a message pointing at System Settings.
+- Nothing is sent anywhere unless OpenAI is the chosen engine.
+
 ## Theme system
 
 Themes are JSON files of named tokens; Light and Dark ship built in, and every colour, font and spacing value can be overridden in a theme editor with live preview.
@@ -462,7 +485,7 @@ Any token a theme leaves out falls back to its `base`, so a custom theme can be 
 
 ## Build milestones
 
-Twelve milestones, ordered so the script is writable and printable early and the visual tools come after the file foundations are solid. Each ends with a "done when" you can check yourself.
+Thirteen milestones, ordered so the script is writable and printable early and the visual tools come after the file foundations are solid. Each ends with a "done when" you can check yourself.
 
 1. **Foundation** — XcodeGen project, three packages, ProjectStore, FileWatcher, ThemeEngine with Light/Dark, home screen with New/Open/Remove, project window with the four-area sidebar (empty views).
    - Done when: you can create a project, see its folder in Finder, edit a file there and watch the app reload it.
@@ -479,6 +502,8 @@ Twelve milestones, ordered so the script is writable and printable early and the
 10. **Animatic** — player built on AVFoundation, overlays and subtitles, scratch audio, `.mov` and board PDF export.
 11. **Production features** — locked scene numbers, A-scenes and A-pages, revision colours and marks, reports, sides.
 12. **Polish and ship** — theme editor UI, settings, import of Markdown folders/zip, accessibility (VoiceOver, Dynamic Type where possible), app icon, onboarding sample project, Developer ID signing and notarization.
+13. **Voice and shortcuts** — dictation into every editor and voice notes into Universe, with Apple (default), Whisper or OpenAI; Settings › Shortcuts to see and remap every menu shortcut.
+    - Done when: ⇧⌘D in a scene types what you say with no network, an m4a memo becomes a tagged note, and a remapped shortcut works in the menu bar at once.
 
 Testing throughout: SlateCore has unit tests for every parser and file format (round-trip: read → write → byte-identical where unchanged); Publish has snapshot tests comparing rendered pages of sample scripts; a sample project in `Fixtures/` exercises every feature.
 

@@ -40,32 +40,11 @@ struct UniverseNavigator: View {
             ForEach(groups, id: \.title) { group in
                 Section(group.title) {
                     ForEach(group.notes) { note in
-                        let tree = HeadingTree.build(note.headings, droppingTitle: note.name)
-                        HStack(spacing: 4) {
-                            if tree.isEmpty {
-                                Color.clear.frame(width: 14, height: 14)
-                            } else {
-                                OutlineChevron(isOpen: session.outline.isOpen(note.path)) { branch in
-                                    withAnimation(.snappy(duration: 0.15)) { session.outline.toggle(note.path, tree: tree, branch: branch) }
-                                }
-                            }
-                            NoteRow(note: note, backlinks: graph.backlinks(to: note.path).count)
-                        }
-                        .draggable("slate-note:" + note.path)
-                        .tag(note.path)
-                        .contextMenu {
-                            noteMenu(note)
-                            if !tree.isEmpty {
-                                Divider()
-                                Button("Expand All Headings") { session.outline.expandAll(note.path, tree: tree) }
-                                Button("Collapse All Headings") { session.outline.collapseAll(note.path) }
-                            }
-                        }
-                        if session.outline.isOpen(note.path) {
-                            ForEach(HeadingTree.rows(tree, isOpen: { session.outline.isOpen(note.path, heading: $0) })) { row in
-                                HeadingRow(session: session, path: note.path, row: row, tree: tree)
-                            }
-                        }
+                        // A note's headings are listed beside it, under its infobox (NoteIndex).
+                        NoteRow(note: note, backlinks: graph.backlinks(to: note.path).count)
+                            .draggable("slate-note:" + note.path)
+                            .tag(note.path)
+                            .contextMenu { noteMenu(note) }
                     }
                 }
             }
@@ -177,6 +156,7 @@ struct UniverseNavigator: View {
                             Label(template.label, systemImage: template.icon ?? icon(for: template.type))
                         }
                     }
+                    Button("Import Voice Note…") { session.importVoiceNotes() }
                     Divider()
                     Button("New Canvas") { session.createCanvas() }
                     Button("New Timeline") { session.createTimeline() }

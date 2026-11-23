@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import SlateCore
 import SlateExport
+import SlateVoice
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -62,6 +63,10 @@ public final class SlateAppModel {
             let scheduler = ReminderScheduler()
             scheduler.onOpen = { [weak self] root, scene in self?.requestJump(to: root, sceneID: scene, quote: nil) }
             self.scheduler = scheduler
+        }
+        // ggml's Metal backend aborts at exit if a Whisper model is still loaded.
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
+            WhisperTranscriber.shared.unload()
         }
     }
 

@@ -27,6 +27,10 @@ struct SearchShortcut: Equatable {
         case "space": key = .space
         case "return": key = .return
         case "tab": key = .tab
+        case "up": key = .upArrow
+        case "down": key = .downArrow
+        case "left": key = .leftArrow
+        case "right": key = .rightArrow
         default:
             guard last.count == 1, let char = last.first else { return nil }
             key = KeyEquivalent(char)
@@ -48,6 +52,10 @@ struct SearchShortcut: Equatable {
         case 49: key = "space"
         case 36: key = "return"
         case 48: key = "tab"
+        case 126: key = "up"
+        case 125: key = "down"
+        case 123: key = "left"
+        case 124: key = "right"
         default:
             guard let chars = event.charactersIgnoringModifiers?.lowercased(), chars.count == 1 else { return nil }
             key = chars
@@ -76,53 +84,67 @@ struct SearchShortcut: Equatable {
         case "space": text += "Space"
         case "return": text += "↩"
         case "tab": text += "⇥"
+        case "up": text += "↑"
+        case "down": text += "↓"
+        case "left": text += "←"
+        case "right": text += "→"
         default: text += keyName.uppercased()
         }
         return text
     }
 
-    /// Slate's own shortcuts this one would take over, if any.
-    var clash: String? {
-        Self.taken[text]
+    /// `text` written the one way Slate compares it (`ctrl+opt+shift+cmd+k`).
+    static func normalized(_ text: String) -> String {
+        SearchShortcut(text)?.text ?? ""
     }
-
-    static let taken: [String: String] = [
-        "cmd+n": "New Note", "cmd+o": "Open Folder", "cmd+s": "Save", "cmd+shift+s": "Save Snapshot", "cmd+opt+k": "Insert Link",
-        "cmd+shift+k": "New Sketch", "cmd+shift+f": "Search Text", "cmd+shift+i": "Import", "cmd+shift+l": "Project Library",
-        "cmd+shift+t": "Add To-do", "cmd+opt+t": "Add Margin Note", "cmd+shift+m": "Toggle Margin", "cmd+shift+o": "Jump to Scene",
-        "cmd+shift+e": "Publish PDF", "cmd+opt+p": "Print Script", "cmd+1": "Universe", "cmd+2": "Script", "cmd+3": "Storyboard",
-        "cmd+4": "Dictionary", "cmd+z": "Undo", "cmd+shift+z": "Redo", "cmd+c": "Copy", "cmd+v": "Paste", "cmd+x": "Cut",
-        "cmd+a": "Select All", "cmd+f": "Find", "cmd+w": "Close", "cmd+q": "Quit", "cmd+comma": "Settings", "cmd+,": "Settings",
-        "cmd+opt+0": "Inspector", "cmd+0": "Fit", "cmd+=": "Zoom In", "cmd+-": "Zoom Out", "cmd+b": "Bold", "cmd+i": "Italic",
-        "cmd+u": "Underline", "cmd+shift+\\": "Page View", "ctrl+cmd+f": "Full Screen", "cmd+shift+return": "Focus Mode",
-        "cmd+opt+return": "Watch Animatic", "ctrl+cmd+]": "Next Film", "ctrl+cmd+[": "Previous Film",
-    ]
 }
 
-/// Click, then press a shortcut. Esc cancels.
+/// Click, then press a shortcut. Esc cancels. Shortcuts already used
+/// elsewhere in Slate (or by macOS) are refused with a note saying where.
 struct ShortcutRecorder: View {
     @Binding var text: String
+    var defaultText: String = SearchPreferences.defaultShortcut
+    var actionID: String = Shortcuts.search
+    @AppStorage(Shortcuts.overridesKey) private var overridesJSON = ""
+    @AppStorage(SearchPreferences.shortcut) private var searchShortcut = SearchPreferences.defaultShortcut
     @State private var recording = false
     @State private var monitor: Any?
     @State private var problem: String?
 
     var body: some View {
-        HStack {
-            Button {
-                recording ? stop() : start()
-            } label: {
-                Text(recording ? "Press a shortcut…" : (SearchShortcut(text)?.display ?? text))
-                    .font(.body.monospaced())
-                    .frame(minWidth: 140)
+        VStack(alignment: .trailing, spacing: 2) {
+            HStack {
+                if SearchShortcut.normalized(text) != SearchShortcut.normalized(defaultText) {
+                    Button("Reset") { text = defaultText; problem = nil }
+                        .controlSize(.small)
+                        .help(defaultText.isEmpty ? "Back to no shortcut" : "Back to \(SearchShortcut(defaultText)?.display ?? defaultText)")
+                }
+                if !text.isEmpty, actionID != Shortcuts.search {
+                    Button {
+                        text = ""
+                        problem = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .help("No shortcut")
+                }
+                Button {
+                    recording ? stop() : start()
+                } label: {
+                    Text(recording ? "Press keys…" : (SearchShortcut(text)?.display ?? "None"))
+                        .font(.body.monospaced())
+                        .foregroundStyle(text.isEmpty && !recording ? .secondary : .primary)
+                        .frame(minWidth: 110)
+                }
+                .help("Click, then press the keys you want (⌘ or ⌃ plus a key)")
             }
-            .help("Click, then press the keys you want (⌘ or ⌃ plus a key)")
-            if text != SearchPreferences.defaultShortcut {
-                Button("Reset") { text = SearchPreferences.defaultShortcut; problem = nil }
+            if let problem {
+                Text(problem).font(.caption).foregroundStyle(.orange)
             }
         }
-        if let problem {
-            Text(problem).font(.caption).foregroundStyle(.orange)
-        }
+        .onDisappear(perform: stop)
     }
 
     private func start() {
@@ -134,8 +156,9 @@ struct ShortcutRecorder: View {
                 problem = "Use ⌘ or ⌃ with a key."
                 return nil
             }
-            if let clash = shortcut.clash {
-                problem = "\(shortcut.display) is \(clash) in Slate. Pick another."
+            if let clash = Shortcuts.clash(shortcut.text, excluding: actionID,
+                                           overrides: Shortcuts.overrides(overridesJSON), search: searchShortcut) {
+                problem = "\(shortcut.display) is \(clash). Pick another, or change that one first."
                 return nil
             }
             text = shortcut.text
