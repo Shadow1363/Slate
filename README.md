@@ -287,6 +287,10 @@ Fixtures/Fountain       Reference scripts and PDFs from fountain.io
 Fixtures/Snapshots      Golden page layouts
 ```
 
+## Moving around
+
+- **Areas:** click the title at the top of a project window (**Universe ▾**) to switch between Universe, Script, Storyboard and Dictionary, or press ⌘1–⌘4. Each area's sidebar holds its notes, scenes, boards or words.
+
 ## Voice
 
 - **Dictate (⇧⌘D)** in the script, a note, the draft or the dictionary book. A panel at the cursor shows the level (and, with Apple, the words as you speak). Press ⇧⌘D again or Insert to put the text in; Esc cancels. It's one undo step.
@@ -339,6 +343,7 @@ Every menu shortcut can be changed in **Settings › Shortcuts**: click one, pre
 ## Themes and settings
 
 - **Settings › General:** the welcome window. **Appearance:** Light, Dark or Follow System, a theme for each, and text size (85–150%; Publish always prints at 12 pt). **Spelling:** language, auto-correct, and spelling and grammar switches for the script, notes, canvas cards and margin sheets. **Reminders.** **Library:** watched folders. **Search:** bangs. **Voice:** transcription engine, language, Whisper models, OpenAI key. **Shortcuts:** every menu shortcut, remappable.
+- **Built-in themes:** Light and Dark (defaults), **Manuscript** (warm paper, Courier everywhere, like a typed book) and **Midnight** (near-black, softer text). Pick them in Settings › Appearance, as the light or dark theme, or per project in View › Theme for This Project.
 - **Edit Themes…** (Settings › Appearance) opens the theme editor: duplicate a theme, change any colour, font or size with a live preview, and Reset a token to its base. Themes are `.slatetheme` JSON files in `~/Library/Application Support/Slate/Themes/` that store only what differs from their base; Import and Export share them.
 - **View › Theme for This Project** overrides the theme for one project (saved in `project.json`).
 

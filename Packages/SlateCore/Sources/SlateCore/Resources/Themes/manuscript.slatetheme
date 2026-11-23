@@ -1,0 +1,76 @@
+{
+  "name": "Manuscript",
+  "base": "Light",
+  "appearance": "light",
+  "chrome": {
+    "accent": "#8B5E3C",
+    "selection": "#E6D5B0",
+    "separator": "#D9CBAA",
+    "sidebarBackground": "#EDE3CC",
+    "toolbar": "#F3EAD6",
+    "windowBackground": "#F3EAD6"
+  },
+  "editor": {
+    "background": "#F3EAD6",
+    "caret": "#8B5E3C",
+    "currentLine": "#EDE1C6",
+    "font": "Courier Prime",
+    "lineSpacing": 1.35,
+    "page": "#FBF6EA",
+    "selection": "#E6D5B0",
+    "size": 13,
+    "spellError": "#B4442E",
+    "termUnderline": "#8A6A9E",
+    "text": "#2B2620"
+  },
+  "markdown": {
+    "brokenLink": "#B4442E",
+    "checkbox": "#8B5E3C",
+    "codeBackground": "#EADFC4",
+    "codeFont": "Courier Prime",
+    "emphasis": "#2B2620",
+    "font": "Courier Prime",
+    "h1Size": 22,
+    "h2Size": 18,
+    "h3Size": 15,
+    "heading": "#1F1A15",
+    "link": "#7A4A2A",
+    "quote": "#7A6E5C",
+    "size": 14,
+    "text": "#2B2620",
+    "wikiLink": "#6B4E8A"
+  },
+  "margin": {
+    "anchorHighlight": "#F0DFA8",
+    "done": "#9C9280",
+    "noteBackground": "#F2E6C2",
+    "overdue": "#B4442E",
+    "todo": "#2B2620"
+  },
+  "canvas": {
+    "connector": "#8C7F68",
+    "groupFill": "#8B5E3C1A",
+    "imageCard": "#FBF6EA",
+    "noteCard": "#F6EEDB",
+    "sceneCard": "#F1E2CC",
+    "textCard": "#FBF6EA",
+    "pin": "#B4442E",
+    "jumpArc": "#B06A2C"
+  },
+  "script": {
+    "action": { "color": "#2B2620" },
+    "boneyard": { "color": "#A89D88" },
+    "centered": { "color": "#2B2620" },
+    "character": { "color": "#2B2620" },
+    "dialogue": { "color": "#2B2620" },
+    "parenthetical": { "color": "#6E6352" },
+    "sceneChip": { "color": "#8C7F68" },
+    "sceneHeading": { "color": "#1F1A15" },
+    "transition": { "color": "#2B2620" }
+  },
+  "storyboard": {
+    "background": "#EDE3CC",
+    "frameBorder": "#D9CBAA",
+    "selectedFrame": "#8B5E3C"
+  }
+}
