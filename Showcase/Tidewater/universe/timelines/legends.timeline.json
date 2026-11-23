@@ -1,0 +1,44 @@
+{
+  "units": "custom",
+  "calendar": {"eras": ["Before the Light", "The Keepers", "After the Storm"]},
+  "lanes": [
+    {"id": "legend", "name": "Town legend"}
+  ],
+  "events": [
+    {
+      "id": "e-l1",
+      "title": "The sea takes the first harbour",
+      "world": "Before the Light 40",
+      "lane": "legend"
+    },
+    {
+      "id": "e-l2",
+      "title": "A clockmaker trades with the tide",
+      "world": "Before the Light 112",
+      "lane": "legend",
+      "summary": "Who made the clock? Nobody in town agrees."
+    },
+    {
+      "id": "e-l3",
+      "title": "The first keeper lights the lamp",
+      "world": "The Keepers 1",
+      "lane": "legend",
+      "location": "l-light"
+    },
+    {
+      "id": "e-l4",
+      "title": "The Great Storm",
+      "world": "The Keepers 204",
+      "lane": "legend",
+      "location": "l-market"
+    },
+    {
+      "id": "e-l5",
+      "title": "Nobody remembers a daughter",
+      "world": "After the Storm 37",
+      "lane": "legend"
+    }
+  ],
+  "branches": [],
+  "jumps": []
+}

@@ -1,0 +1,35 @@
+{
+  "units": "days",
+  "lanes": [
+    {"id": "harbour", "name": "The harbour"},
+    {"id": "greyline", "name": "Greyline"}
+  ],
+  "events": [
+    {"id": "e-w1", "title": "Barometer drops", "world": "Day 1", "lane": "harbour"},
+    {"id": "e-w2", "title": "Boats stay in", "world": "Day 2", "end": "Day 4", "lane": "harbour"},
+    {
+      "id": "e-w3",
+      "title": "Greyline's survey boat arrives",
+      "world": "Day 3 14:00",
+      "lane": "greyline",
+      "location": "l-harbour"
+    },
+    {
+      "id": "e-w4",
+      "title": "The storm night",
+      "world": "Day 5 21:00",
+      "lane": "harbour",
+      "location": "l-market"
+    },
+    {
+      "id": "e-w5",
+      "title": "Dredging starts",
+      "world": "Day 7",
+      "lane": "greyline",
+      "location": "l-market",
+      "after": ["e-w4"]
+    }
+  ],
+  "branches": [],
+  "jumps": []
+}

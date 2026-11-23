@@ -1,5 +1,19 @@
 # Changes
 
+## Showcase project (2026-11-22, after Milestone 8)
+
+- **New:** `Showcase/Tidewater`, a made-up short film about a lighthouse keeper, a clock that winds back the tide, and a brother saved at a price. It uses every feature from Milestones 1–8:
+  - three act files using every Fountain element;
+  - notes of every type, a wiki-infobox note and a project-only Vessel template;
+  - margin to-dos and notes;
+  - a dictionary;
+  - a canvas;
+  - timelines in dates, days and a custom calendar;
+  - an image map with layers and a blank-grid map.
+- **`SHOWCASE.md`** inside it is a checklist of what to try, by milestone.
+- **`ShowcaseTests`** (4 tests) check that every file reads, links and scene IDs resolve, every script element appears, all three time units are used, and only the warning left in on purpose shows.
+- **From now on,** each milestone adds its features to the showcase and its checklist.
+
 ## Milestone 8 — Timeline and map (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

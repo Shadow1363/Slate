@@ -1,0 +1,25 @@
+{
+  "image": null,
+  "aspect": 0.75,
+  "pins": [
+    {"id": "p-lamp", "title": "Lamp room", "x": 0.5, "y": 0.12, "scenes": ["s003", "s007"]},
+    {
+      "id": "p-board",
+      "title": "Loose floorboard",
+      "x": 0.62,
+      "y": 0.18,
+      "note": "i-clock",
+      "color": "3"
+    },
+    {"id": "p-kettle", "title": "Keeper's room", "x": 0.5, "y": 0.55, "scenes": ["s002", "s010"]}
+  ],
+  "regions": [
+    {
+      "id": "r-stairs",
+      "title": "Spiral stair",
+      "points": [[0.4, 0.25], [0.6, 0.25], [0.6, 0.45], [0.4, 0.45]]
+    }
+  ],
+  "layers": [],
+  "paths": []
+}

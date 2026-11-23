@@ -1,0 +1,77 @@
+{
+  "image": "saltmarrow.png",
+  "layers": [
+    {"id": "l1987", "name": "1987"},
+    {"id": "l2024", "name": "2024"}
+  ],
+  "pins": [
+    {
+      "id": "p-light",
+      "title": "The Lighthouse",
+      "x": 0.9,
+      "y": 0.2,
+      "note": "l-light",
+      "scenes": ["s002", "s003", "s007", "s010"],
+      "color": "1"
+    },
+    {
+      "id": "p-office",
+      "title": "Harbour Office",
+      "x": 0.42,
+      "y": 0.47,
+      "note": "l-office",
+      "scenes": ["s005"]
+    },
+    {
+      "id": "p-harbour",
+      "title": "Saltmarrow Harbour",
+      "x": 0.3,
+      "y": 0.62,
+      "note": "l-harbour",
+      "scenes": ["s001", "s004"],
+      "color": "5"
+    },
+    {"id": "p-crab", "title": "Juno's crab pots", "x": 0.2, "y": 0.75, "layer": "l2024"}
+  ],
+  "regions": [
+    {
+      "id": "r-market",
+      "title": "The Drowned Market",
+      "points": [[0.52, 0.66], [0.69, 0.66], [0.69, 0.78], [0.52, 0.78]],
+      "layer": "l1987",
+      "note": "l-market",
+      "scenes": ["s006", "s009"],
+      "color": "3"
+    },
+    {
+      "id": "r-wreck",
+      "title": "Market wreck (dredged)",
+      "points": [[0.53, 0.7], [0.66, 0.68], [0.68, 0.8], [0.55, 0.82]],
+      "layer": "l2024",
+      "color": "6"
+    },
+    {
+      "id": "r-town",
+      "title": "Old town",
+      "points": [[0.13, 0.21], [0.37, 0.21], [0.37, 0.5], [0.13, 0.5]],
+      "color": "2"
+    }
+  ],
+  "paths": [
+    {
+      "id": "w-cliff",
+      "title": "Cliff path",
+      "points": [[0.47, 0.42], [0.62, 0.36], [0.76, 0.28], [0.9, 0.2]],
+      "note": "l-cliffs",
+      "scenes": ["s008"],
+      "color": "4"
+    },
+    {
+      "id": "w-run",
+      "title": "Juno's run, 1987",
+      "points": [[0.3, 0.62], [0.42, 0.47], [0.55, 0.66]],
+      "layer": "l1987",
+      "color": "1"
+    }
+  ]
+}

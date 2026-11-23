@@ -1,0 +1,9 @@
+{
+  "id" : "p-showcase-tidewater",
+  "name" : "Tidewater",
+  "pageSize" : "letter",
+  "schemaVersion" : 3,
+  "settings" : {
+    "reminders" : "lastProject"
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "units": "datetime",
+  "lanes": [
+    {"id": "juno", "name": "Juno", "note": "c-juno"},
+    {"id": "ellis", "name": "Ellis", "note": "universe/characters/ellis-hale.md"},
+    {"id": "tobias", "name": "Tobias", "note": "c-tobias", "color": "4"},
+    {"id": "ida", "name": "Ida", "note": "c-ida"}
+  ],
+  "branches": [
+    {"id": "prime", "name": "First timeline"},
+    {"id": "b-lives", "name": "Ellis lives", "forksFrom": "e-0307"}
+  ],
+  "events": [
+    {
+      "id": "e-0101",
+      "title": "Tobias winds the clock",
+      "world": "1979-10-14T23:00",
+      "lane": "tobias",
+      "location": "l-light",
+      "summary": "He loses his brother's voice."
+    },
+    {
+      "id": "e-0102",
+      "title": "Tobias's watch",
+      "world": "1983-04-01",
+      "end": "2020-01-01",
+      "lane": "tobias",
+      "location": "l-light",
+      "summary": "A span: decades of keeping the light."
+    },
+    {
+      "id": "e-0103",
+      "title": "Tobias buries the clock",
+      "world": "1983-04-02",
+      "lane": "tobias",
+      "location": "l-light",
+      "after": ["e-0101"]
+    },
+    {
+      "id": "e-0001",
+      "title": "Young Juno hears Ellis leave",
+      "world": "1987-10-15T20:15",
+      "lane": "juno",
+      "location": "l-light",
+      "summary": "Same night, different Juno: no clash, because the adult is in a later stint."
+    },
+    {
+      "id": "e-0201",
+      "title": "Ellis finds the box",
+      "world": "1987-10-15T20:30",
+      "lane": "ellis",
+      "location": "l-market",
+      "scenes": ["s006"]
+    },
+    {
+      "id": "e-0202",
+      "title": "The market goes under",
+      "world": "1987-10-15T21:00",
+      "lane": "ellis",
+      "location": "l-market",
+      "after": ["e-0201"],
+      "color": "1"
+    },
+    {
+      "id": "e-0301",
+      "title": "Juno finds the clock",
+      "world": "2024-03-08T23:40",
+      "lane": "juno",
+      "location": "l-light",
+      "scenes": ["s003"]
+    },
+    {
+      "id": "e-0302",
+      "title": "Juno arrives in 1987",
+      "world": "1987-10-15T20:00",
+      "lane": "juno",
+      "location": "l-harbour",
+      "scenes": ["s004"]
+    },
+    {
+      "id": "e-0303",
+      "title": "Ida sees the coat",
+      "world": "1987-10-15T20:05",
+      "lane": "ida",
+      "location": "l-office",
+      "scenes": ["s005"]
+    },
+    {
+      "id": "e-0312",
+      "title": "Ida watches the market",
+      "world": "1987-10-15T19:45",
+      "end": "1987-10-15T20:10",
+      "lane": "ida",
+      "location": "The Drowned Market",
+      "summary": "Left in on purpose: overlaps the office scene, so it shows a two-places warning."
+    },
+    {
+      "id": "e-0304",
+      "title": "Juno at the market",
+      "world": "1987-10-15T20:30",
+      "lane": "juno",
+      "location": "l-market",
+      "scenes": ["s006"],
+      "after": ["e-0302"]
+    },
+    {
+      "id": "e-0305",
+      "title": "Juno warns Tobias",
+      "world": "1987-10-15T20:45",
+      "lane": "juno",
+      "location": "l-light",
+      "scenes": ["s007"],
+      "after": ["e-0304"]
+    },
+    {
+      "id": "e-0306",
+      "title": "Juno winds twice",
+      "world": "1987-10-15T21:05",
+      "lane": "juno",
+      "location": "l-cliffs",
+      "scenes": ["s008"],
+      "after": ["e-0305"]
+    },
+    {
+      "id": "e-0307",
+      "title": "Juno arrives earlier",
+      "world": "1987-10-15T19:30",
+      "lane": "juno",
+      "location": "l-market",
+      "scenes": ["s009"]
+    },
+    {
+      "id": "e-0308",
+      "title": "Ellis goes home",
+      "world": "1987-10-15T19:40",
+      "lane": "ellis",
+      "branch": "b-lives",
+      "location": "l-market",
+      "scenes": ["s009"],
+      "after": ["e-0307"]
+    },
+    {
+      "id": "e-0309",
+      "title": "Tea with Tobias",
+      "world": "2024-03-09T10:00",
+      "lane": "ellis",
+      "branch": "b-lives",
+      "location": "l-light",
+      "scenes": ["s010"]
+    }
+  ],
+  "jumps": [
+    {"from": "e-0301", "to": "e-0302", "traveller": "juno", "label": "first turn"},
+    {"from": "e-0306", "to": "e-0307", "traveller": "juno", "label": "two turns"}
+  ]
+}

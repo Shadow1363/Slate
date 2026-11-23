@@ -10,3 +10,6 @@ xcuserdata/
 .swiftpm/
 
 .DS_Store
+
+# Slate caches inside the showcase project (rebuilt on open)
+Showcase/*/.slate/

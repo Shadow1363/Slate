@@ -67,6 +67,10 @@ Tests use Swift Testing and work on temp copies of the sample project in `Fixtur
 4. Edit that file in TextEdit or VS Code and save it. Slate reloads it within a second.
 5. Type in Slate, then edit the same file outside before Slate autosaves (it waits 2 s). A **Changed on disk** banner offers Keep Mine or Load Theirs.
 
+## Showcase project
+
+`Showcase/Tidewater` is a made-up short film that uses every feature built so far: a three-act script, notes of every type, a custom template, margin to-dos and notes, a dictionary, a canvas, three timelines and two maps. Open it with ⌘O and follow its `SHOWCASE.md` checklist. It grows with each milestone, and `ShowcaseTests` keeps it valid.
+
 ## Writing a script
 
 Scripts are standard [Fountain](https://fountain.io/syntax) in `script/`. Act files (`01-act-one.md`, …) join in name order.

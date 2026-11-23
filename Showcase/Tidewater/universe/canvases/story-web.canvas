@@ -1,0 +1,25 @@
+{
+	"nodes":[
+		{"id":"a0a0a0a0a0a0a001","type":"group","x":-80,"y":-100,"width":1000,"height":480,"label":"Act one: the clock","color":"5"},
+		{"id":"a0a0a0a0a0a0a002","type":"group","x":-80,"y":440,"width":1000,"height":380,"label":"Act three: the price","color":"1"},
+		{"id":"b0b0b0b0b0b0b001","type":"text","text":"## The question\n\nCan you save someone **without** erasing yourself?\n\n- [x] Set it up in the lamp room\n- [ ] Pay it off without dialogue\n\n> The sea keeps what it's owed.","x":-40,"y":-40,"width":320,"height":260,"color":"3"},
+		{"id":"c0c0c0c0c0c0c001","type":"file","file":"universe/characters/juno-hale.md","x":340,"y":-40,"width":280,"height":260},
+		{"id":"c0c0c0c0c0c0c002","type":"file","file":"universe/items/the-tidewater-clock.md","x":660,"y":-40,"width":240,"height":200},
+		{"id":"d0d0d0d0d0d0d001","type":"file","file":"script/01-act-one.md","subpath":"#s003","x":340,"y":240,"width":280,"height":120,"color":"2"},
+		{"id":"e0e0e0e0e0e0e001","type":"file","file":"universe/canvases/images/lighthouse-sketch.png","x":660,"y":180,"width":240,"height":160},
+		{"id":"c0c0c0c0c0c0c003","type":"file","file":"universe/characters/ellis-hale.md","x":-40,"y":500,"width":300,"height":280},
+		{"id":"d0d0d0d0d0d0d002","type":"file","file":"script/03-act-three.md","subpath":"#s010","x":300,"y":500,"width":280,"height":120,"color":"2"},
+		{"id":"c0c0c0c0c0c0c004","type":"file","file":"universe/rules/tide-rules.md","x":620,"y":500,"width":280,"height":260},
+		{"id":"b0b0b0b0b0b0b002","type":"text","text":"No daughter in the photograph. See [[Tide Rules]].","x":300,"y":660,"width":280,"height":100},
+		{"id":"f0f0f0f0f0f0f001","type":"link","url":"https://fountain.io/syntax","x":980,"y":-40,"width":260,"height":80},
+		{"id":"b0b0b0b0b0b0b003","type":"text","text":"Loose idea, outside any frame: a second clock for [[Ida Marsh]]?","x":980,"y":100,"width":260,"height":120}
+	],
+	"edges":[
+		{"id":"aaaa000000000001","fromNode":"c0c0c0c0c0c0c001","fromSide":"right","toNode":"c0c0c0c0c0c0c002","toSide":"left","label":"finds"},
+		{"id":"aaaa000000000002","fromNode":"b0b0b0b0b0b0b001","fromSide":"bottom","toNode":"d0d0d0d0d0d0d001","toSide":"left","label":"set up in","color":"3"},
+		{"id":"aaaa000000000003","fromNode":"d0d0d0d0d0d0d001","fromSide":"bottom","toNode":"d0d0d0d0d0d0d002","toSide":"top","label":"pays off in","color":"1"},
+		{"id":"aaaa000000000004","fromNode":"c0c0c0c0c0c0c003","fromSide":"right","toNode":"d0d0d0d0d0d0d002","toSide":"left","fromEnd":"arrow","label":"saved / lost"},
+		{"id":"aaaa000000000005","fromNode":"c0c0c0c0c0c0c004","fromSide":"left","toNode":"b0b0b0b0b0b0b002","toSide":"right","toEnd":"none","color":"6"},
+		{"id":"aaaa000000000006","fromNode":"c0c0c0c0c0c0c002","fromSide":"bottom","toNode":"c0c0c0c0c0c0c004","toSide":"top","label":"obeys"}
+	]
+}
