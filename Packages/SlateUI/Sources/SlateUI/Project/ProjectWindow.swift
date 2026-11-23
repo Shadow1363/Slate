@@ -104,7 +104,6 @@ struct ProjectContent: View {
     @State private var session: ProjectSession
     @Environment(SlateAppModel.self) private var model
     @State private var columns: NavigationSplitViewVisibility = .all
-    @AppStorage(Shortcuts.overridesKey) private var shortcutOverrides = ""
     /// What focus mode hid, to put back when it ends.
     @State private var beforeFocus: (columns: NavigationSplitViewVisibility, margin: Bool, inspector: Bool)?
 
@@ -115,15 +114,8 @@ struct ProjectContent: View {
 
     var body: some View {
         @Bindable var session = session
+        // The area (Universe, Script…) is picked from the title menu, not a column.
         NavigationSplitView(columnVisibility: $columns) {
-            List(ProjectArea.allCases, selection: $session.area) { area in
-                Label(area.title, systemImage: area.systemImage)
-                    .badge(Text(SearchShortcut(Shortcuts.text("area." + area.rawValue, overrides: Shortcuts.overrides(shortcutOverrides),
-                                                              search: ""))?.display ?? "").foregroundStyle(.tertiary))
-                    .tag(area)
-            }
-            .navigationSplitViewColumnWidth(min: 170, ideal: 190)
-        } content: {
             Group {
                 switch session.area ?? .script {
                 case .script: ScriptNavigator(workspace: session.script, session: session)
@@ -200,13 +192,10 @@ struct ProjectContent: View {
                 .transition(.opacity)
             }
         }
+        .toolbar(removing: .title)
         .toolbar {
-            // The area's icon (the same one as in the sidebar), left of its title.
             ToolbarItem(placement: .navigation) {
-                Image(systemName: (session.area ?? .script).systemImage)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                AreaSwitcher(area: $session.area)
             }
         }
         .onChange(of: store.files) { session.spotlight?.reload() }
@@ -406,5 +395,38 @@ struct AreaPlaceholder: View {
         } description: {
             Text(area.comingIn + "\nFor now, pick a file to view and edit it as plain text.")
         }
+    }
+}
+
+/// The window's title: the current area's name. Clicking it lists every
+/// area, with its icon, the current one ticked. ⌘1–⌘4 still switch.
+struct AreaSwitcher: View {
+    @Binding var area: ProjectArea?
+
+    var body: some View {
+        let current = area ?? .script
+        Menu {
+            ForEach(ProjectArea.allCases) { option in
+                Toggle(isOn: Binding(get: { option == current }, set: { if $0 { area = option } })) {
+                    Label(option.title, systemImage: option.systemImage)
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Text(current.title)
+                    .font(.title3.weight(.semibold))
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 6)
+            .contentShape(.rect)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Switch area (⌘1–⌘4)")
+        .accessibilityLabel("Area: \(current.title)")
     }
 }

@@ -287,6 +287,10 @@ Fixtures/Fountain       Reference scripts and PDFs from fountain.io
 Fixtures/Snapshots      Golden page layouts
 ```
 
+## Moving around
+
+- **Areas:** click the title at the top of a project window (**Universe ▾**) to switch between Universe, Script, Storyboard and Dictionary, or press ⌘1–⌘4. Each area's sidebar holds its notes, scenes, boards or words.
+
 ## Voice
 
 - **Dictate (⇧⌘D)** in the script, a note, the draft or the dictionary book. A panel at the cursor shows the level (and, with Apple, the words as you speak). Press ⇧⌘D again or Insert to put the text in; Esc cancels. It's one undo step.

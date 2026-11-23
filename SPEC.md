@@ -169,7 +169,7 @@ The home screen is a library of project folders that can live anywhere on disk; 
 | A folder of Markdown (e.g. an Obsidian vault) | Copied into `universe/`; `[[links]]` kept, `.canvas` files kept     |
 | Plain `.txt` / `.md` screenplay               | Parsed with the Fountain rules                                      |
 
-Inside a project, the window has a sidebar (Universe, Script, Storyboard, Dictionary), the main editor, and an optional inspector on the right. The toolbar shows the area's icon (the one in the sidebar: globe for Universe, book for Dictionary…) to the left of the area's title; the project's folder path is not shown (Show in Finder and the library card have it).
+Inside a project, the window has four areas (Universe, Script, Storyboard, Dictionary). There is no column listing them: the window's title is the current area's name with a ▾, and clicking it opens a menu of the four areas, each with its icon, the current one ticked. ⌘1–⌘4 (View menu, remappable) switch too. Below the title: the area's own sidebar (notes, scenes, boards or words), the main editor, and an optional inspector on the right. The project's folder path is not shown (Show in Finder and the library card have it).
 
 **Shortcuts** — every menu command's shortcut is listed in Settings › Shortcuts, grouped by menu, with a filter. Click one and press new keys to remap it; a shortcut already used by another command or by macOS is refused with a note naming it. Each can be reset, set to none, or all reset at once. Changes apply to the menu bar immediately and are stored in `UserDefaults` (`shortcuts.overrides`, JSON of command → keys; Search keeps `search.shortcut`). Editor keys (Tab cycling, ⌘B/⌘I, zoom in canvas/map/timeline) are listed as built in. Defaults include ⌘K search, ⇧⌘F search text, ⌥⌘K insert link, ⇧⌘O jump to scene, ⇧⌘D dictate, ⌘1–⌘4 areas.
 
@@ -488,7 +488,7 @@ Any token a theme leaves out falls back to its `base`, so a custom theme can be 
 
 Thirteen milestones, ordered so the script is writable and printable early and the visual tools come after the file foundations are solid. Each ends with a "done when" you can check yourself.
 
-1. **Foundation** — XcodeGen project, three packages, ProjectStore, FileWatcher, ThemeEngine with Light/Dark, home screen with New/Open/Remove, project window with the four-area sidebar (empty views).
+1. **Foundation** — XcodeGen project, three packages, ProjectStore, FileWatcher, ThemeEngine with Light/Dark, home screen with New/Open/Remove, project window with the four areas (empty views).
    - Done when: you can create a project, see its folder in Finder, edit a file there and watch the app reload it.
 2. **Script editor** — ScriptParser with unit tests, TextKit 2 editor with live element formatting, Tab/Return element cycling, scene IDs, scene navigator, character autocomplete, spell check.
    - Done when: a 10-page script can be typed without touching the mouse and looks right in Draft view.

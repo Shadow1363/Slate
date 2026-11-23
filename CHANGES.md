@@ -1,5 +1,10 @@
 # Changes
 
+## Areas from the title menu (2026-11-23)
+
+- **No more area column.** The window's title (**Universe ▾**) opens a menu of Universe, Script, Storyboard and Dictionary, each with its icon, the current one ticked. The title itself has no icon. ⌘1–⌘4 still switch.
+- The area's own list (notes, scenes, boards, words) is now the window's sidebar. README screenshots retaken.
+
 ## Whisper is an optional download; beta.3 launch crash fixed (2026-11-23)
 
 - **0.9.0-beta.3 couldn't start.** The app linked `whisper.framework`, and the hardened runtime refused it because the app and framework were ad-hoc signed separately ("different Team IDs").
