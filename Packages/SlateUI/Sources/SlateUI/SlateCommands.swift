@@ -87,6 +87,9 @@ public struct SlateCommands: Commands {
             Button("Toggle Margin") { actions?.toggleMargin() }
                 .keyboardShortcut("m", modifiers: [.command, .shift])
                 .disabled(actions == nil)
+            Button("New Sketch…") { actions?.newSketch() }
+                .keyboardShortcut("k", modifiers: [.command, .shift])
+                .disabled(actions == nil)
             Divider()
             Button("Jump to Scene…") { actions?.jumpToScene() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])

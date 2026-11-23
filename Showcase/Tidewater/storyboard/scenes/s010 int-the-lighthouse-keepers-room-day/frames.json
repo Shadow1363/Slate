@@ -1,0 +1,19 @@
+{
+  "scene": "s010",
+  "frames": [
+    {
+      "file": "01.png",
+      "duration": 4,
+      "shot": "MS",
+      "caption": "Two cups",
+      "scriptRange": "action-1"
+    },
+    {
+      "file": "02.png",
+      "duration": 5,
+      "shot": "INSERT",
+      "caption": "No daughter in the photograph",
+      "scriptRange": "action-4"
+    }
+  ]
+}

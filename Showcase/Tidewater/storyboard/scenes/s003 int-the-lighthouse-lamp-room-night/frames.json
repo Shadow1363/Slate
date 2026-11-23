@@ -1,0 +1,26 @@
+{
+  "scene": "s003",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "WS",
+      "caption": "The lamp room (a sketch: double-click to edit)",
+      "scriptRange": "action-1"
+    },
+    {
+      "file": "02.mov",
+      "in": 0.5,
+      "out": 2.5,
+      "shot": "WS",
+      "move": "static",
+      "caption": "The beam stops mid-sweep",
+      "scriptRange": "action-5"
+    },
+    {
+      "file": "03.png",
+      "shot": "INSERT",
+      "caption": "The clock, hand pointing backwards",
+      "scriptRange": "action-3"
+    }
+  ]
+}

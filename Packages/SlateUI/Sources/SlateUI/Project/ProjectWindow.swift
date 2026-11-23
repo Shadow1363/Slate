@@ -23,6 +23,7 @@ public struct ProjectActions {
     public let toggleMargin: @MainActor () -> Void
     public let showAllTodos: @MainActor () -> Void
     public let defineSelection: @MainActor () -> Void
+    public let newSketch: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -108,6 +109,7 @@ struct ProjectContent: View {
                 case .script: ScriptNavigator(workspace: session.script, session: session)
                 case .universe: UniverseNavigator(session: session)
                 case .dictionary: DictionaryNavigator(session: session)
+                case .storyboard: StoryboardNavigator(session: session)
                 case let area: AreaFileList(store: store, area: area, selection: $session.selectedFile)
                 }
             }
@@ -129,6 +131,8 @@ struct ProjectContent: View {
                     UniverseDetail(session: session)
                 case .dictionary:
                     DictionaryDetail(session: session)
+                case .storyboard:
+                    StoryboardDetail(session: session)
                 case let area:
                     if let selectedFile = session.selectedFile {
                         DocumentPane(store: store, relativePath: selectedFile, close: { session.selectedFile = nil })
@@ -169,8 +173,15 @@ struct ProjectContent: View {
             }
         }
         .onChange(of: session.area) { session.selectedFile = nil }
-        .onAppear { model.register(session) }
-        .onDisappear { model.unregister(session) }
+        .onAppear {
+            model.register(session)
+            // Renames board folders to match headings, and moves boards whose scene is gone to orphans/.
+            session.storyboard.tidyFolders(moveMissing: true)
+        }
+        .onDisappear {
+            session.storyboard.tidyFolders(moveMissing: true)
+            model.unregister(session)
+        }
         .onChange(of: model.jumpRequests[SlateAppModel.key(store.rootURL)], initial: true) { _, request in
             guard request != nil, let jump = model.takeJump(for: store.rootURL) else { return }
             session.area = .script
@@ -180,6 +191,7 @@ struct ProjectContent: View {
             model.reschedule(root: store.rootURL, todos: MarginTodos.parse(text))
         }
         .onChange(of: store.files) { session.filesChanged() }
+        .onChange(of: store.externalChangeCount) { session.contentsChanged() }
         .onChange(of: session.dictionary.projectText) { session.dictionary.refresh() }
         .sheet(item: $session.sheet) { sheet in
             switch sheet {
@@ -237,7 +249,8 @@ struct ProjectContent: View {
                 session.script.margin.tab = .todos
                 session.script.margin.scope = .all
             },
-            defineSelection: { session.defineSelection() }
+            defineSelection: { session.defineSelection() },
+            newSketch: { session.newSketch() }
         ))
     }
 }
@@ -257,7 +270,7 @@ extension ProjectArea {
         switch self {
         case .universe: "Canvas, timeline and map arrive in Milestones 7–8."
         case .script: "The screenplay editor arrives in Milestone 2."
-        case .storyboard: "Boards arrive in Milestone 9 and the animatic player in Milestone 10."
+        case .storyboard: "The animatic player arrives in Milestone 10."
         case .dictionary: "Pick a word to see its page."
         }
     }

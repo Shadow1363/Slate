@@ -1,5 +1,74 @@
 # Changes
 
+## Milestone 9 — Storyboard (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 333 pass: 242 in SlateCore, 75 in SlateUI and 16 in SlateExport.
+**Dependencies:** none added (AVFoundation and ImageIO are Apple's).
+
+### What works
+- **Rows follow the script.** The Storyboard area (⌘3) has a row for every scene with an ID, in script order: number, heading, estimated time, and a strip of frames. The left column lists scenes with frame counts, then "Scene Missing" and "Orphans".
+- **Empty scenes** show a placeholder card with their first action line.
+- **Files:** `storyboard/scenes/s014 int-kitchen-night/` holds the media and `frames.json`, in SPEC's format. A folder is created with a scene's first frame. Images or clips dropped into the folder in Finder show up at the end of the row.
+- **Adding frames:**
+  - drop images or clips from Finder onto a row (or before a frame);
+  - a row's + menu: Add Images or Clips…, New Sketch, Paste;
+  - ⌘V pastes.
+
+  Files are copied in and named `01.png`, `02.mov`….
+- **Arranging:** drag frames to reorder, or onto another scene (the file moves, with its strokes). Delete sends a frame's files to the Trash. Undo covers details, reordering and moves.
+- **Inspector:**
+  - a large preview;
+  - shot size (EWS to INSERT) and camera move;
+  - lens, and duration (empty shows the "auto" share of the scene's time);
+  - caption;
+  - **Covers**, the first and last script lines the frame shows (written as `scriptRange`, e.g. `action-1..dialogue-2`);
+  - for clips, In/Out sliders that update the poster, plus a sound toggle.
+- **Script ↔ frames:**
+  - Selecting a frame tints its lines in the script.
+  - Frames that cover the line at the script's caret get a dashed outline on the board.
+  - **Show Frames in Storyboard** is on the script's right-click menu, and **Show in Storyboard** on a scene's menu in the Script sidebar.
+  - A frame's **Show in Script** goes the other way.
+- **Sketch pad** (⇧⌘K, or a row's + menu):
+  - a pen that responds to pressure (Force Touch trackpad or tablet), an eraser, four greys and three sizes;
+  - 16:9, 2.39:1 and 1.85:1 guides, with the area outside darkened;
+  - undo and redo per stroke, and Clear.
+  - It saves a PNG cropped to the guide, with `NN.strokes.json` beside it. Double-click the frame (or Edit Sketch) to change it.
+- **Clips:** a poster frame and length are read in the background. A clip with no duration plays from in to out.
+- **Missing scenes:** when a scene is deleted, its row turns "scene missing" right away, with **Reattach** (to any scene without a board) and **Move to Orphans**.
+  - When the project opens or closes, leftovers move to `storyboard/orphans/`, and folder names are renamed to match changed headings (or press **Tidy**).
+  - Nothing moves while you type, and nothing is orphaned if the script has no scenes.
+  - Orphans can be reattached.
+- **Home:** each project card shows its first storyboard image.
+- **Outside edits:** editing `frames.json` in another app reloads the board. The project store now notices changed contents, not only added or removed files.
+
+### Showcase and fixtures
+- **Tidewater:**
+  - boards for nine of ten scenes, using every shot size, seven camera moves and two lenses;
+  - a sketch with strokes and a 3-second clip, trimmed 0.5–2.5 s;
+  - an empty s008 to show the placeholder;
+  - a cut "ferry deck" board in `orphans/` to reattach.
+
+  `SHOWCASE.md` has a Milestone 9 checklist.
+- **`ShowcaseTests`** now also check that every frame file exists, every `scriptRange` resolves, folder names match headings, `frames.json` is in Slate's layout, and only the orphan is unattached.
+- **The sample fixture** has a three-frame board for s014, one of them a sketch.
+
+### Stubbed or not yet
+- **Not checked by hand:** I can build, test and launch the app, but I can't draw or drag here. The sketch pad with a real tablet or trackpad, dragging between rows, and paste especially need trying.
+- **Playback:** the animatic player, overlays, scratch audio, `.mov` export and the boards PDF are Milestone 10. Clips can be trimmed but not played yet.
+- **Undo limits:** adding frames isn't undone with ⌘Z (delete them instead), and a deleted frame comes back from the Trash, not with undo.
+- **Selecting:** ⌘A on a row isn't in yet; frames are selected one at a time.
+- **Thumbnails** are cached in memory only, so a big project rereads them each launch.
+
+### Please try
+1. Open Tidewater and press ⌘3. Scroll the rows; s008 shows its placeholder.
+2. Select frame 2 of s003, the clip, and drag the In and Out sliders.
+3. Select a frame, then press ⌘2: its lines are tinted. Right-click an action line › Show Frames in Storyboard.
+4. Press ⇧⌘K and draw, using pressure if you can. Erase, switch guides, then Add Sketch. Double-click it to edit.
+5. Drag a frame to another scene, undo, then drop an image from Finder onto a row.
+6. Reattach the ferry orphan to s008.
+7. Delete a boarded scene's heading in the script, look at the board, then close and reopen the project.
+
 ## Showcase project (2026-11-22, after Milestone 8)
 
 - **New:** `Showcase/Tidewater`, a made-up short film about a lighthouse keeper, a clock that winds back the tide, and a brother saved at a price. It uses every feature from Milestones 1–8:

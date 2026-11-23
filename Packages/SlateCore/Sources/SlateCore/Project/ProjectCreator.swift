@@ -63,6 +63,8 @@ public struct ProjectSummary: Sendable, Equatable {
     public var lastEdited: Date?
     /// Open to-dos in `script/margin/todos.md`.
     public var openTodos = 0
+    /// The first storyboard image, in script order, for the Home card.
+    public var cover: URL?
 
     /// Reads `project.json` and finds the newest file modification date,
     /// skipping `.slate/` and `exports/`. Safe to call off the main thread.
@@ -85,7 +87,7 @@ public struct ProjectSummary: Sendable, Equatable {
             }
         }
         let open = Reminders.todos(in: root).filter { !$0.done }.count
-        return ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open)
+        return ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open, cover: StoryboardCover.firstImage(in: root))
     }
 }
 

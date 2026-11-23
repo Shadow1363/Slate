@@ -42,5 +42,17 @@ Each milestone adds its features to this project; the checklist below grows with
 - [ ] `saltmarrow` map: an image, 1987 and 2024 layers, pins, regions and paths linked to location notes and scenes. `lighthouse-floors` is a blank-grid map.
 - [ ] Right-click any scene in the Script sidebar › Show on Map.
 
-## Milestone 9 onwards
-Storyboard frames, animatic, production features and polish will be added here as they're built.
+## Milestone 9: Storyboard
+- [ ] Storyboard (⌘3): ten scene rows in script order. s008 has no frames, so it shows its first action line.
+- [ ] Every shot size (EWS to INSERT) and seven camera moves; s002 and s007 set a lens.
+- [ ] s003: frame 1 is a **sketch** (double-click to edit; 2.39:1 guide), frame 2 is a **clip** trimmed 0.5–2.5 s (drag the In/Out sliders), frame 3 an insert.
+- [ ] Select a frame, then go to Script: its lines are tinted. Put the caret on an action line and come back: frames that cover it are outlined.
+- [ ] Right-click in the script › Show Frames in Storyboard.
+- [ ] Orphans: "s099 ext-ferry-deck-day" was cut from the script. Reattach it to s008.
+- [ ] Delete a boarded scene in the script: its row turns "scene missing". Close and reopen the project and it's in `storyboard/orphans/`.
+- [ ] Rename a heading, then press Tidy (or reopen): the folder name follows.
+- [ ] Drag a frame to another scene and undo. Drop an image from Finder onto a row. New Sketch with ⇧⌘K.
+- [ ] Home: the project card shows the first frame.
+
+## Milestone 10 onwards
+The animatic player, production features and polish will be added here as they're built.

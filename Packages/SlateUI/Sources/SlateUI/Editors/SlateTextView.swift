@@ -25,6 +25,8 @@ final class SlateTextView: NSTextView {
     var followTerm: ((String) -> Bool)?
     /// Context-menu items for the word under the pointer: (word, misspelled).
     var dictionaryMenuItems: ((String, Bool) -> [NSMenuItem])?
+    /// Items added at the end of the right-click menu, for the clicked character index.
+    var extraMenuItems: ((Int) -> [NSMenuItem])?
 
     private enum HoverItem: Equatable {
         case link(String)
@@ -186,6 +188,19 @@ final class SlateTextView: NSTextView {
     }
 
     override func menu(for event: NSEvent) -> NSMenu? {
+        let menu = dictionaryMenu(for: event)
+        if let menu, let extraMenuItems {
+            let index = characterIndexForInsertion(at: convert(event.locationInWindow, from: nil))
+            let items = extraMenuItems(index)
+            if !items.isEmpty {
+                menu.addItem(.separator())
+                items.forEach(menu.addItem)
+            }
+        }
+        return menu
+    }
+
+    private func dictionaryMenu(for event: NSEvent) -> NSMenu? {
         let menu = super.menu(for: event)
         guard let menu, let dictionaryMenuItems,
               let (word, _) = word(at: convert(event.locationInWindow, from: nil)) else { return menu }

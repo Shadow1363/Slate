@@ -1,0 +1,19 @@
+{
+  "scene": "s004",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "EWS",
+      "move": "handheld",
+      "caption": "1987, the storm",
+      "scriptRange": "action-1"
+    },
+    {
+      "file": "02.png",
+      "shot": "WS",
+      "move": "track",
+      "caption": "Ellis runs past with a lantern",
+      "scriptRange": "action-3"
+    }
+  ]
+}

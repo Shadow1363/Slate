@@ -10,6 +10,8 @@ struct ScriptEditor: NSViewRepresentable {
     let text: String
     let workspace: ScriptWorkspace
     let reveal: RevealRequest?
+    /// Lines the selected storyboard frame covers.
+    var frameHighlight: FrameHighlight? = nil
     let theme: ResolvedTheme
     let sources: ScriptCompletion.Sources
     let spelling: EditorSpelling
@@ -112,6 +114,7 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         terms = TermDecorator(textView: textView)
         terms.protectedRanges = { [weak self] in self?.protectedRanges ?? [] }
         config.workspace.dictionaryActions.install(in: textView, decorator: terms)
+        textView.extraMenuItems = { [weak self] index in self?.storyboardMenuItems(at: index) ?? [] }
 
         frameObserver = NotificationCenter.default.addObserver(
             forName: NSView.frameDidChangeNotification, object: textView, queue: .main
@@ -619,7 +622,9 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     private func highlightAnchors(force: Bool = false) {
         guard let textView, let layout = textView.textLayoutManager, let content = layout.textContentManager else { return }
         let anchors = config.workspace.margin.anchors
-        let key = anchors.map { $0.sceneID + "|" + $0.quote } + [theme.margin.anchorHighlight.hex]
+        let frame = config.frameHighlight
+        let key = anchors.map { $0.sceneID + "|" + $0.quote } + [theme.margin.anchorHighlight.hex, theme.storyboard.selectedFrame.hex]
+            + [frame.map { $0.sceneID + "|" + $0.range } ?? ""]
         let keyChanged = key != appliedAnchors
         appliedAnchors = key
         var ranges: [NSRange] = []
@@ -629,16 +634,33 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
                   let range = MarginQuote.range(of: anchor.quote, in: text, within: scene.range) else { continue }
             ranges.append(range)
         }
-        guard force || keyChanged || ranges != anchorRanges else { return }
-        let color = NSColor(theme.margin.anchorHighlight)
+        // The selected storyboard frame's lines, after the anchors so they're told apart by colour.
+        var frameRanges: [NSRange] = []
+        if let frame, let scene = parsed.scenes.first(where: { $0.sceneID == frame.sceneID }),
+           let lines = ScriptRange(frame.range)?.lines(in: scene, of: parsed) {
+            frameRanges = lines.map { parsed.lines[$0].range }
+        }
+        guard force || keyChanged || ranges + frameRanges != anchorRanges else { return }
         layout.removeRenderingAttribute(.backgroundColor, for: layout.documentRange)
-        for range in ranges {
+        func tint(_ range: NSRange, _ color: NSColor) {
             guard let start = content.location(content.documentRange.location, offsetBy: range.location),
                   let end = content.location(start, offsetBy: range.length),
-                  let textRange = NSTextRange(location: start, end: end) else { continue }
+                  let textRange = NSTextRange(location: start, end: end) else { return }
             layout.addRenderingAttribute(.backgroundColor, value: color, for: textRange)
         }
-        anchorRanges = ranges
+        let anchorColor = NSColor(theme.margin.anchorHighlight)
+        ranges.forEach { tint($0, anchorColor) }
+        let frameColor = NSColor(theme.storyboard.selectedFrame).withAlphaComponent(0.2)
+        frameRanges.forEach { tint($0, frameColor) }
+        anchorRanges = ranges + frameRanges
+    }
+
+    /// "Show Frames" for the scene under the pointer.
+    private func storyboardMenuItems(at index: Int) -> [NSMenuItem] {
+        guard let show = config.workspace.showFrames else { return [] }
+        let line = parsed.lineIndex(containing: index)
+        guard let sceneIndex = parsed.sceneIndex(containingLine: line), let id = parsed.scenes[sceneIndex].sceneID else { return [] }
+        return [ClosureMenuItem("Show Frames in Storyboard") { show(id, line) }]
     }
 
     // MARK: - Caret reporting

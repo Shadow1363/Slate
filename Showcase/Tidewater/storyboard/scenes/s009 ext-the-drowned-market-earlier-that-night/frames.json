@@ -1,0 +1,18 @@
+{
+  "scene": "s009",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "MCU",
+      "caption": "Juno kneels to Ellis's height",
+      "scriptRange": "action-2"
+    },
+    {
+      "file": "02.png",
+      "shot": "WS",
+      "move": "zoom",
+      "caption": "He goes home",
+      "scriptRange": "action-3"
+    }
+  ]
+}

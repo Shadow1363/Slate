@@ -53,6 +53,7 @@ final class ProjectSession {
     let links: LinkIndex
     let script: ScriptWorkspace
     let dictionary: DictionaryModel
+    let storyboard: StoryboardModel
 
     var area: ProjectArea? = .script
     /// The open file in Storyboard (a temporary file list).
@@ -90,6 +91,7 @@ final class ProjectSession {
         links = LinkIndex(store: store)
         script = ScriptWorkspace(store: store)
         dictionary = DictionaryModel(store: store, globalURL: globalWordsURL)
+        storyboard = StoryboardModel(store: store, script: script)
         refreshTemplates()
         script.dictionary = dictionary
         script.linkGraph = { [weak self] in self?.links.graph ?? .empty }
@@ -99,6 +101,26 @@ final class ProjectSession {
         script.textDidChange = { [weak self] path, text in self?.textDidChange(path: path, text: text) }
         universeSelection = ProjectLayout.draft
         script.dictionaryActions = dictionaryActions(inScript: true)
+        script.showFrames = { [weak self] sceneID, line in
+            guard let self else { return }
+            StoryboardActions.showFrames(sceneID: sceneID, line: line, session: self)
+        }
+    }
+
+    /// A new sketch for the selected frame's scene, the focused board row, or the scene at the script caret.
+    func newSketch() {
+        let board = storyboard
+        let fromSelection = board.selection.flatMap { board.scene(forFolder: $0.folder)?.scene.sceneID }
+        let fromRow = board.focusedRow.flatMap { id in board.scenes.contains { $0.scene.sceneID == id } ? id : nil }
+        let fromCaret = script.caret.flatMap { caret -> String? in
+            guard let file = script.book.files.first(where: { $0.path == caret.file }) else { return nil }
+            let line = file.parsed.lineIndex(containing: caret.location)
+            return file.parsed.sceneIndex(containingLine: line).flatMap { file.parsed.scenes[$0].sceneID }
+        }
+        guard let id = fromSelection ?? fromRow ?? fromCaret ?? board.scenes.first?.scene.sceneID else { return }
+        area = .storyboard
+        board.focusedRow = id
+        board.sketchTarget = .init(sceneID: id, file: nil)
     }
 
     /// Call when `store.files` changes.
@@ -108,8 +130,15 @@ final class ProjectSession {
         links.refresh()
         dictionary.refresh()
         refreshTemplates()
+        storyboard.refresh()
         if let selection = universeSelection, !exists(selection) { universeSelection = nil }
         if let selection = selectedFile, !exists(selection) { selectedFile = nil }
+    }
+
+    /// Call when files may have changed on disk without the file list changing.
+    func contentsChanged() {
+        links.refresh()
+        storyboard.refresh()
     }
 
     func refreshTemplates() {

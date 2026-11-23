@@ -1,0 +1,12 @@
+{
+  "scene": "s006",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "MS",
+      "caption": "Juno grabs Ellis's arm",
+      "scriptRange": "action-3..dialogue-4"
+    },
+    {"file": "02.png", "shot": "ECU", "caption": "The box in the water", "scriptRange": "action-2"}
+  ]
+}

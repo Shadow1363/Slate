@@ -1,0 +1,26 @@
+{
+  "scene": "s001",
+  "frames": [
+    {
+      "file": "01.png",
+      "duration": 3,
+      "shot": "WS",
+      "move": "static",
+      "caption": "Saltmarrow at dawn",
+      "scriptRange": "action-1"
+    },
+    {
+      "file": "02.png",
+      "shot": "EWS",
+      "move": "pan",
+      "caption": "The lighthouse turns",
+      "scriptRange": "action-2"
+    },
+    {
+      "file": "03.png",
+      "shot": "MS",
+      "caption": "Juno hauls an empty pot",
+      "scriptRange": "action-3..dialogue-1"
+    }
+  ]
+}

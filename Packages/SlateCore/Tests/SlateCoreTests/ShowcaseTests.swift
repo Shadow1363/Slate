@@ -112,4 +112,46 @@ struct ShowcaseTests {
             }
         }
     }
+
+    @Test func storyboards() throws {
+        let folder = try TempFolder()
+        let store = try Self.open(folder)
+        let all = Self.paths(store)
+        let book = try Self.book(store)
+        let scenes = book.scenes.map { ($0.scene.sceneID!, $0.scene.heading) }
+        let plan = StoryboardFolders.plan(scenes: scenes, folders: StoryboardFolders.folders(in: all))
+        // Folder names match their headings, and the only loose board is the deliberate orphan.
+        #expect(plan.renames.isEmpty, "\(plan.renames)")
+        #expect(plan.missing.isEmpty)
+        #expect(plan.orphans.map(\.name) == ["s099 ext-ferry-deck-day"])
+        // s008 is left empty on purpose, to show the placeholder card.
+        #expect(plan.unboarded == ["s008"])
+        var shots: Set<String> = [], moves: Set<String> = []
+        var clips = 0, sketches = 0
+        for (id, folder) in plan.boarded {
+            let text = try store.readText(at: folder.framesPath)
+            let frames = try FramesFile(text: text)
+            #expect(frames.text == text, "\(folder.name)/frames.json isn't in Slate's layout")
+            #expect(frames.scene == id)
+            let scene = try #require(book.scenes.first { $0.scene.sceneID == id })
+            let parsed = try #require(book.files.first { $0.path == scene.file }).parsed
+            for frame in frames.frames {
+                #expect(all.contains(folder.path + "/" + frame.file), "Missing \(folder.name)/\(frame.file)")
+                let range = try #require(frame.scriptRange.flatMap(ScriptRange.init), "\(frame.file) has no script range")
+                #expect(range.lines(in: scene.scene, of: parsed) != nil, "\(folder.name)/\(frame.file): \(range) not found")
+                if let shot = frame.shot { shots.insert(shot) }
+                if let move = frame.move { moves.insert(move) }
+                if frame.isClip { clips += 1 }
+                if all.contains(folder.path + "/" + StoryboardMedia.strokesFile(for: frame.file)) {
+                    let url = try store.url(for: folder.path + "/" + StoryboardMedia.strokesFile(for: frame.file))
+                    #expect(try !SketchStrokes(data: Data(contentsOf: url)).strokes.isEmpty)
+                    sketches += 1
+                }
+            }
+        }
+        #expect(shots == Set(ShotSize.allCases.map(\.rawValue)))
+        #expect(moves.count >= 6)
+        #expect(clips == 1 && sketches == 1)
+        #expect(StoryboardCover.firstImage(in: store.rootURL)?.lastPathComponent == "01.png")
+    }
 }

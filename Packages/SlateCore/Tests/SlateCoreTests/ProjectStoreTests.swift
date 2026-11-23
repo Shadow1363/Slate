@@ -22,7 +22,7 @@ struct ProjectStoreTests {
         ])
         #expect(store.files[.dictionary]?.map(\.name) == ["words.md"])
         // Hidden files (.gitkeep) are not listed.
-        #expect(store.files[.storyboard]?.map(\.name) == ["storyboard.json"])
+        #expect(store.files[.storyboard]?.map(\.name) == ["01.png", "02.png", "03.png", "03.strokes.json", "frames.json", "storyboard.json"])
     }
 
     @Test func refusesAFolderWithoutManifest() throws {

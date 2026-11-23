@@ -1,0 +1,19 @@
+{
+  "scene": "s002",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "MCU",
+      "lens": 50,
+      "caption": "Tobias polishes the lens",
+      "scriptRange": "action-1"
+    },
+    {
+      "file": "02.png",
+      "shot": "CU",
+      "move": "push in",
+      "caption": "Juno stops",
+      "scriptRange": "action-3"
+    }
+  ]
+}

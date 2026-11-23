@@ -29,6 +29,9 @@ public final class ProjectStore {
     public private(set) var documents: [String: TextDocument] = [:]
     /// Set when `project.json` was edited outside Slate into something unreadable.
     public private(set) var manifestError: String?
+    /// Bumped each time outside changes are handled, even when no file was
+    /// added or removed (an edited file only changes its contents).
+    public private(set) var externalChangeCount = 0
 
     private let watcher: FileWatcher
     @ObservationIgnored private var watchTask: Task<Void, Never>?
@@ -96,6 +99,7 @@ public final class ProjectStore {
         for document in documents.values {
             checkDisk(document)
         }
+        externalChangeCount += 1
     }
 
     // MARK: - Files

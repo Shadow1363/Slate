@@ -343,7 +343,7 @@ _Notes_
 
 ## Storyboard
 
-The storyboard mirrors the script: every `#` scene heading becomes a scene row automatically, and you fill it with frames (images, clips or sketches) that the player turns into a watchable animatic.
+The storyboard mirrors the script: every scene heading becomes a scene row automatically, and you fill it with frames (images, clips or sketches) that the player turns into a watchable animatic.
 
 **Storage (recommended)** — one folder per scene, named by its ID plus a readable slug: `storyboard/scenes/s014 int-kitchen-night/`. Media files sit in it as normal files; `frames.json` holds order and metadata. The ID prefix is the real key, so the slug is renamed when the heading changes and Finder stays readable.
 
@@ -371,6 +371,8 @@ The storyboard mirrors the script: every `#` scene heading becomes a scene row a
 }
 ```
 
+`scriptRange` names script lines by their position in the scene: `action-1` is the scene's first action line, and `character-2..dialogue-2` runs from the second cue to the second dialogue line (kinds: `heading`, `action`, `character`, `parenthetical`, `dialogue`, `transition`, `centered`, `lyric`…). Frames without `duration` share the scene's estimated time; clips play from `in` to `out`. A sketch keeps its strokes beside its image (`03.png` + `03.strokes.json`) so it can be edited again. `storyboard.json` › `settings` › `guide` (`16:9`, `2.39:1`, `1.85:1`) sets the default sketch guide. Media files put in a scene folder by hand appear after the listed frames.
+
 **Board view**
 
 - Rows of scenes in script order, each with scene number, heading, estimated time and a strip of frame thumbnails.
@@ -378,7 +380,7 @@ The storyboard mirrors the script: every `#` scene heading becomes a scene row a
 - Per frame: shot size (EWS, WS, MS, MCU, CU, ECU, insert), camera move, lens, duration, caption, and which script lines it covers. Selecting a frame highlights those lines in the script, and vice versa.
 - Built-in sketch pad for rough boards: pen, eraser, a few greys, frame guides in 16:9, 2.39:1 or 1.85:1; saved as PNG with its strokes kept beside it for re-editing.
 - Empty scenes show a placeholder card with the scene's first action line, so the animatic plays even before every scene is boarded.
-- When a scene is deleted from the script, its folder moves to `storyboard/orphans/` and can be reattached.
+- When a scene is deleted from the script, its board is marked "scene missing" straight away (with Reattach and Move to Orphans), and its folder moves to `storyboard/orphans/` when the project is next opened or closed. Boards in `orphans/` can be reattached to any scene without one.
 
 **Watch (animatic player)**
 
@@ -489,7 +491,7 @@ The spec picks a default for each of these; change them here before Milestone 1 
 | Minimum macOS        | 15 (Sequoia)                                    | 26 (Tahoe) for the newest SwiftUI and Liquid Glass styling  |
 | Distribution         | Developer ID, unsandboxed                       | Mac App Store (sandboxed; needs bookmarks, already planned) |
 | Default page size    | US Letter                                       | A4                                                          |
-| Storyboard storage   | Scene folders + `frames.json`                   | One `.slateboard` package per scene                         |
+| Storyboard storage   | Scene folders + `frames.json` (chosen, Milestone 9) | One `.slateboard` package per scene                         |
 | Sketch pad           | Simple built-in (pen, eraser, greys)            | Import-only; draw in another app                            |
 
 - [ ] Confirm the defaults above, or note changes

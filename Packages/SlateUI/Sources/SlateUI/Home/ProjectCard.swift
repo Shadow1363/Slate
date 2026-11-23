@@ -32,7 +32,6 @@ struct ProjectCard: View {
                     Text(lastEditedText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    // Page count and runtime need a full layout; they come with the cover images (M9).
                     Text(todoText)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
@@ -56,9 +55,14 @@ struct ProjectCard: View {
     private var cover: some View {
         ZStack {
             Rectangle().fill(Color(theme.storyboard.background))
-            Image(systemName: isMissing ? "questionmark.folder" : "film")
-                .font(.system(size: 34, weight: .light))
-                .foregroundStyle(.secondary)
+            if !isMissing, let url = summary?.cover, let image = ThumbnailCache.imageThumbnail(url) {
+                // The first storyboard frame.
+                Image(nsImage: image).resizable().scaledToFill()
+            } else {
+                Image(systemName: isMissing ? "questionmark.folder" : "film")
+                    .font(.system(size: 34, weight: .light))
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(height: 120)
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 10, topTrailingRadius: 10))

@@ -144,6 +144,16 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **Layers** (toolbar) can be shown and hidden, and new items go on the layer you choose. Coordinates are saved from 0 to 1 across the image, so a sharper copy of the same image keeps every pin in place.
 - **Show on Map:** right-click a scene in the Script sidebar to jump to the pin linked to that scene, or to the location its heading names.
 
+## Storyboard
+
+- **Every scene is a row,** in script order, with its number, heading, estimated time and frames. Empty scenes show their first action line.
+- **Add frames:** drop images or clips from Finder onto a row, use its + menu (Add Images or Clips…, New Sketch, Paste), or ⌘V. Files are copied into `storyboard/scenes/<id> <slug>/`.
+- **Arrange:** drag frames to reorder, or onto another scene. Delete sends a frame to the Trash.
+- **Inspector:** shot size, camera move, lens, duration (empty = shares the scene's time), caption, the script lines it covers, and in/out for clips.
+- **Script ↔ frames:** selecting a frame tints its lines in the script; frames covering the script caret are outlined. Right-click in the script › Show Frames in Storyboard.
+- **Sketch pad (⇧⌘K):** pen with pressure, eraser, four greys, three sizes, 16:9 / 2.39:1 / 1.85:1 guides. Saved as a PNG with its strokes; double-click to edit.
+- **Missing scenes:** a board whose scene was deleted is marked, with Reattach and Move to Orphans; on close it moves to `storyboard/orphans/`.
+
 ## Dictionary
 
 - **One book:** `dictionary/words.md` is the film's own dictionary, filed A–Z under `## Letter` headings:
@@ -190,6 +200,7 @@ Fixtures/Snapshots      Golden page layouts
 | ⌘0 / ⇧⌘0 | Canvas: fit everything / 100% |
 | ⌘= / ⌘− | Canvas and map: zoom in / out. Timeline: wider / narrower |
 | ⌘0 | Map: fit |
+| ⇧⌘K | New sketch (storyboard) |
 | ⇧⌘T | Add to-do at the caret |
 | ⌥⌘T | Add margin note at the caret |
 | ⇧⌘M | Show / hide the margin |

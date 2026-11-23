@@ -1,0 +1,12 @@
+{
+  "scene": "s005",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "MS",
+      "move": "push in",
+      "caption": "Ida signs without reading",
+      "scriptRange": "action-1"
+    }
+  ]
+}

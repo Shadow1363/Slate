@@ -15,6 +15,13 @@ struct RevealRequest: Equatable {
     let token = UUID()
 }
 
+/// Script lines a selected storyboard frame covers, tinted in the editor.
+struct FrameHighlight: Equatable {
+    let sceneID: String
+    /// A `ScriptRange` (`action-1..dialogue-2`).
+    let range: String
+}
+
 /// The caret as the editor last reported it.
 struct ScriptCaret: Equatable {
     var file: String
@@ -39,6 +46,10 @@ final class ScriptWorkspace {
     var selectedRow: String?
     var reveal: RevealRequest?
     var caret: ScriptCaret?
+    /// Lines to tint for the frame selected in the storyboard.
+    var frameHighlight: FrameHighlight?
+    /// Opens the storyboard on the frames covering a line (scene ID, line index).
+    @ObservationIgnored var showFrames: ((String, Int) -> Void)?
     private(set) var characterNoteNames: [String] = []
     /// The project's dictionary, for spell check and defined-word underlines.
     var dictionary: DictionaryModel?

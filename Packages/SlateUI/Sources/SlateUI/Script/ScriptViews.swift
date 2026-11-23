@@ -24,6 +24,11 @@ struct ScriptNavigator: View {
                             .tag(ScriptWorkspace.row(for: scene))
                             .contextMenu {
                                 if let session {
+                                    Button("Show in Storyboard") {
+                                        session.area = .storyboard
+                                        session.storyboard.focusedRow = scene.scene.sceneID
+                                    }
+                                    .disabled(scene.scene.sceneID == nil)
                                     Button("Show on Map") { session.showOnMap(scene) }
                                         .disabled(session.mapTarget(for: scene) == nil)
                                 }
@@ -150,6 +155,7 @@ struct ScriptEditorPane: View {
                 text: document.text,
                 workspace: workspace,
                 reveal: workspace.reveal,
+                frameHighlight: workspace.frameHighlight,
                 theme: theme,
                 sources: workspace.completionSources,
                 spelling: workspace.spelling

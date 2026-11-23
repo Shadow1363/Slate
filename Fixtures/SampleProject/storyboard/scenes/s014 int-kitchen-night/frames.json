@@ -1,0 +1,20 @@
+{
+  "scene": "s014",
+  "frames": [
+    {
+      "file": "01.png",
+      "duration": 3,
+      "shot": "WS",
+      "move": "static",
+      "caption": "Rain on the window",
+      "scriptRange": "action-1"
+    },
+    {"file": "02.png", "shot": "INSERT", "caption": "The key", "scriptRange": "action-1"},
+    {
+      "file": "03.png",
+      "shot": "MCU",
+      "caption": "Older Mara, off screen",
+      "scriptRange": "character-2..dialogue-2"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "scene": "s007",
+  "frames": [
+    {
+      "file": "01.png",
+      "shot": "CU",
+      "move": "crane",
+      "lens": 85,
+      "caption": "Tobias, quietly",
+      "scriptRange": "character-4..dialogue-4"
+    }
+  ]
+}
