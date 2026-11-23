@@ -4,8 +4,7 @@ import SlateCore
 import SwiftUI
 
 /// The Universe area's margin: the TODO comments in notes (`%% TODO: … %%`,
-/// `<!-- TODO: … -->`), beside the note like the script's margin. ⇧⌘M or
-/// the toolbar shows and hides it.
+/// `<!-- TODO: … -->`), in the sidebar's To-dos tab like the script's.
 @MainActor
 @Observable
 final class NoteMarginModel {
@@ -16,18 +15,12 @@ final class NoteMarginModel {
     }
 
     let store: ProjectStore
-    var showing: Bool {
-        didSet { UserDefaults.standard.set(showing, forKey: Self.showingKey) }
-    }
     var scope: Scope = .note
     var filter: MarginModel.TodoFilter = .open
     private(set) var error: String?
 
-    static let showingKey = "universe.marginShown"
-
     init(store: ProjectStore) {
         self.store = store
-        showing = UserDefaults.standard.object(forKey: Self.showingKey) as? Bool ?? true
     }
 
     /// Markdown files in Universe (notes and the draft).
@@ -100,12 +93,6 @@ struct NoteMarginView: View {
         let canAdd = selected?.hasSuffix(".md") ?? false
         let todos = margin.todos(selected: selected)
         VStack(spacing: 0) {
-            HStack {
-                Text("To-dos").font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal, 10)
-            .padding(.top, 10)
             HStack {
                 Picker("Scope", selection: $margin.scope) {
                     ForEach(NoteMarginModel.Scope.allCases) { Text($0.title).tag($0) }

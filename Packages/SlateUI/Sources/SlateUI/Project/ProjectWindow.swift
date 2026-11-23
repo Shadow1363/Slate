@@ -105,7 +105,7 @@ struct ProjectContent: View {
     @Environment(SlateAppModel.self) private var model
     @State private var columns: NavigationSplitViewVisibility = .all
     /// What focus mode hid, to put back when it ends.
-    @State private var beforeFocus: (columns: NavigationSplitViewVisibility, margin: Bool, inspector: Bool)?
+    @State private var beforeFocus: (columns: NavigationSplitViewVisibility, sidebar: Bool)?
 
     init(store: ProjectStore) {
         self.store = store
@@ -130,25 +130,9 @@ struct ProjectContent: View {
             Group {
                 switch session.area ?? .script {
                 case .script:
-                    HStack(spacing: 0) {
-                        ScriptDetail(workspace: session.script)
-                            .frame(maxWidth: .infinity)
-                        if session.script.showingMargin {
-                            Divider()
-                            MarginView(session: session, margin: session.script.margin)
-                                .frame(width: 300)
-                        }
-                    }
+                    ScriptDetail(workspace: session.script)
                 case .universe:
-                    HStack(spacing: 0) {
-                        UniverseDetail(session: session)
-                            .frame(maxWidth: .infinity)
-                        if session.noteMargin.showing {
-                            Divider()
-                            NoteMarginView(session: session, margin: session.noteMargin)
-                                .frame(width: 300)
-                        }
-                    }
+                    UniverseDetail(session: session)
                 case .dictionary:
                     DictionaryDetail(session: session)
                 case .storyboard:
@@ -162,40 +146,9 @@ struct ProjectContent: View {
                     }
                 }
             }
-            .inspector(isPresented: $session.showingInspector) {
-                VStack(spacing: 0) {
-                    Picker("Inspector", selection: $session.inspectorTab) {
-                        ForEach(ProjectSession.InspectorTab.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .padding(8)
-                    switch session.inspectorTab {
-                    case .links: LinksInspector(session: session)
-                    case .define: DefineInspector(session: session)
-                    }
-                }
-                .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
-            }
-            .toolbar {
-                if session.area == .universe {
-                    ToolbarItem(placement: .automatic) {
-                        Button {
-                            session.noteMargin.showing.toggle()
-                        } label: {
-                            Label("Margin", systemImage: "sidebar.squares.trailing")
-                        }
-                        .help("Show or hide the margin: to-dos in notes (⇧⌘M)")
-                    }
-                }
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        session.showingInspector.toggle()
-                    } label: {
-                        Label("Inspector", systemImage: "sidebar.trailing")
-                    }
-                    .help("Show backlinks and definitions (⌥⌘0)")
-                }
+            .inspector(isPresented: $session.showingSidebar) {
+                SidebarView(session: session)
+                    .inspectorColumnWidth(min: 220, ideal: 300, max: 420)
             }
         }
         .overlay(alignment: .top) {
@@ -215,6 +168,14 @@ struct ProjectContent: View {
             ToolbarItem(placement: .navigation) {
                 AreaSwitcher(area: $session.area)
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    session.showingSidebar.toggle()
+                } label: {
+                    Label("Sidebar", systemImage: "sidebar.trailing")
+                }
+                .help("Show or hide the sidebar: to-dos, notes, links and definitions (⌥⌘0)")
+            }
         }
         .onChange(of: store.files) { session.spotlight?.reload() }
         .safeAreaInset(edge: .top, spacing: 0) { UpdateBanner() }
@@ -229,17 +190,15 @@ struct ProjectContent: View {
         }
         .onChange(of: session.script.focusMode) { _, on in
             if on {
-                beforeFocus = (columns, session.script.showingMargin, session.showingInspector)
+                beforeFocus = (columns, session.showingSidebar)
                 withAnimation {
                     columns = .detailOnly
-                    session.script.showingMargin = false
-                    session.showingInspector = false
+                    session.showingSidebar = false
                 }
             } else if let saved = beforeFocus {
                 withAnimation {
                     columns = saved.columns
-                    session.script.showingMargin = saved.margin
-                    session.showingInspector = saved.inspector
+                    session.showingSidebar = saved.sidebar
                 }
                 beforeFocus = nil
             }
@@ -318,23 +277,15 @@ struct ProjectContent: View {
             },
             importVoiceNote: { session.importVoiceNotes() },
             newItemTitle: session.area == .dictionary ? "Add Word…" : "New Note…",
-            toggleInspector: { session.showingInspector.toggle() },
+            toggleInspector: { session.showingSidebar.toggle() },
             addTodo: { session.addTodoAtCaret() },
             addMarginNote: { session.addMarginNoteAtCaret() },
-            toggleMargin: {
-                if session.area == .universe {
-                    session.noteMargin.showing.toggle()
-                } else {
-                    session.area = .script
-                    session.script.showingMargin.toggle()
-                }
-            },
+            toggleMargin: { session.toggleTodos() },
             showAllTodos: {
                 session.area = .script
-                session.script.showingMargin = true
                 session.script.margin.peek = nil
-                session.script.margin.tab = .todos
                 session.script.margin.scope = .all
+                session.showSidebar(.todos)
             },
             defineSelection: { session.defineSelection() },
             newSketch: { session.newSketch() },
@@ -458,5 +409,36 @@ struct AreaSwitcher: View {
         .fixedSize()
         .help("Switch area (⌘1–⌘4)")
         .accessibilityLabel("Area: \(current.title)")
+    }
+}
+
+/// The right-hand sidebar: one column whose tabs depend on the area
+/// (Script: To-dos, Notes, Define; Universe: To-dos, Links, Define; others: Links, Define).
+struct SidebarView: View {
+    @Bindable var session: ProjectSession
+
+    var body: some View {
+        let area = session.area ?? .script
+        VStack(spacing: 0) {
+            if area == .script, session.script.margin.peek != nil {
+                // A linked note clicked in the script takes the whole sidebar until closed.
+                MarginView(session: session, margin: session.script.margin, tab: .notes)
+            } else {
+                Picker("Sidebar", selection: $session.sidebarTab) {
+                    ForEach(ProjectSession.SidebarTab.tabs(for: area)) { Text($0.title).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding([.horizontal, .top], 10)
+                switch session.sidebarTab {
+                case .todos where area == .universe:
+                    NoteMarginView(session: session, margin: session.noteMargin)
+                case .todos, .notes:
+                    MarginView(session: session, margin: session.script.margin, tab: session.sidebarTab)
+                case .links: LinksInspector(session: session)
+                case .define: DefineInspector(session: session)
+                }
+            }
+        }
     }
 }

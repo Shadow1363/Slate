@@ -81,9 +81,9 @@ struct MarginUITests {
     @Test func scriptLinksPeekInTheMargin() throws {
         let h = try SessionHarness()
         let session = h.session
-        session.script.showingMargin = false
+        session.showingSidebar = false
         #expect(session.script.followLink("the key"))
-        #expect(session.script.showingMargin)
+        #expect(session.showingSidebar)
         #expect(session.script.margin.peek == "universe/items/the-brass-key.md")
         #expect(session.area == .script)
         #expect(session.linkPreview("The Station") != nil)

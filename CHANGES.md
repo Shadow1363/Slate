@@ -1,5 +1,12 @@
 # Changes
 
+## One sidebar on the right (2026-11-23)
+
+- **The margin and the inspector are now one sidebar,** with one toolbar button (beside the area title) instead of two look-alike ones, and one column instead of two side by side. Its tabs follow the area: **Script** To-dos · Notes · Define, **Universe** To-dos · Links · Define, **Storyboard / Dictionary** Links · Define. Links is gone from the script, where it only ever said "Only notes have backlinks".
+- Each area remembers its tab; the sidebar remembers whether it's open.
+- **⌥⌘0** (View › Toggle Sidebar) shows or hides it. **⇧⌘M** (View › Show To-dos) opens it on To-dos, or hides it if To-dos is already showing. Remapped keys carry over.
+- Clicking a link in the script still opens the note in the sidebar, with a close button back to the tabs.
+
 ## A margin for notes' to-dos (2026-11-23)
 
 - **Universe has a margin,** like the script's: **To-dos** for **This Note** or **All Notes**, Open / Done / All, tick boxes, click to jump to the comment, and a field that adds `%% TODO: … %%` to the open note. ⇧⌘M or the toolbar's margin button shows and hides it, and it remembers.

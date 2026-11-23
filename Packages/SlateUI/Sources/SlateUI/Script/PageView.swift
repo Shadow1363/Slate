@@ -84,12 +84,6 @@ struct ScriptToolbar: ToolbarContent {
             .help("Draft view to write; Page view shows the printed pages")
         }
         ToolbarItemGroup(placement: .primaryAction) {
-            Button {
-                workspace.showingMargin.toggle()
-            } label: {
-                Label("Margin", systemImage: "sidebar.squares.trailing")
-            }
-            .help("Show or hide the margin: to-dos and notes (⇧⌘M)")
             Menu {
                 ForEach(ExportFormat.allCases.filter(\.isScript)) { format in
                     Button(format.title) { workspace.publish(format) }

@@ -41,7 +41,6 @@ public enum Shortcuts {
             .init(id: "saveSnapshot", title: "Save Snapshot…", menu: "Script", defaultText: "cmd+shift+s"),
             .init(id: "addTodo", title: "Add To-do…", menu: "Script", defaultText: "cmd+shift+t"),
             .init(id: "addMarginNote", title: "Add Margin Note…", menu: "Script", defaultText: "cmd+opt+t"),
-            .init(id: "toggleMargin", title: "Toggle Margin", menu: "Script", defaultText: "cmd+shift+m"),
             .init(id: "jumpToScene", title: "Jump to Scene…", menu: "Script", defaultText: "cmd+shift+o"),
             .init(id: "moveSceneUp", title: "Move Scene Up", menu: "Script", defaultText: "ctrl+cmd+up"),
             .init(id: "moveSceneDown", title: "Move Scene Down", menu: "Script", defaultText: "ctrl+cmd+down"),
@@ -52,7 +51,8 @@ public enum Shortcuts {
             list.append(.init(id: "area." + area.rawValue, title: area.title, menu: "View", defaultText: "cmd+\(area.shortcutNumber)"))
         }
         list += [
-            .init(id: "toggleInspector", title: "Toggle Inspector", menu: "View", defaultText: "cmd+opt+0"),
+            .init(id: "toggleInspector", title: "Toggle Sidebar", menu: "View", defaultText: "cmd+opt+0"),
+            .init(id: "toggleMargin", title: "Show To-dos", menu: "View", defaultText: "cmd+shift+m"),
             .init(id: "focusMode", title: "Focus Mode", menu: "View", defaultText: "cmd+shift+return"),
             .init(id: "checkForUpdates", title: "Check for Updates…", menu: "Slate", defaultText: ""),
         ]

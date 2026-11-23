@@ -333,13 +333,13 @@ extension ProjectSession {
             }
         case .todo(_, let sceneID, let quote):
             area = .script
-            script.showingMargin = true
-            script.margin.tab = .todos
+            script.margin.peek = nil
+            showSidebar(.todos)
             if let sceneID { script.reveal(sceneID: sceneID, quote: quote) } else { script.margin.scope = .all }
         case .marginNote(let sceneID, let quote):
             area = .script
-            script.showingMargin = true
-            script.margin.tab = .notes
+            script.margin.peek = nil
+            showSidebar(.notes)
             if let sceneID { script.reveal(sceneID: sceneID, quote: quote) }
         case .timelineEvent(let path, let id):
             pendingItemSelection = PendingSelection(path: path, id: id)

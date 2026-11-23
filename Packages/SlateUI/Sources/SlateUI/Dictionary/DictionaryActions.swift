@@ -130,8 +130,7 @@ extension ProjectSession {
 
     /// ⌃⌥⌘D: the Define panel for the selected words.
     func defineSelection() {
-        inspectorTab = .define
-        showingInspector = true
+        showSidebar(.define)
     }
 }
 

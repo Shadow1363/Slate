@@ -42,10 +42,26 @@ final class ProjectSession {
         }
     }
 
-    enum InspectorTab: String, CaseIterable, Identifiable {
-        case links, define
+    /// The tabs of the right-hand sidebar. Which ones show depends on the area.
+    enum SidebarTab: String, CaseIterable, Identifiable {
+        case todos, notes, links, define
         var id: String { rawValue }
-        var title: String { self == .links ? "Links" : "Define" }
+        var title: String {
+            switch self {
+            case .todos: "To-dos"
+            case .notes: "Notes"
+            case .links: "Links"
+            case .define: "Define"
+            }
+        }
+
+        static func tabs(for area: ProjectArea?) -> [SidebarTab] {
+            switch area ?? .script {
+            case .script: [.todos, .notes, .define]
+            case .universe: [.todos, .links, .define]
+            default: [.links, .define]
+            }
+        }
     }
 
     let store: ProjectStore
@@ -62,7 +78,8 @@ final class ProjectSession {
     var dictionaryQuery = ""
     /// The Dictionary area shows `words.md` as text instead of the book.
     var showingWordBookSource = false
-    var inspectorTab: InspectorTab = .links
+    /// The last tab picked in each area's sidebar.
+    var sidebarTabs: [ProjectArea: SidebarTab] = [:]
     /// The words selected in the focused editor (for the Define panel).
     var selectedText: String?
     /// The open note or file in Universe.
@@ -78,7 +95,11 @@ final class ProjectSession {
     var noteReveal: RevealRequest?
     /// An item for the open map to point out ("Show on Map").
     var mapReveal: MapRevealRequest?
-    var showingInspector = false
+    /// The right-hand sidebar (to-dos, margin notes, links, define).
+    var showingSidebar: Bool {
+        didSet { UserDefaults.standard.set(showingSidebar, forKey: Self.sidebarShownKey) }
+    }
+    static let sidebarShownKey = "project.sidebarShown"
     var sheet: Sheet?
     /// A path whose name field should take focus (a note just created).
     var focusNameField: String?
@@ -103,6 +124,7 @@ final class ProjectSession {
 
     init(store: ProjectStore, globalWordsURL: URL = GlobalWords.defaultURL) {
         self.store = store
+        showingSidebar = UserDefaults.standard.object(forKey: Self.sidebarShownKey) as? Bool ?? true
         outline = OutlineState(projectRoot: store.rootURL)
         links = LinkIndex(store: store)
         script = ScriptWorkspace(store: store)
@@ -122,6 +144,31 @@ final class ProjectSession {
             guard let self else { return }
             StoryboardActions.showFrames(sceneID: sceneID, line: line, session: self)
         }
+    }
+
+    /// The sidebar tab for the current area: the last one picked there, or its first.
+    var sidebarTab: SidebarTab {
+        get {
+            let tabs = SidebarTab.tabs(for: area)
+            if let saved = sidebarTabs[area ?? .script], tabs.contains(saved) { return saved }
+            return tabs[0]
+        }
+        set { sidebarTabs[area ?? .script] = newValue }
+    }
+
+    /// Opens the sidebar on a tab (if this area has it).
+    func showSidebar(_ tab: SidebarTab) {
+        if SidebarTab.tabs(for: area).contains(tab) { sidebarTab = tab }
+        showingSidebar = true
+    }
+
+    /// ⇧⌘M: the sidebar on To-dos, or hides it when To-dos is already showing.
+    func toggleTodos() {
+        guard SidebarTab.tabs(for: area).contains(.todos) else {
+            showingSidebar.toggle()
+            return
+        }
+        if showingSidebar && sidebarTab == .todos { showingSidebar = false } else { showSidebar(.todos) }
     }
 
     /// A new sketch for the selected frame's scene, the focused board row, or the scene at the script caret.
@@ -257,7 +304,7 @@ final class ProjectSession {
             sheet = .newNote(type: nil, name: target)
             return true
         }
-        script.showingMargin = true
+        showingSidebar = true
         script.margin.peek = resolution.path
         return true
     }

@@ -2,23 +2,17 @@ import AppKit
 import SlateCore
 import SwiftUI
 
-/// The collapsible column beside the script: To-dos and Notes, or a peek
-/// at a linked note.
+/// The script's to-dos or margin notes, in the sidebar (or a linked note it peeks at).
 struct MarginView: View {
     let session: ProjectSession
     @Bindable var margin: MarginModel
+    let tab: ProjectSession.SidebarTab
 
     var body: some View {
         VStack(spacing: 0) {
             if let path = margin.peek {
                 NotePeek(session: session, path: path) { margin.peek = nil }
             } else {
-                Picker("Margin", selection: $margin.tab) {
-                    ForEach(MarginModel.Tab.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .padding(10)
                 HStack {
                     Picker("Scope", selection: $margin.scope) {
                         ForEach(MarginModel.Scope.allCases) { Text($0.title).tag($0) }
@@ -26,7 +20,7 @@ struct MarginView: View {
                     .labelsHidden()
                     .fixedSize()
                     Spacer()
-                    if margin.tab == .todos {
+                    if tab == .todos {
                         Menu {
                             Picker("Show", selection: $margin.filter) {
                                 ForEach(MarginModel.TodoFilter.allCases) { Text($0.title).tag($0) }
@@ -43,19 +37,18 @@ struct MarginView: View {
                     }
                 }
                 .font(.callout)
-                .padding(.horizontal, 10)
-                .padding(.bottom, 6)
+                .padding(10)
                 if let error = margin.error {
                     Text(error).font(.caption).foregroundStyle(.orange).padding(.horizontal, 10)
                 }
                 Divider()
-                switch margin.tab {
-                case .todos: TodoList(session: session, margin: margin)
-                case .notes: NoteList(session: session, margin: margin)
+                if tab == .notes {
+                    NoteList(session: session, margin: margin)
+                } else {
+                    TodoList(session: session, margin: margin)
                 }
             }
         }
-        .frame(minWidth: 240, idealWidth: 300, maxWidth: 420)
         .background(.background)
         .environment(\.openURL, OpenURLAction { url in
             guard url.scheme == LinkURL.scheme, let target = LinkURL.target(from: url) else { return .systemAction }
@@ -437,8 +430,7 @@ struct TodoSheet: View {
         result.due = hasDue ? dueDate.formatted(.iso8601.year().month().day()) : nil
         let margin = session.script.margin
         if let original { margin.update(original, to: result) } else { margin.add(result) }
-        session.script.showingMargin = true
-        margin.tab = .todos
+        session.showSidebar(.todos)
         dismiss()
     }
 }
@@ -491,8 +483,7 @@ struct MarginNoteSheet: View {
         } else {
             margin.addNote(text, quote: quote, sceneID: sceneID)
         }
-        session.script.showingMargin = true
-        margin.tab = .notes
+        session.showSidebar(.notes)
         dismiss()
     }
 }

@@ -133,9 +133,6 @@ public struct SlateCommands: Commands {
                 .disabled(actions == nil)
             Button("Show All To-dos") { actions?.showAllTodos() }
                 .disabled(actions == nil)
-            Button("Toggle Margin") { actions?.toggleMargin() }
-                .keyboardShortcut(key("toggleMargin"))
-                .disabled(actions == nil)
             Divider()
             Button("Jump to Scene…") { actions?.jumpToScene() }
                 .keyboardShortcut(key("jumpToScene"))
@@ -197,8 +194,11 @@ public struct SlateCommands: Commands {
                     .keyboardShortcut(key("area." + area.rawValue))
                     .disabled(actions == nil)
             }
-            Button("Toggle Inspector") { actions?.toggleInspector() }
+            Button("Toggle Sidebar") { actions?.toggleInspector() }
                 .keyboardShortcut(key("toggleInspector"))
+                .disabled(actions == nil)
+            Button("Show To-dos") { actions?.toggleMargin() }
+                .keyboardShortcut(key("toggleMargin"))
                 .disabled(actions == nil)
             Toggle("Focus Mode", isOn: Binding(get: { actions?.focusMode ?? false }, set: { _ in actions?.script(.toggleFocus) }))
                 .keyboardShortcut(key("focusMode"))
