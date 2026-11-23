@@ -58,6 +58,32 @@ struct UniverseNavigator: View {
                 }
                 .buttonStyle(.plain)
             }
+            Section("Timelines") {
+                ForEach(session.timelineFiles, id: \.self) { path in
+                    Label(TimelinePane.title(path), systemImage: "timeline.selection")
+                        .tag(path)
+                        .contextMenu { fileMenu(path) }
+                }
+                Button {
+                    session.createTimeline()
+                } label: {
+                    Label("New Timeline", systemImage: "plus").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            Section("Maps") {
+                ForEach(session.mapFiles, id: \.self) { path in
+                    Label(MapPane.title(path), systemImage: "map")
+                        .tag(path)
+                        .contextMenu { fileMenu(path) }
+                }
+                Button {
+                    session.createMap()
+                } label: {
+                    Label("New Map", systemImage: "plus").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
             let others = otherFiles(graph)
             if !others.isEmpty {
                 Section("Other Files") {
@@ -102,6 +128,8 @@ struct UniverseNavigator: View {
                     }
                     Divider()
                     Button("New Canvas") { session.createCanvas() }
+                    Button("New Timeline") { session.createTimeline() }
+                    Button("New Map") { session.createMap() }
                     Button("Edit Templates…") { session.sheet = .templates(nil) }
                 } label: {
                     Label("New Note", systemImage: "plus")
@@ -150,8 +178,10 @@ struct UniverseNavigator: View {
     }
 
     private func otherFiles(_ graph: LinkGraph) -> [String] {
-        (session.store.files[.universe] ?? []).map(\.relativePath)
+        let shown = Set(session.timelineFiles + session.mapFiles).union(session.mapImages)
+        return (session.store.files[.universe] ?? []).map(\.relativePath)
             .filter { $0 != ProjectLayout.draft && graph.note(at: $0) == nil && !$0.hasSuffix(".canvas") && !$0.hasPrefix("universe/canvases/images/") }
+            .filter { !shown.contains($0) }
     }
 
     private var canvasFiles: [String] {
@@ -205,7 +235,7 @@ struct UniverseDetail: View {
             ContentUnavailableView {
                 Label("Universe", systemImage: "globe.americas")
             } description: {
-                Text("Choose a note, or make one with + (⌘N).\nCanvas, timeline and map arrive in Milestones 7–8.")
+                Text("Choose a note, canvas, timeline or map, or make a note with + (⌘N).")
             }
         }
     }
@@ -225,6 +255,10 @@ struct UniverseFilePane: View {
             if let document {
                 if path.hasSuffix(".canvas") {
                     CanvasPane(session: session, document: document)
+                } else if path.lowercased().hasSuffix(TimelineFile.suffix) {
+                    TimelinePane(session: session, document: document)
+                } else if path.lowercased().hasSuffix(MapFile.suffix) {
+                    MapPane(session: session, document: document)
                 } else if path == ProjectLayout.draft || !isMarkdown {
                     if isMarkdown {
                         MarkdownPane(session: session, document: document)
@@ -237,7 +271,7 @@ struct UniverseFilePane: View {
             } else if let error {
                 ContentUnavailableView("Can't Open File", systemImage: "doc.badge.ellipsis", description: Text(error))
             } else if !ProjectLayout.isTextFile(path) {
-                ContentUnavailableView("Not a Text File", systemImage: "doc", description: Text("Images, canvases and maps get their own views in later milestones."))
+                ContentUnavailableView("Not a Text File", systemImage: "doc", description: Text("Images open in Finder or Preview; maps show theirs on the map."))
             } else {
                 ProgressView()
             }

@@ -1,5 +1,82 @@
 # Changes
 
+## Milestone 8 — Timeline and map (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 310 pass: 230 in SlateCore, 64 in SlateUI and 16 in SlateExport.
+**Dependencies:** none added.
+
+### Timeline: what works
+- **Files:** `universe/timelines/*.timeline.json`, in SPEC's format plus `end`, `location`, `after`, `summary`, `color`, branch `name`/`rejoins` and custom-calendar eras. They're written as indented, readable JSON. An unchanged file is never rewritten, and keys from elsewhere are kept.
+- **The sample project** has `main.timeline.json`, with Mara and Thomas, a span, a jump from the 2031 fire back to 1998, a "No fire" branch, and two warnings left in on purpose.
+- **Sidebar:** a **Timelines** section with New Timeline (also in the + menu).
+- **World Order:** a column for each distinct time and a row for each lane, with branch rows under their lane.
+  - Spans stretch across columns, and overlapping events stack.
+  - Jumps are orange arcs; forks and rejoins are dashed lines.
+  - Double-click a row to add an event at that time.
+- **Story Order:** a column for each scene that shows an event, in script order, plus "Not in the script". Double-click a column header to go to the scene.
+- **Personal:** pick a character to see their life in the order they live it, following their jumps. Events after each jump are marked.
+- **Inspector:**
+  - **Events:** title, when, end, lane, branch, place (a location note or any name), scenes (checkboxes), "happens after" causes, jumps, summary, colour and that event's warnings.
+  - **Lanes:** name, linked note and colour.
+  - **Branches:** name, where it forks and where it rejoins.
+- **Right-click an event:** open its scenes or place; Jump From Here… (then click the arrival); Branch From Here; Duplicate; Delete.
+- **Right-click a lane:** add an event; follow the character's life; move up or down; delete.
+- **Warnings** (toolbar button with a count):
+  - a character in two places at once with no jump;
+  - an event before its cause;
+  - events that fall between a traveller's jumps;
+  - unreadable or backwards times;
+  - links to missing lanes, branches, events or scenes.
+
+  Click a warning to select its event; warned events show a triangle.
+- **Time units:** dates, days, or a custom calendar whose eras you set.
+- **Zoom:** ⌘= / ⌘− make columns wider or narrower. **Undo** works for every change.
+- **Links:** lanes and places are backlinks, so a note's inspector shows "“Mara” on this timeline". They're stored by note `id`, which survives renames. Paths and names are updated when a note is renamed.
+
+### Map: what works
+- **Files:** `universe/maps/*.map.json` beside their image, with layers, pins, regions and paths. Coordinates are saved from 0 to 1 across the image.
+- **The sample project** has `city.map.json` and a generated `city.png`, with a station pin, an Old Town region on the 1998 layer and a chase path on the 2031 layer.
+- **Sidebar:** a **Maps** section with New Map, which starts as a blank grid. Map images are kept out of Other Files.
+- **Base layer:**
+  - the image, or a grid;
+  - Add or Change Image copies the image beside the map, and so does dropping one from Finder;
+  - if the image goes missing, a banner says so and the pins stay put.
+- **Moving around:** scroll to pan and pinch or ⌘-scroll to zoom, as on the canvas. ⌘0 fits.
+- **Tools:**
+  - **Select:** click an item, drag it to move it, drag a corner dot to reshape it, or drag empty space to pan;
+  - **Pin:** click to place a pin;
+  - **Region** and **Path:** click corners, then double-click or press Return to finish (Escape stops).
+  - Delete removes the selected item, and every change can be undone.
+- **Inspector:** title, layer, colour, linked note (locations listed first) and scenes. Double-click an item to open its note or scene.
+- **Dropping a note** from the Universe sidebar makes a pin linked to it.
+- **Layers:** show or hide each one (for this window only; the file isn't changed), choose the layer new items go on, add, rename and delete.
+- **Show on Map:** right-click a scene in the Script sidebar. The map opens on the pin linked to that scene, or else the one linked to the location its heading names, and briefly highlights it.
+- **Links:** map items linked to notes are backlinks ("“The Station” on this map").
+
+### Also changed
+- The canvas's pan and zoom handling is now shared with maps, and its edit, undo and save logic has a shared version (`FileBackedModel`) that timelines and maps use.
+- Note `id:` values are now link targets.
+- The link index cache version went to 5, so it rebuilds once.
+
+### Stubbed or not yet
+- **Not checked by hand:** I can build, test and launch the app, but I can't click through these screens from here. Map dragging, drawing regions, and the timeline's double-click and context menus especially need trying.
+- **Scene links:** "Show on Map" is only on the Script sidebar's scene menu, not on a click in the script editor's heading. A scene doesn't yet list its timeline events.
+- **Timeline columns aren't to scale:** one per distinct time.
+- **Personal view** shows every branch together.
+- **Events** can't be dragged between lanes or times on the grid; use the inspector.
+- **Map editing:** you can't add or remove a corner of an existing region or path. Hidden layers are forgotten when the map is closed.
+- **Time formats:** custom-calendar times are only `<era> <number>` (no months).
+
+### Please try
+1. Open **main** under Timelines. Check World Order: the arc from Station fire back to "Mara arrives in 1998", and the dashed fork to the "No fire" row.
+2. Click **2 Warnings**, then each warning: it selects the clashing event. Change "Mara at the archive" to happen at the Station and the two-places warning goes away.
+3. Switch to **Personal** and pick Mara: her life runs to the fire, then continues from 1998.
+4. Right-click an event, choose **Jump From Here…**, click another event, then undo.
+5. Open **city** under Maps. Hide the 1998 layer and drag the station pin. Draw a region with the Region tool, then reshape it by its corner dots.
+6. Right-click the kitchen scene in the Script sidebar and choose **Show on Map**.
+7. Edit `main.timeline.json` in VS Code while it's open: the timeline reloads.
+
 ## Templates rework and Milestone 7 — Canvas (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

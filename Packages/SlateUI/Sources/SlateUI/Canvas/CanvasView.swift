@@ -442,8 +442,8 @@ enum CanvasDrops {
     }
 
     /// Copies an image to `universe/canvases/images/`, returning its project path.
-    static func importImage(_ url: URL, session: ProjectSession) -> String? {
-        let folder = "universe/canvases/images"
+    /// Copies an image into the project (`folder`, numbered if the name is taken).
+    static func importImage(_ url: URL, session: ProjectSession, folder: String = "universe/canvases/images") -> String? {
         let ext = url.pathExtension.lowercased()
         let stem = Slug.make(url.deletingPathExtension().lastPathComponent)
         var name = "\(stem).\(ext)"
@@ -816,6 +816,15 @@ struct CanvasToolbar: ToolbarContent {
 
 /// Pans on scroll and zooms on pinch or ⌘-scroll while the pointer is over
 /// the board. (SwiftUI has no scroll-wheel events for a custom view.)
+/// A board that pans and zooms (the canvas, a map).
+@MainActor
+protocol ZoomPanTarget: AnyObject {
+    func zoom(by factor: Double, around anchor: CGPoint?)
+    func pan(by dx: Double, _ dy: Double)
+}
+
+extension CanvasModel: ZoomPanTarget {}
+
 @MainActor
 final class CanvasEventMonitor {
     weak var window: NSWindow?
@@ -823,7 +832,7 @@ final class CanvasEventMonitor {
     var frame: CGRect = .zero
     private var monitor: Any?
 
-    func install(model: CanvasModel) {
+    func install(model: any ZoomPanTarget) {
         remove()
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .magnify]) { [weak self, weak model] event in
             // NSEvent isn't Sendable: read what's needed, then decide on the main actor.
@@ -862,7 +871,7 @@ final class CanvasEventMonitor {
 }
 
 /// Hands back the hosting window.
-private struct WindowReader: NSViewRepresentable {
+struct WindowReader: NSViewRepresentable {
     let found: (NSWindow?) -> Void
 
     func makeNSView(context: Context) -> NSView {

@@ -123,6 +123,23 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **Moving around:** scroll to pan; pinch or ⌘-scroll to zoom; ⌥-drag to pan with a mouse. ⌘0 fits everything, ⇧⌘0 is 100%, and the minimap moves the view.
 - **Editing:** drag to move (frames carry their cards), resize from the corner, and double-click to edit or open a card. Drag a side dot onto another card to connect them, then click the connection to label or colour it. **Arrange** aligns and distributes; **Snap to Grid** uses a 20 pt grid. Everything undoes.
 
+## Timelines
+
+- **Timelines** are `universe/timelines/*.timeline.json`. Use **New Timeline** in the sidebar or the + menu; the sample project has `main`.
+- **Lanes** are characters or story threads (Add › Add Lane for Character links one to its note). **Events** have a world time, an optional end (a span), a lane, a place, the scenes that show them, and the events that cause them. Double-click a row to add an event at that time.
+- **Three views:** **World Order** (when things happen), **Story Order** (as the film shows them, from scene order) and **Personal** (one character's life, following their jumps).
+- **Jumps:** right-click an event › Jump From Here…, then click where the traveller arrives. **Branches:** Branch From Here starts an alternate line; set where it rejoins in its inspector.
+- **Warnings** (toolbar) flag a character in two places at once with no jump, an event before its cause, events that fall between a traveller's jumps, unreadable times and broken links.
+- **Time units:** dates (`2031-03-14T22:10`), days (`Day 3 14:00`), or a custom calendar of eras (`Second Age 312`).
+
+## Maps
+
+- **Maps** are `universe/maps/*.map.json` next to their image. **New Map** starts as a blank grid; add an image with the toolbar or drop one from Finder.
+- **Tools:** Select, Pin, Region (click corners, double-click or Return to finish) and Path. Drag items to move them and the corner dots to reshape. Drop a note from the sidebar to pin it.
+- **Links:** each item can link to a note (usually a location) and to scenes. Double-click an item to open its note or scene.
+- **Layers** (toolbar) can be shown and hidden, and new items go on the layer you choose. Coordinates are saved from 0 to 1 across the image, so a sharper copy of the same image keeps every pin in place.
+- **Show on Map:** right-click a scene in the Script sidebar to jump to the pin linked to that scene, or to the location its heading names.
+
 ## Dictionary
 
 - **One book:** `dictionary/words.md` is the film's own dictionary, filed A–Z under `## Letter` headings:
@@ -167,7 +184,8 @@ Fixtures/Snapshots      Golden page layouts
 | ⌥⌘0 | Inspector (Links and Define) |
 | ⌃⌥⌘D | Define the selected word |
 | ⌘0 / ⇧⌘0 | Canvas: fit everything / 100% |
-| ⌘= / ⌘− | Canvas: zoom in / out |
+| ⌘= / ⌘− | Canvas and map: zoom in / out. Timeline: wider / narrower |
+| ⌘0 | Map: fit |
 | ⇧⌘T | Add to-do at the caret |
 | ⌥⌘T | Add margin note at the caret |
 | ⇧⌘M | Show / hide the margin |

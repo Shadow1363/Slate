@@ -69,6 +69,8 @@ final class ProjectSession {
     var universeSelection: String?
     /// Caret placement for the Markdown editors.
     var noteReveal: RevealRequest?
+    /// An item for the open map to point out ("Show on Map").
+    var mapReveal: MapRevealRequest?
     var showingInspector = false
     var sheet: Sheet?
     /// A path whose name field should take focus (a note just created).

@@ -105,7 +105,7 @@ struct ProjectContent: View {
         } content: {
             Group {
                 switch session.area ?? .script {
-                case .script: ScriptNavigator(workspace: session.script)
+                case .script: ScriptNavigator(workspace: session.script, session: session)
                 case .universe: UniverseNavigator(session: session)
                 case .dictionary: DictionaryNavigator(session: session)
                 case let area: AreaFileList(store: store, area: area, selection: $session.selectedFile)

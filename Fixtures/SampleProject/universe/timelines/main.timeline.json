@@ -1,0 +1,71 @@
+{
+  "units": "datetime",
+  "lanes": [
+    {"id": "mara", "name": "Mara", "note": "c-7f3a"},
+    {"id": "thomas", "name": "Thomas", "note": "universe/characters/thomas-wiley-cade.md"}
+  ],
+  "branches": [
+    {"id": "prime"},
+    {"id": "b2", "name": "No fire", "forksFrom": "e-07"}
+  ],
+  "events": [
+    {
+      "id": "e-01",
+      "title": "Mara's first night shift",
+      "world": "2019-09-01T20:00",
+      "lane": "mara",
+      "location": "l-51c0"
+    },
+    {
+      "id": "e-05",
+      "title": "Thomas's long winter",
+      "world": "2030-12-01",
+      "end": "2031-02-28",
+      "lane": "thomas"
+    },
+    {
+      "id": "e-07",
+      "title": "Station fire",
+      "world": "2031-03-14T22:10",
+      "lane": "mara",
+      "branch": "prime",
+      "scenes": ["s014"],
+      "location": "l-51c0"
+    },
+    {
+      "id": "e-08",
+      "title": "Mara at the archive",
+      "world": "2031-03-14T22:10",
+      "lane": "mara",
+      "location": "The Archive",
+      "summary": "Left in on purpose: Mara can't be here and at the fire."
+    },
+    {
+      "id": "e-12",
+      "title": "Mara arrives in 1998",
+      "world": "1998-06-02T09:00",
+      "lane": "mara",
+      "branch": "prime",
+      "scenes": ["s003"]
+    },
+    {
+      "id": "e-13",
+      "title": "Mara hides the brass key",
+      "world": "1998-06-02T21:00",
+      "lane": "mara",
+      "location": "The Station",
+      "after": ["e-12"]
+    },
+    {
+      "id": "e-21",
+      "title": "The fire never starts",
+      "world": "2031-03-14T22:10",
+      "lane": "mara",
+      "branch": "b2"
+    }
+  ],
+  "jumps": [
+    {"from": "e-07", "to": "e-12", "traveller": "mara"}
+  ],
+  "studio": {"note": "Unknown keys like this one must survive a save."}
+}

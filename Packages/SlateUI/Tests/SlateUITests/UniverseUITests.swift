@@ -183,7 +183,8 @@ struct UniverseSessionTests {
         #expect(character.origin == .project)
         let path = try session.createNote(template: character, name: name)
         #expect(path == "universe/characters/the-archivist.md")
-        #expect(session.links.graph.unresolved.isEmpty)
+        // Only the sample timeline's "The Archive" (no note, on purpose) is left.
+        #expect(session.links.graph.unresolved.map(\.link.target) == ["The Archive"])
         #expect(try h.read(path).contains("first appearance:"))
     }
 
@@ -192,11 +193,12 @@ struct UniverseSessionTests {
         let session = h.session
         session.universeSelection = "universe/locations/the-station.md"
         let plan = try #require(session.renamePlan(for: "universe/locations/the-station.md", to: "Grand Station"))
-        #expect(plan.edits.count == 3) // the brass key, powers and the dictionary
+        #expect(plan.edits.count == 4) // the brass key, powers, the dictionary and a timeline event's location
         session.rename(plan, updateLinks: true)
         #expect(session.dictionary.entry(for: "Chronoshift")?.links.map(\.target).contains("Grand Station") == true)
         #expect(session.universeSelection == "universe/locations/grand-station.md")
         #expect(try h.read("universe/items/the-brass-key.md").contains("[[Grand Station]]"))
+        #expect(try h.read("universe/timelines/main.timeline.json").contains("\"location\": \"Grand Station\""))
         #expect(session.links.graph.resolve("Grand Station")?.path == "universe/locations/grand-station.md")
     }
 

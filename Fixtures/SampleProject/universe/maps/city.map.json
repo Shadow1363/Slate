@@ -1,0 +1,38 @@
+{
+  "image": "city.png",
+  "layers": [
+    {"id": "l1998", "name": "1998"},
+    {"id": "l2031", "name": "2031"}
+  ],
+  "pins": [
+    {
+      "id": "p-st01",
+      "title": "The Station",
+      "x": 0.42,
+      "y": 0.31,
+      "note": "l-51c0",
+      "scenes": ["s014"],
+      "color": "1"
+    },
+    {"id": "p-kt01", "title": "Mara's kitchen", "x": 0.7, "y": 0.62, "layer": "l2031"}
+  ],
+  "regions": [
+    {
+      "id": "r-ot01",
+      "title": "Old Town",
+      "points": [[0.08, 0.1], [0.3, 0.08], [0.33, 0.35], [0.1, 0.4]],
+      "layer": "l1998",
+      "color": "3"
+    }
+  ],
+  "paths": [
+    {
+      "id": "w-ch01",
+      "title": "The chase",
+      "points": [[0.42, 0.31], [0.55, 0.45], [0.7, 0.62]],
+      "layer": "l2031",
+      "color": "6"
+    }
+  ],
+  "studio": {"note": "Unknown keys like this one must survive a save."}
+}

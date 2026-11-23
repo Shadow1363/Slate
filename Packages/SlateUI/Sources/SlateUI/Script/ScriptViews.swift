@@ -4,6 +4,7 @@ import SwiftUI
 /// Left column of the Script area: title page, act files and their scenes.
 struct ScriptNavigator: View {
     @Bindable var workspace: ScriptWorkspace
+    var session: ProjectSession?
 
     var body: some View {
         let book = workspace.book
@@ -21,6 +22,12 @@ struct ScriptNavigator: View {
                         SceneRow(scene: scene, isCurrent: current?.id == scene.id, isExact: book.isExact)
                             .draggable("slate-scene:\(scene.file)#\(scene.scene.sceneID ?? "")")
                             .tag(ScriptWorkspace.row(for: scene))
+                            .contextMenu {
+                                if let session {
+                                    Button("Show on Map") { session.showOnMap(scene) }
+                                        .disabled(session.mapTarget(for: scene) == nil)
+                                }
+                            }
                     }
                     .onMove { offsets, destination in
                         guard let from = offsets.first else { return }

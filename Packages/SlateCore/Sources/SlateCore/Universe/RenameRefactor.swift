@@ -62,8 +62,8 @@ public enum RenameRefactor {
         for path in graph.files.keys.sorted() {
             for source in graph.files[path]?.links ?? [] {
                 guard let resolution = graph.resolve(source.link.target), resolution.path == notePath,
-                      resolution.via != .alias, source.link.target != newName else { continue }
-                // A canvas note card names the file, so it follows the move.
+                      resolution.via != .alias, resolution.via != .id, source.link.target != newName else { continue }
+                // A canvas note card (or a timeline or map link) names the file, so it follows the move.
                 let isPath = source.link.target == notePath
                 if isPath, newPath == nil { continue }
                 edits.append(FileEdit(

@@ -280,13 +280,14 @@ struct LinkIndexTests {
         let draft = try store.document(at: "universe/draft.md")
         draft.text += "\nAnd [[The Archivist]] watches.\n"
         index.update(path: draft.relativePath, text: draft.text)
-        #expect(index.graph.unresolved.count == 2)
+        // (The sample timeline's "The Archive" has no note on purpose.)
+        #expect(index.graph.unresolved.filter { $0.kind != .timeline }.count == 2)
 
         // A note added outside Slate.
         try folder.write("---\nname: The Archivist\n---\n", to: "SampleProject/universe/characters/the-archivist.md")
         store.handleExternalChanges(["universe/characters/the-archivist.md"])
         index.refresh()
-        #expect(index.graph.unresolved.isEmpty)
+        #expect(index.graph.unresolved.map(\.link.target) == ["The Archive"])
 
         // The cache is only a speed-up.
         try FileManager.default.removeItem(at: root.appending(path: ".slate/index"))

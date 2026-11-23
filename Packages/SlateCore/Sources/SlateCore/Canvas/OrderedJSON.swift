@@ -193,6 +193,48 @@ public indirect enum OrderedJSON: Sendable, Equatable {
         }
     }
 
+    /// Indented JSON for hand-read files (timelines, maps): one key per line,
+    /// with short lists of plain values (`["s014"]`, `[0.25, 0.4]`) kept on one line.
+    public func pretty(indent: String = "  ", level: Int = 0) -> String {
+        let inner = String(repeating: indent, count: level + 1)
+        let outer = String(repeating: indent, count: level)
+        switch self {
+        case .array(let items):
+            guard !items.isEmpty else { return "[]" }
+            if items.allSatisfy(\.isInline) {
+                return "[" + items.map(\.spaced).joined(separator: ", ") + "]"
+            }
+            return "[\n" + items.map { inner + $0.pretty(indent: indent, level: level + 1) }.joined(separator: ",\n") + "\n" + outer + "]"
+        case .object(let object):
+            guard !object.pairs.isEmpty else { return "{}" }
+            // A short record of plain values fits on one line: {"id": "mara", "name": "Mara"}.
+            if level > 0, object.pairs.allSatisfy(\.value.isInline) {
+                let line = "{" + object.pairs.map { OrderedJSON.quote($0.key) + ": " + $0.value.spaced }.joined(separator: ", ") + "}"
+                if outer.count + line.count <= 100 { return line }
+            }
+            return "{\n" + object.pairs.map {
+                inner + OrderedJSON.quote($0.key) + ": " + $0.value.pretty(indent: indent, level: level + 1)
+            }.joined(separator: ",\n") + "\n" + outer + "}"
+        default:
+            return compact
+        }
+    }
+
+    /// Plain values, and lists of plain values, stay on one line.
+    private var isInline: Bool {
+        switch self {
+        case .object: false
+        case .array(let items): items.allSatisfy { if case .array = $0 { false } else { $0.isInline } }
+        default: true
+        }
+    }
+
+    /// Like `compact`, with a space after each comma.
+    private var spaced: String {
+        if case .array(let items) = self { return "[" + items.map(\.spaced).joined(separator: ", ") + "]" }
+        return compact
+    }
+
     static func quote(_ string: String) -> String {
         var result = "\""
         for scalar in string.unicodeScalars {

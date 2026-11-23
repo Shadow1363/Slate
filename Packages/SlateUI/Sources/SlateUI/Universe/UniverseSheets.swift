@@ -119,6 +119,8 @@ private struct BacklinkRow: View {
         case .draft: "Rough Draft"
         case .dictionary: "Dictionary"
         case .canvas: "Canvas · " + ((source.path as NSString).lastPathComponent as NSString).deletingPathExtension
+        case .timeline: "Timeline · " + TimelinePane.title(source.path)
+        case .map: "Map · " + MapPane.title(source.path)
         case .note: graph.note(at: source.path)?.name ?? source.path
         }
     }
@@ -130,6 +132,8 @@ private struct BacklinkRow: View {
         case .draft: "doc.richtext"
         case .dictionary: "character.book.closed"
         case .canvas: "rectangle.3.group"
+        case .timeline: "timeline.selection"
+        case .map: "map"
         case .note: icon(for: graph.note(at: source.path)?.type)
         }
     }

@@ -11,6 +11,10 @@ public struct LinkSource: Sendable, Equatable, Codable, Identifiable {
         case dictionary
         /// A `.canvas` board: note cards and `[[links]]` in text cards.
         case canvas
+        /// A `*.timeline.json`: lanes' notes and events' locations.
+        case timeline
+        /// A `*.map.json`: the notes pins, regions and paths link to.
+        case map
         /// A line in a script act file.
         case scene
         /// `script/margin/*.md`.
@@ -54,6 +58,8 @@ public struct IndexedFile: Sendable, Equatable, Codable {
         case "universe":
             if path == ProjectLayout.draft { return .draft }
             if ext == "canvas" { return .canvas }
+            if path.lowercased().hasSuffix(TimelineFile.suffix) { return .timeline }
+            if path.lowercased().hasSuffix(MapFile.suffix) { return .map }
             return ["md", "markdown"].contains(ext) ? .note : nil
         case "dictionary":
             return path == WordBook.path ? .dictionary : nil
@@ -102,6 +108,25 @@ public struct IndexedFile: Sendable, Equatable, Codable {
                                         sceneID: nil, sceneHeading: nil))
             }
             return IndexedFile(path: path, modified: modified, size: size, note: nil, links: links)
+        case .timeline, .map:
+            // `"note": "c-7f3a"` and `"location": "The Station"`: an id, a path or a name.
+            var links = WikiLink.find(in: text).map { source($0) }
+            let ns = text as NSString
+            let titles = jsonTitlePattern.matches(in: text, range: NSRange(location: 0, length: ns.length))
+            let place = kind == .timeline ? "this timeline" : "this map"
+            // Only the keys Slate reads count (not a `note` inside some other app's data).
+            let references = jsonReferences(text, kind: kind)
+            for match in jsonNotePattern.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                let valueRange = match.range(at: 2)
+                let target = ns.substring(with: valueRange).replacingOccurrences(of: "\\/", with: "/")
+                guard !target.isEmpty, references.contains(target) else { continue }
+                let link = WikiLink(range: match.range, targetRange: valueRange, target: target, heading: nil, shown: nil)
+                let owner = titles.last { $0.range.location < match.range.location }.map { ns.substring(with: $0.range(at: 1)) }
+                let snippet = owner.map { "“\($0)” on \(place)" } ?? "On \(place)"
+                links.append(LinkSource(path: path, kind: kind, link: link, line: lines.line(containing: match.range.location),
+                                        snippet: snippet, sceneID: nil, sceneHeading: nil))
+            }
+            return IndexedFile(path: path, modified: modified, size: size, note: nil, links: links)
         case .scene:
             let parsed = ScriptParser.parse(text)
             let links = WikiLink.find(in: text).map { link -> LinkSource in
@@ -117,10 +142,27 @@ public struct IndexedFile: Sendable, Equatable, Codable {
 /// `"file":"…"` in a canvas file; group 1 is the path.
 let canvasFilePattern = try! NSRegularExpression(pattern: #""file"\s*:\s*"((?:[^"\\]|\\.)*)""#)
 
+/// `"note": "…"` or `"location": "…"` in a timeline or map; group 2 is the value.
+let jsonNotePattern = try! NSRegularExpression(pattern: #""(note|location)"\s*:\s*"((?:[^"\\]|\\.)*)""#)
+
+/// The note references a timeline (lanes' notes, events' locations) or map (items' notes) holds.
+func jsonReferences(_ text: String, kind: LinkSource.Kind) -> Set<String> {
+    if kind == .timeline, let file = try? TimelineFile(text: text) {
+        return Set(file.lanes.compactMap(\.note) + file.events.compactMap(\.location))
+    }
+    if kind == .map, let file = try? MapFile(text: text) {
+        return Set(file.items.compactMap(\.note))
+    }
+    return []
+}
+
+/// `"title": "…"` or `"name": "…"`, for naming what a link sits on.
+let jsonTitlePattern = try! NSRegularExpression(pattern: #""(?:title|name)"\s*:\s*"((?:[^"\\]|\\.)*)""#)
+
 /// The resolved web of links: names → notes, and notes → backlinks.
 /// Pure data, rebuilt whenever a file changes.
 public struct LinkGraph: Sendable, Equatable {
-    public enum Match: String, Sendable { case name, alias, fileName }
+    public enum Match: String, Sendable { case name, alias, id, fileName }
 
     public struct Resolution: Sendable, Equatable {
         public let path: String
@@ -141,6 +183,7 @@ public struct LinkGraph: Sendable, Equatable {
     private let byName: [String: String]
     private let byAlias: [String: String]
     private let byStem: [String: String]
+    private let byID: [String: String]
     private let incoming: [String: [LinkSource]]
 
     public init(files: [IndexedFile]) {
@@ -151,6 +194,7 @@ public struct LinkGraph: Sendable, Equatable {
         var byName: [String: String] = [:]
         var byAlias: [String: String] = [:]
         var byStem: [String: String] = [:]
+        var byID: [String: String] = [:]
         var notes: [Note] = []
         for path in sortedPaths {
             guard let note = map[path]?.note else { continue }
@@ -163,16 +207,19 @@ public struct LinkGraph: Sendable, Equatable {
             if byStem[Self.key(note.fileStem)] == nil { byStem[Self.key(note.fileStem)] = path }
             // A full path (a canvas note card) resolves to that note.
             byStem[Self.key(path)] = path
+            // So does an `id:` (timeline lanes, map pins).
+            if let id = note.noteID, byID[id] == nil { byID[id] = path }
         }
         self.byName = byName
         self.byAlias = byAlias
         self.byStem = byStem
+        self.byID = byID
         self.notes = notes.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
 
         var incoming: [String: [LinkSource]] = [:]
         for path in sortedPaths {
             for source in map[path]?.links ?? [] {
-                guard let target = Self.resolve(source.link.target, byName: byName, byAlias: byAlias, byStem: byStem) else { continue }
+                guard let target = Self.resolve(source.link.target, byName: byName, byAlias: byAlias, byID: byID, byStem: byStem) else { continue }
                 incoming[target.path, default: []].append(source)
             }
         }
@@ -183,7 +230,7 @@ public struct LinkGraph: Sendable, Equatable {
 
     /// Name, then alias, then file name; case and accents don't matter.
     public func resolve(_ target: String) -> Resolution? {
-        Self.resolve(target, byName: byName, byAlias: byAlias, byStem: byStem)
+        Self.resolve(target, byName: byName, byAlias: byAlias, byID: byID, byStem: byStem)
     }
 
     public func note(at path: String) -> Note? { files[path]?.note }
@@ -237,10 +284,12 @@ public struct LinkGraph: Sendable, Equatable {
             .joined(separator: " ")
     }
 
-    private static func resolve(_ target: String, byName: [String: String], byAlias: [String: String], byStem: [String: String]) -> Resolution? {
+    private static func resolve(_ target: String, byName: [String: String], byAlias: [String: String], byID: [String: String],
+                                byStem: [String: String]) -> Resolution? {
         let key = key(target)
         if let path = byName[key] { return Resolution(path: path, via: .name) }
         if let path = byAlias[key] { return Resolution(path: path, via: .alias) }
+        if let path = byID[target.trimmingCharacters(in: .whitespaces)] { return Resolution(path: path, via: .id) }
         if let path = byStem[key] ?? byStem[Slug.make(target)] { return Resolution(path: path, via: .fileName) }
         return nil
     }
@@ -295,7 +344,7 @@ public final class LinkIndex {
 
     public static let cachePath = ".slate/index/links.json"
     /// Bump when `IndexedFile` changes shape, so old caches are ignored.
-    static let cacheVersion = 4
+    static let cacheVersion = 5
 
     public init(store: ProjectStore) {
         self.store = store

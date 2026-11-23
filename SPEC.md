@@ -200,6 +200,7 @@ Universe is where the film is thought through before and while it is written: a 
 - Three views of the same data: **World order** (chronological), **Story order** (as the film plays, from scene order), **Personal** (one character's lived experience, following their jumps).
 - Light continuity checks: warn when a character is in two places at the same world time without a jump, or when a scene shows an event before its cause on their personal line.
 - Time units are configurable: real dates, relative days ("Day 3"), or a custom calendar with named eras.
+- In the file, an event may also have `end` (a span), `location` (a note id, path or name), `after` (IDs of the events that cause it), `summary` and `color`. A branch has `name`, `forksFrom` and `rejoins`; events without `branch` are on the first branch. A custom calendar lists its eras as `"calendar": {"eras": [...]}`, and times are written `<era> <number>`. A traveller's jumps are lived in the order they're listed. Unknown keys are kept; an unchanged file is never rewritten.
 
 ```json
 {
@@ -234,6 +235,18 @@ Universe is where the film is thought through before and while it is written: a 
 - Layers you can toggle (e.g. "1998" vs "2031" if the city changes across time).
 - Coordinates stored normalised 0–1 against the image, so swapping in a higher-resolution map keeps every pin in place.
 - Clicking a location in the script's scene heading can reveal it on the map.
+
+```json
+{
+  "image": "city.png",
+  "layers": [{"id": "l1998", "name": "1998"}],
+  "pins": [{"id": "p-st01", "title": "The Station", "x": 0.42, "y": 0.31, "note": "l-51c0", "scenes": ["s014"]}],
+  "regions": [{"id": "r-ot01", "title": "Old Town", "points": [[0.08, 0.1], [0.3, 0.08], [0.33, 0.35]], "layer": "l1998"}],
+  "paths": []
+}
+```
+
+`image` is relative to the map file (`null` for a blank grid, sized by `aspect`); items without `layer` are always shown.
 
 ## Script
 
