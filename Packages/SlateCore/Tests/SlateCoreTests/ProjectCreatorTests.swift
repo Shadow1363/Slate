@@ -4,7 +4,7 @@ import Testing
 
 @Suite("New Project")
 struct ProjectCreatorTests {
-    @Test(arguments: ProjectTemplate.allCases)
+    @Test(arguments: ProjectTemplate.allCases.filter { $0 != .showcase })
     func everyTemplateCreatesAValidProject(_ template: ProjectTemplate) throws {
         let folder = try TempFolder()
         let root = try ProjectCreator.create(title: "My Film", template: template, in: folder.url)
@@ -84,5 +84,27 @@ struct ProjectCreatorTests {
         try ProjectCreator.create(title: "Two", template: .blank, in: folder.url)
         try folder.write("x", to: "Not A Project/readme.txt")
         #expect(ProjectScanner.projects(in: folder.url).map(\.lastPathComponent) == ["One", "Two"])
+    }
+
+    @MainActor
+    @Test func showcaseCopiesTheSampleUnderANewName() throws {
+        let folder = try TempFolder()
+        let showcase = Fixtures.root.deletingLastPathComponent().appending(path: "Showcase/Tidewater", directoryHint: .isDirectory)
+        let original = try ProjectManifest.decode(Data(contentsOf: showcase.appending(path: "project.json")))
+        let root = try ProjectCreator.create(title: "My Tidewater", template: .showcase, in: folder.url, sample: showcase)
+        let manifest = try ProjectManifest.decode(Data(contentsOf: root.appending(path: "project.json")))
+        #expect(manifest.name == "My Tidewater")
+        #expect(manifest.id != original.id)
+        for path in ["script/01-act-one.md", "universe/maps/saltmarrow.png", "storyboard/scenes/s003 int-the-lighthouse-lamp-room-night/02.mov",
+                     "SHOWCASE.md", ".slate"] {
+            #expect(FileManager.default.fileExists(atPath: root.appending(path: path).path), "missing \(path)")
+        }
+        // It opens like any project.
+        let store = try ProjectStore(rootURL: root, autosaveDelay: nil)
+        #expect(store.manifest.name == "My Tidewater")
+        // Without the sample (as in a test runner), it says so.
+        #expect(throws: ProjectCreationError.sampleMissing) {
+            try ProjectCreator.create(title: "X", template: .showcase, in: folder.url, sample: nil)
+        }
     }
 }

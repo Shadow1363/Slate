@@ -28,6 +28,10 @@ targets:
     platform: macOS
     sources:
       - App
+      # The showcase project, copied by New Project › Showcase.
+      - path: Showcase/Tidewater
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: SlateCore
       - package: SlateUI

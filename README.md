@@ -69,7 +69,9 @@ Tests use Swift Testing and work on temp copies of the sample project in `Fixtur
 
 ## Showcase project
 
-`Showcase/Tidewater` is a made-up short film that uses every feature built so far: a three-act script, notes of every type, a custom template, margin to-dos and notes, a dictionary, a canvas, three timelines and two maps. Open it with ⌘O and follow its `SHOWCASE.md` checklist. It grows with each milestone, and `ShowcaseTests` keeps it valid.
+**Easiest:** Home › New Project › Template: **Showcase (sample film)**. Slate copies *Tidewater*, a made-up short film that uses every feature built so far, into a new project under your title, ready to poke at. Make as many copies as you like; follow the `SHOWCASE.md` checklist inside.
+
+The original lives in the repo at `Showcase/Tidewater` and is built into the app. Edit it there (not through a copy) to change what new copies get; `ShowcaseTests` keeps it valid, and it grows with each milestone. Opening the repo copy directly with ⌘O works too, but Slate then tidies folders and writes its cache inside it.
 
 ## Writing a script
 

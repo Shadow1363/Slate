@@ -1,5 +1,11 @@
 # Changes
 
+## Showcase in New Project (2026-11-22, after Milestone 9)
+
+- **New Project › Template › Showcase (sample film)** makes a fresh copy of *Tidewater* under your title (it suggests "Tidewater"), with its own project ID. It isn't linked to the repo's copy.
+- **The app now bundles** `Showcase/Tidewater` as a resource (372 KB), so this works from any build of Slate.
+- **Tests:** 334 pass, one more than before: creating from the showcase copies every file except the cache, renames the project, and the result opens.
+
 ## Milestone 9 — Storyboard (2026-11-22)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

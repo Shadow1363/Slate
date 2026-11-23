@@ -6,6 +6,8 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
     case short
     case tvPilot
     case blank
+    /// A copy of the Tidewater showcase: a made-up film that uses every feature.
+    case showcase
 
     public var id: String { rawValue }
 
@@ -15,6 +17,7 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
         case .short: "Short"
         case .tvPilot: "TV Pilot"
         case .blank: "Blank"
+        case .showcase: "Showcase (sample film)"
         }
     }
 
@@ -24,6 +27,7 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
         case .short: "One script file, note folders and a title page."
         case .tvPilot: "A teaser and four act files, note folders and a title page."
         case .blank: "The bare folders and an empty script."
+        case .showcase: "Tidewater, a made-up short film that uses every feature: script, notes, canvas, timelines, maps and storyboard. A fresh copy to try things on."
         }
     }
 
@@ -90,7 +94,8 @@ public enum ProjectTemplate: String, CaseIterable, Sendable, Identifiable {
                 ("01-teaser.md", "TEASER"), ("02-act-one.md", "ACT ONE"), ("03-act-two.md", "ACT TWO"),
                 ("04-act-three.md", "ACT THREE"), ("05-act-four.md", "ACT FOUR"),
             ]
-        case .blank:
+        case .blank, .showcase:
+            // (The showcase is copied whole; see ProjectCreator.)
             [("script.md", nil)]
         }
     }

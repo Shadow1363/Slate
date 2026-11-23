@@ -25,6 +25,7 @@ struct NewProjectSheet: View {
                 Text(template.summary)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 LabeledContent("Location") {
                     HStack {
                         Text(location.path(percentEncoded: false))
@@ -36,6 +37,10 @@ struct NewProjectSheet: View {
                 }
             }
             .formStyle(.columns)
+            .onChange(of: template) { _, chosen in
+                // The showcase suggests its own title; you can still change it.
+                if chosen == .showcase, title.trimmingCharacters(in: .whitespaces).isEmpty { title = "Tidewater" }
+            }
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }

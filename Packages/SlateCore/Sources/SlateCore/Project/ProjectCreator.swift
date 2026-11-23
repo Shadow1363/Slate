@@ -3,11 +3,13 @@ import Foundation
 public enum ProjectCreationError: Error, Equatable, LocalizedError {
     case emptyTitle
     case folderNotEmpty(String)
+    case sampleMissing
 
     public var errorDescription: String? {
         switch self {
         case .emptyTitle: "Give the project a title."
         case .folderNotEmpty(let path): "A folder already exists at \(path) and isn't empty. Pick another title or location."
+        case .sampleMissing: "The showcase project isn't inside this copy of Slate."
         }
     }
 }
@@ -24,14 +26,21 @@ public enum ProjectCreator {
         return name.isEmpty ? "Untitled" : name
     }
 
+    /// The showcase project inside the app (`Tidewater` in its resources), if present.
+    public static var bundledShowcase: URL? {
+        Bundle.main.url(forResource: "Tidewater", withExtension: nil)
+    }
+
     /// Creates `<parent>/<title>/` with the template's folders and starter files.
+    /// The showcase template copies `sample` (the app's bundled Tidewater by default).
     /// Returns the new project folder.
     @discardableResult
     public static func create(
         title: String,
         template: ProjectTemplate,
         in parent: URL,
-        date: Date = .now
+        date: Date = .now,
+        sample: URL? = ProjectCreator.bundledShowcase
     ) throws -> URL {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ProjectCreationError.emptyTitle }
@@ -44,6 +53,13 @@ public enum ProjectCreator {
                 throw ProjectCreationError.folderNotEmpty(root.path)
             }
         }
+        if template == .showcase {
+            guard let sample, fm.fileExists(atPath: sample.appending(path: ProjectLayout.manifest).path) else {
+                throw ProjectCreationError.sampleMissing
+            }
+            try copySample(sample, to: root, title: trimmed)
+            return root
+        }
 
         for folder in template.folders {
             try fm.createDirectory(at: root.appending(path: folder, directoryHint: .isDirectory), withIntermediateDirectories: true)
@@ -54,6 +70,24 @@ public enum ProjectCreator {
         let manifest = ProjectManifest(name: trimmed)
         try CoordinatedFileIO.write(try manifest.encoded(), to: root.appending(path: ProjectLayout.manifest))
         return root
+    }
+
+    /// Copies a sample project (without its `.slate/` cache), then gives the
+    /// copy its own name and ID so it's a separate project in the library.
+    static func copySample(_ source: URL, to root: URL, title: String) throws {
+        let fm = FileManager.default
+        try fm.createDirectory(at: root, withIntermediateDirectories: true)
+        for name in try fm.contentsOfDirectory(atPath: source.path) where name != ProjectLayout.cache && name != ".DS_Store" {
+            let target = root.appending(path: name)
+            if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
+            try fm.copyItem(at: source.appending(path: name), to: target)
+        }
+        try fm.createDirectory(at: root.appending(path: ProjectLayout.cache, directoryHint: .isDirectory), withIntermediateDirectories: true)
+        let manifestURL = root.appending(path: ProjectLayout.manifest)
+        var manifest = try ProjectManifest.decode(Data(contentsOf: manifestURL))
+        manifest.name = title
+        manifest.id = ProjectManifest.newID()
+        try CoordinatedFileIO.write(try manifest.encoded(), to: manifestURL)
     }
 }
 
