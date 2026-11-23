@@ -8,6 +8,7 @@
 - **Due-date notifications** cover TODO comments too; clicking one opens the note at the comment.
 - The **+** for watched folders now sits right after "Watched Folders".
 - Project cards count TODO comments in "open to-dos".
+- The typing-speed test allows GitHub's slower shared runners 100 ms per key (33 ms on a Mac); a busy runner had failed the release at 68 ms while a Mac measures about 11 ms.
 - Fixed while building: scanning a project could mangle file paths when the folder was reached through `/var` vs `/private/var`; paths now come straight from the file system.
 
 ## Areas from the title menu (2026-11-23)
