@@ -35,6 +35,32 @@ struct VoiceSettingsView: View {
             }
 
             if engine == VoiceEngine.whisper.rawValue {
+                Section {
+                    let _ = downloads.revision
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Whisper engine")
+                            Text(WhisperEngine.isInstalled ? "Installed" : "Not installed · \(WhisperEngine.sizeDescription)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if downloads.downloading == .engine {
+                            ProgressView(value: downloads.progress).frame(width: 90)
+                            Button("Cancel") { downloads.cancel() }.controlSize(.small)
+                        } else if WhisperEngine.isInstalled {
+                            Button("Remove") { downloads.uninstallEngine() }.controlSize(.small)
+                        } else {
+                            Button("Download") { downloads.download(.engine) }
+                                .controlSize(.small)
+                                .disabled(downloads.downloading != nil)
+                        }
+                    }
+                } header: {
+                    Text("Whisper (optional)")
+                } footer: {
+                    Text("Whisper isn't part of Slate. Download it only if you want it; Slate checks the file before installing it. You also need a model below.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 Section("Whisper model") {
                     let _ = downloads.revision
                     ForEach(WhisperModel.allCases) { model in
@@ -95,7 +121,7 @@ struct VoiceSettingsView: View {
 
     @ViewBuilder
     private func modelStatus(_ model: WhisperModel) -> some View {
-        if downloads.downloading == model {
+        if downloads.downloading == .model(model) {
             ProgressView(value: downloads.progress).frame(width: 90)
             Button("Cancel") { downloads.cancel() }.controlSize(.small)
         } else if model.isDownloaded {
@@ -104,7 +130,7 @@ struct VoiceSettingsView: View {
         } else {
             Button("Download") {
                 whisperModel = model.rawValue
-                downloads.download(model)
+                downloads.download(.model(model))
             }
             .controlSize(.small)
             .disabled(downloads.downloading != nil)

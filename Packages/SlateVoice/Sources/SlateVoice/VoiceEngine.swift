@@ -20,7 +20,7 @@ public enum VoiceEngine: String, CaseIterable, Identifiable, Sendable {
     public var summary: String {
         switch self {
         case .apple: "Recommended. Works offline with nothing to download, and shows words as you speak."
-        case .whisper: "Works offline once a model is downloaded. Often better with names and accents. The text appears when you stop."
+        case .whisper: "Optional download. Works offline once installed with a model; often better with names and accents. The text appears when you stop."
         case .openAI: "Sends the audio to OpenAI with your API key. Needs the internet, and OpenAI bills you per minute."
         }
     }
@@ -75,6 +75,7 @@ public enum VoiceError: LocalizedError, Equatable {
     case microphoneDenied
     case speechDenied
     case appleUnavailable(String)
+    case whisperNotInstalled
     case whisperModelMissing(String)
     case whisperFailed(String)
     case openAIKeyMissing
@@ -91,6 +92,8 @@ public enum VoiceError: LocalizedError, Equatable {
             "Slate isn't allowed to use speech recognition. Turn it on in System Settings › Privacy & Security › Speech Recognition."
         case .appleUnavailable(let detail):
             "Apple's on-device speech recognition isn't available: \(detail)"
+        case .whisperNotInstalled:
+            "Whisper isn't installed. It's an optional download in Settings › Voice."
         case .whisperModelMissing(let name):
             "The Whisper model “\(name)” isn't downloaded yet. Download it in Settings › Voice."
         case .whisperFailed(let detail):

@@ -102,6 +102,8 @@ public final class Dictation {
 
     private func check() throws {
         switch settings.engine {
+        case .whisper where !WhisperEngine.isInstalled:
+            throw VoiceError.whisperNotInstalled
         case .whisper where !settings.whisperModel.isDownloaded:
             throw VoiceError.whisperModelMissing(settings.whisperModel.title)
         case .openAI where !OpenAIKey.isSet:

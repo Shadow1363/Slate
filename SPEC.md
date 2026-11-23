@@ -60,7 +60,7 @@ SwiftUI for the app shell and most views, AppKit for the parts that need the ful
 | PDF                   | Own pagination engine, drawn with Core Text into a PDF context                  | Exact control over screenplay page breaks                                                                  |
 | Animatic              | AVFoundation (`AVMutableComposition`, `AVPlayer`, `AVAssetExportSession`)       | Plays images and clips as one timeline, exports .mov                                                       |
 | Reminders             | `UserNotifications` + an on-launch sheet                                        | To-dos surface when you open the app                                                                       |
-| Speech to text        | SlateVoice package: Apple Speech (on-device), whisper.cpp (vendored `whisper.xcframework`), or OpenAI's transcription API | Apple works offline with nothing to download; Whisper and OpenAI are opt-in |
+| Speech to text        | SlateVoice package: Apple Speech (on-device), whisper.cpp (an optional download, opened at run time), or OpenAI's transcription API | Apple works offline with nothing to download; Whisper and OpenAI are opt-in |
 | Project file          | XcodeGen `project.yml`; Swift packages SlateCore, SlateUI, SlateExport, SlateVoice | Reproducible builds, testable core                                                                         |
 
 Key services in SlateCore:
@@ -435,9 +435,10 @@ Two ways to write by speaking, both in the SlateVoice package.
   | Engine | Default | Where it runs | Needs |
   | ------ | ------- | ------------- | ----- |
   | Apple (Speech framework) | Yes, recommended | On this Mac, `requiresOnDeviceRecognition` | Nothing to download; the language's on-device model (comes with macOS Dictation) |
-  | Whisper (whisper.cpp, Metal) | | On this Mac | A model downloaded in Settings › Voice from Hugging Face (`ggerganov/whisper.cpp`) to `~/Library/Application Support/Slate/Whisper/`: Base (142 MB, default), Small (466 MB), Large Turbo q5 (547 MB), English-only or multilingual |
+  | Whisper (whisper.cpp, Metal) | | On this Mac | The Whisper engine, an optional 4 MB download in Settings › Voice (never bundled), and a model downloaded there from Hugging Face (`ggerganov/whisper.cpp`) to `~/Library/Application Support/Slate/Whisper/`: Base (142 MB, default), Small (466 MB), Large Turbo q5 (547 MB), English-only or multilingual |
   | OpenAI (`/v1/audio/transcriptions`) | | Online | An API key, stored in the login keychain; models `gpt-4o-transcribe` (default), `gpt-4o-mini-transcribe`, `whisper-1`; files over 25 MB are refused |
 
+- The Whisper engine is not part of the app. Settings › Voice › Download fetches `whisper-framework-<n>.zip` from the `whisper-<n>` GitHub release, checks its SHA-256 against the one built into Slate, and unpacks `whisper.framework` into `~/Library/Application Support/Slate/Whisper/`; Remove deletes it. Slate opens it with `dlopen` only when Whisper transcribes (`CWhisper`), so a Slate without it starts and works normally. The zip is made from `Packages/SlateVoice/Vendor/whisper.xcframework` by `Scripts/publish-whisper.sh`.
 - Language: automatic (system language for Apple, detection for Whisper/OpenAI) or a fixed one.
 - Transcripts are tidied: Whisper's non-speech markers (`[BLANK_AUDIO]`, `(music)`) are removed and spacing collapsed.
 - Permissions: microphone (`NSMicrophoneUsageDescription`, plus the `com.apple.security.device.audio-input` entitlement for the hardened runtime) and speech recognition (`NSSpeechRecognitionUsageDescription`). Denials show a message pointing at System Settings.

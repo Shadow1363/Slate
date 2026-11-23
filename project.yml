@@ -68,6 +68,11 @@ targets:
         ENABLE_APP_SANDBOX: NO
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        # Debug builds are ad-hoc signed; the hardened runtime would refuse the
+        # optional Whisper engine. Release (Developer ID) keeps it.
+        Debug:
+          ENABLE_HARDENED_RUNTIME: NO
 
 schemes:
   Slate:
