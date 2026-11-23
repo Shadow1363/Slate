@@ -105,24 +105,13 @@ private struct TextCard: View {
     let model: CanvasModel
     let node: CanvasNode
     @State private var draft = ""
-    @FocusState private var focused: Bool
 
     var body: some View {
         if model.editingText == node.id {
-            TextEditor(text: $draft)
-                .font(.system(size: 14))
-                .scrollContentBackground(.hidden)
-                .focused($focused)
+            SpellingTextEditor(text: $draft, spelling: model.spelling, font: .systemFont(ofSize: 14), focusOnAppear: true,
+                               onEscape: { commit() }, onEndEditing: { commit() })
                 .padding(8)
-                .onAppear {
-                    draft = node.text
-                    focused = true
-                }
-                .onChange(of: focused) { _, isFocused in if !isFocused { commit() } }
-                .onKeyPress(.escape) {
-                    commit()
-                    return .handled
-                }
+                .onAppear { draft = node.text }
                 .onDisappear { commit() }
         } else {
             ScrollView {

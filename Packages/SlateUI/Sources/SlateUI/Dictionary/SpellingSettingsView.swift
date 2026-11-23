@@ -5,8 +5,6 @@ import SwiftUI
 /// Settings › Spelling.
 struct SpellingSettingsView: View {
     @AppStorage(SpellingPreferences.language) private var language = ""
-    @AppStorage(SpellingPreferences.grammarInScript) private var grammarInScript = false
-    @AppStorage(SpellingPreferences.grammarInNotes) private var grammarInNotes = true
     @AppStorage(SpellingPreferences.autocorrect) private var autocorrect = false
 
     var body: some View {
@@ -20,9 +18,23 @@ struct SpellingSettingsView: View {
             }
             Text("Automatic checks each paragraph in whichever of your languages it's written in (System Settings › Keyboard › Text Input).")
                 .font(.caption).foregroundStyle(.secondary)
-            Section("Grammar") {
-                Toggle("Check grammar in the script", isOn: $grammarInScript)
-                Toggle("Check grammar in notes", isOn: $grammarInNotes)
+            Section("Where to check") {
+                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                    GridRow {
+                        Text("")
+                        Text("Spelling").font(.caption).foregroundStyle(.secondary)
+                        Text("Grammar").font(.caption).foregroundStyle(.secondary)
+                    }
+                    ForEach(EditorSpelling.Area.allCases) { area in
+                        GridRow {
+                            Text(area.title)
+                            AreaToggle(key: SpellingPreferences.checkKey(area), fallback: SpellingPreferences.defaultCheck(area),
+                                       label: "Check spelling in \(area.title)")
+                            AreaToggle(key: SpellingPreferences.grammarKey(area), fallback: SpellingPreferences.defaultGrammar(area),
+                                       label: "Check grammar in \(area.title)")
+                        }
+                    }
+                }
             }
             Section {
                 Toggle("Correct spelling automatically", isOn: $autocorrect)
@@ -43,5 +55,23 @@ struct SpellingSettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+}
+
+/// One checkbox bound to a UserDefaults key with a default.
+private struct AreaToggle: View {
+    let key: String
+    let fallback: Bool
+    let label: String
+    @State private var on = false
+
+    var body: some View {
+        Toggle(label, isOn: Binding(get: { on }, set: { value in
+            on = value
+            UserDefaults.standard.set(value, forKey: key)
+        }))
+        .labelsHidden()
+        .toggleStyle(.checkbox)
+        .onAppear { on = UserDefaults.standard.object(forKey: key) as? Bool ?? fallback }
     }
 }

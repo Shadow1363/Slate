@@ -130,6 +130,33 @@ public final class ProjectLibrary {
         missing.remove(id)
     }
 
+    /// Watches another folder for projects (and adds the ones in it now).
+    public func addWatchedFolder(_ folder: URL) {
+        let path = folder.standardizedFileURL.path
+        guard !watchedFolders.contains(where: { $0.standardizedFileURL.path == path }) else { return }
+        watchedFolders.append(URL(filePath: path, directoryHint: .isDirectory))
+        save()
+        scanWatchedFolders()
+    }
+
+    /// Stops watching a folder. Its projects stay in the library.
+    public func removeWatchedFolder(_ folder: URL) {
+        let path = folder.standardizedFileURL.path
+        watchedFolders.removeAll { $0.standardizedFileURL.path == path }
+        save()
+    }
+
+    /// Follows a project folder that Slate itself moved or renamed.
+    public func moved(_ id: UUID, to folder: URL) {
+        guard let (bookmark, scoped) = try? Self.makeBookmark(folder) else { return }
+        update(id) {
+            $0.bookmark = bookmark
+            $0.securityScoped = scoped
+            $0.lastKnownPath = folder.standardizedFileURL.path
+        }
+        missing.remove(id)
+    }
+
     /// Adds any projects found in the watched folders that aren't in the
     /// library yet (and weren't removed by the user).
     public func scanWatchedFolders() {

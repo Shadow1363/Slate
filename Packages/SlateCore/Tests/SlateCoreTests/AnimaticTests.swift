@@ -257,3 +257,27 @@ struct AnimaticTextTests {
         #expect(film.subtitles.first?.text == "Ellis! It's Ellis.")
     }
 }
+
+@Suite("Animatic subtitles")
+struct AnimaticReadabilityTests {
+    @Test func shortPlacedCuesSpreadIntoFreeTime() {
+        let cues = [
+            SubtitleCue(start: 8, end: 8.4, character: "A", text: "Did you now."),
+            SubtitleCue(start: 8.4, end: 8.8, character: "B", text: "Felt like I owed her something."),
+        ]
+        let spread = AnimaticTimeline.readable(cues, covered: [false, false], from: 0, to: 10)
+        #expect(spread[0].end - spread[0].start >= 1.8)
+        #expect(spread[1].start == spread[0].end)
+        #expect(spread[1].end <= 10)
+        #expect(spread[1].end - spread[1].start > spread[0].end - spread[0].start)
+        // A covered cue keeps its time, and blocks the run from spreading over it.
+        let kept = AnimaticTimeline.readable(cues, covered: [true, false], from: 0, to: 10)
+        #expect(kept[0] == cues[0])
+        #expect(kept[1].start >= kept[0].end) // spreads only after the covered cue
+        // No room: the run fills what there is.
+        let tight = AnimaticTimeline.readable(cues, covered: [false, false], from: 8, to: 9)
+        #expect(tight.first?.start == 8)
+        #expect(tight.last?.end == 9)
+        #expect(AnimaticTimeline.readingTime("one two three") == 1.9)
+    }
+}

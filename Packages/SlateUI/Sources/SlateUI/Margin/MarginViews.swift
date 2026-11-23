@@ -459,8 +459,7 @@ struct MarginNoteSheet: View {
                 Text(session.script.scene(withID: sceneID).map { "Scene \($0.label): \($0.scene.heading)" } ?? sceneID)
                     .font(.caption).foregroundStyle(.secondary)
             }
-            TextEditor(text: $text)
-                .font(.body)
+            SpellingTextEditor(text: $text, spelling: session.dictionary.spelling(for: .margin, characters: session.script.characterNames))
                 .frame(minHeight: 100)
                 .overlay(RoundedRectangle(cornerRadius: 5).stroke(.quaternary))
             Text("Use [[Name]] to link a note.").font(.caption).foregroundStyle(.secondary)

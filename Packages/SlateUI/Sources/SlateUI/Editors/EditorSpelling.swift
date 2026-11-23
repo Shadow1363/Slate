@@ -10,12 +10,31 @@ enum SpellingPreferences {
     static let grammarInNotes = "grammarInNotes"
     static let autocorrect = "spellingAutocorrect"
 
+    /// `spelling.<area>` and `grammar.<area>` for the areas without older keys.
+    static func checkKey(_ area: EditorSpelling.Area) -> String { "spelling." + area.rawValue }
+    static func grammarKey(_ area: EditorSpelling.Area) -> String {
+        switch area {
+        case .script: grammarInScript
+        case .notes: grammarInNotes
+        default: "grammar." + area.rawValue
+        }
+    }
+
+    /// Spelling is on everywhere but canvas cards; grammar only in notes.
+    static func defaultCheck(_ area: EditorSpelling.Area) -> Bool { area != .cards }
+    static func defaultGrammar(_ area: EditorSpelling.Area) -> Bool { area == .notes }
+
     static var current: SpellingSettings {
         let defaults = UserDefaults.standard
+        var check: [EditorSpelling.Area: Bool] = [:], grammar: [EditorSpelling.Area: Bool] = [:]
+        for area in EditorSpelling.Area.allCases {
+            check[area] = defaults.object(forKey: checkKey(area)) as? Bool ?? defaultCheck(area)
+            grammar[area] = defaults.object(forKey: grammarKey(area)) as? Bool ?? defaultGrammar(area)
+        }
         return SpellingSettings(
             language: defaults.string(forKey: language) ?? "",
-            grammarInScript: defaults.object(forKey: grammarInScript) as? Bool ?? false,
-            grammarInNotes: defaults.object(forKey: grammarInNotes) as? Bool ?? true,
+            check: check,
+            grammar: grammar,
             autocorrect: defaults.object(forKey: autocorrect) as? Bool ?? false
         )
     }
@@ -23,15 +42,27 @@ enum SpellingPreferences {
 
 struct SpellingSettings: Equatable {
     var language: String
-    var grammarInScript: Bool
-    var grammarInNotes: Bool
+    /// Check as you type, per area.
+    var check: [EditorSpelling.Area: Bool]
+    var grammar: [EditorSpelling.Area: Bool]
     var autocorrect: Bool
 }
 
 /// What an editor needs from the dictionary: words not to flag, defined
 /// words to underline, and the spelling settings for its area.
 struct EditorSpelling: Equatable {
-    enum Area { case script, notes }
+    enum Area: String, CaseIterable, Identifiable {
+        case script, notes, cards, margin
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .script: "Script"
+            case .notes: "Notes, draft and dictionary"
+            case .cards: "Canvas cards"
+            case .margin: "Margin to-dos and notes"
+            }
+        }
+    }
 
     var ignoredWords: [String]
     var matcher: TermMatcher
@@ -40,11 +71,13 @@ struct EditorSpelling: Equatable {
     var grammar: Bool
     var autocorrect: Bool
     var language: String
+    /// Check spelling as you type.
+    var checking = true
 
     static let none = EditorSpelling(ignoredWords: [], matcher: .empty, matcherVersion: -1, grammar: false, autocorrect: false, language: "")
 
     static func == (a: EditorSpelling, b: EditorSpelling) -> Bool {
-        a.matcherVersion == b.matcherVersion && a.grammar == b.grammar && a.autocorrect == b.autocorrect
+        a.matcherVersion == b.matcherVersion && a.grammar == b.grammar && a.autocorrect == b.autocorrect && a.checking == b.checking
             && a.language == b.language && a.ignoredWords == b.ignoredWords
     }
 }
@@ -82,6 +115,7 @@ final class TermDecorator {
                 textView.isContinuousSpellCheckingEnabled = true
             }
         }
+        if textView.isContinuousSpellCheckingEnabled != spelling.checking { textView.isContinuousSpellCheckingEnabled = spelling.checking }
         if textView.isGrammarCheckingEnabled != spelling.grammar { textView.isGrammarCheckingEnabled = spelling.grammar }
         if textView.isAutomaticSpellingCorrectionEnabled != spelling.autocorrect {
             textView.isAutomaticSpellingCorrectionEnabled = spelling.autocorrect

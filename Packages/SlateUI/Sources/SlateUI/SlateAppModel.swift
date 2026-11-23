@@ -13,6 +13,8 @@ public final class SlateAppModel {
     public let themes: ThemeEngine
     /// Set by File › New Project… so the home window shows the sheet.
     public var showingNewProject = false
+    /// The welcome window has opened this launch.
+    public var welcomeShown = false
 
     // MARK: Reminders state
 
@@ -81,16 +83,41 @@ public final class SlateAppModel {
 
     /// Asks for a Fountain, Final Draft, text or Markdown screenplay, makes a
     /// new project from it in `~/Documents/Slate`, and returns the project folder.
-    public func importScreenplay() -> URL? {
+    /// File › Import…: a project folder or `.zip`, a screenplay, or a folder of Markdown notes.
+    /// Returns the project to open.
+    public func importProject() -> URL? {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowedContentTypes = ["fountain", "fdx", "txt", "md", "markdown"].compactMap { UTType(filenameExtension: $0) }
+        panel.canChooseDirectories = true
+        panel.allowedContentTypes = (ProjectImport.screenplayExtensions.union(["zip"])).compactMap { UTType(filenameExtension: $0) } + [.folder]
         panel.prompt = "Import"
-        panel.message = "Choose a screenplay: Fountain, Final Draft (.fdx), plain text or Markdown."
+        panel.message = "Choose a Slate project (folder or .zip), a screenplay (Fountain, Final Draft, text, Markdown), or a folder of Markdown notes such as an Obsidian vault."
         guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        return importProject(at: url)
+    }
+
+    public func importProject(at url: URL) -> URL? {
+        let parent = Self.defaultProjectsFolder
         do {
-            let root = try Publisher.createProject(from: url, in: Self.defaultProjectsFolder)
+            let root: URL
+            switch ProjectImport.kind(of: url) {
+            case .slateFolder:
+                let alert = NSAlert()
+                alert.messageText = "Add “\(url.lastPathComponent)” to the library?"
+                alert.informativeText = "Add it where it is, or copy it into \(parent.path(percentEncoded: false))."
+                alert.addButton(withTitle: "Add in Place")
+                alert.addButton(withTitle: "Copy")
+                alert.addButton(withTitle: "Cancel")
+                switch alert.runModal() {
+                case .alertFirstButtonReturn: root = url
+                case .alertSecondButtonReturn: root = try ProjectImport.copyProject(url, into: parent)
+                default: return nil
+                }
+            case .zip: root = try ProjectImport.importZip(url, into: parent)
+            case .markdownFolder: root = try ProjectImport.importMarkdownFolder(url, into: parent)
+            case .screenplay: root = try Publisher.createProject(from: url, in: parent)
+            case nil: throw ProjectImport.ImportError.unsupported(url.lastPathComponent)
+            }
             let entry = try library.add(root)
             library.markOpened(entry.id)
             return root
@@ -237,4 +264,21 @@ public final class SlateAppModel {
 public enum ReminderPreferences {
     public static let launchScope = "launchReminderScope"
     public static let notifications = "dueDateNotifications"
+}
+
+extension SlateAppModel {
+    /// A fresh copy of the sample film (Tidewater) in the projects folder, added to the library.
+    public func makeSampleProject(in parent: URL = SlateAppModel.defaultProjectsFolder, sample: URL? = nil) -> URL? {
+        do {
+            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+            let title = ProjectFolders.freeFolder(for: "Tidewater", in: parent).lastPathComponent
+            let root = try ProjectCreator.create(title: title, template: .showcase, in: parent, sample: sample ?? ProjectCreator.bundledShowcase)
+            let entry = try library.add(root)
+            library.markOpened(entry.id)
+            return root
+        } catch {
+            Self.showError("Couldn't make the sample film", error)
+            return nil
+        }
+    }
 }

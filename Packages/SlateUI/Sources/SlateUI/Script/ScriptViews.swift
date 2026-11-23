@@ -18,11 +18,39 @@ struct ScriptNavigator: View {
                     Label(file.name, systemImage: "doc.text")
                         .foregroundStyle(workspace.currentFile == file.path && !workspace.showingTitlePage ? .primary : .secondary)
                         .tag("file:" + file.path)
+                        .dropDestination(for: String.self) { items, _ in
+                            dropScenes(items, onto: file.path, at: nil)
+                        }
                     ForEach(book.scenes.filter { $0.file == file.path }) { scene in
                         SceneRow(scene: scene, isCurrent: current?.id == scene.id, isExact: book.isExact)
                             .draggable("slate-scene:\(scene.file)#\(scene.scene.sceneID ?? "")")
                             .tag(ScriptWorkspace.row(for: scene))
+                            .dropDestination(for: String.self) { items, _ in
+                                let index = book.scenes.filter { $0.file == file.path }.firstIndex { $0.id == scene.id }
+                                return dropScenes(items, onto: file.path, at: index)
+                            }
                             .contextMenu {
+                                Menu("Colour") {
+                                    ForEach(SceneColor.allCases) { color in
+                                        Button {
+                                            workspace.setColor(color, for: scene)
+                                        } label: {
+                                            Label(color.title, systemImage: scene.scene.color == color ? "checkmark.circle.fill" : "circle.fill")
+                                        }
+                                        .tint(Color(sceneColor: color))
+                                    }
+                                    Divider()
+                                    Button("None") { workspace.setColor(nil, for: scene) }
+                                        .disabled(scene.scene.color == nil)
+                                }
+                                if book.files.count > 1 {
+                                    Menu("Move to") {
+                                        ForEach(book.files.filter { $0.path != scene.file }) { target in
+                                            Button(target.name) { workspace.moveScene(scene, toFile: target.path) }
+                                        }
+                                    }
+                                }
+                                Divider()
                                 if let session {
                                     Button("Show in Storyboard") {
                                         session.area = .storyboard
@@ -54,6 +82,27 @@ struct ScriptNavigator: View {
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
+                HStack {
+                    Button {
+                        workspace.newActFile()
+                    } label: {
+                        Label("New Act File", systemImage: "doc.badge.plus")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Add the next act file to script/")
+                    Spacer()
+                    Button {
+                        workspace.showingSnapshots = true
+                    } label: {
+                        Label("Snapshots", systemImage: "clock.arrow.circlepath")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Save, compare and restore snapshots (⇧⌘S saves one)")
+                }
+                .labelStyle(.iconOnly)
+                .padding(.horizontal, 12)
+                .padding(.top, 6)
+                .background(.bar)
                 if let status = workspace.productionStatus {
                     Label(status, systemImage: "lock.fill")
                         .font(.caption)
@@ -82,6 +131,28 @@ struct ScriptNavigator: View {
     }
 }
 
+extension ScriptNavigator {
+    /// A scene dragged from another act file lands before `index` there (the end when nil).
+    func dropScenes(_ items: [String], onto path: String, at index: Int?) -> Bool {
+        var moved = false
+        for item in items where item.hasPrefix("slate-scene:") {
+            let payload = item.dropFirst("slate-scene:".count)
+            guard let hash = payload.lastIndex(of: "#") else { continue }
+            let file = String(payload[..<hash]), id = String(payload[payload.index(after: hash)...])
+            guard file != path, let scene = workspace.book.scenes.first(where: { $0.file == file && $0.scene.sceneID == id }) else { continue }
+            workspace.moveScene(scene, toFile: path, at: index)
+            moved = true
+        }
+        return moved
+    }
+}
+
+extension Color {
+    init(sceneColor color: SceneColor) {
+        self.init(red: color.rgb.red, green: color.rgb.green, blue: color.rgb.blue)
+    }
+}
+
 struct SceneRow: View {
     let scene: ScriptBook.Scene
     let isCurrent: Bool
@@ -89,6 +160,10 @@ struct SceneRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle()
+                .fill(scene.scene.color.map { Color(sceneColor: $0) } ?? .clear)
+                .frame(width: 7, height: 7)
+                .accessibilityHidden(true)
             Text(scene.label)
                 .font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -103,7 +178,7 @@ struct SceneRow: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Scene \(scene.label), \(scene.scene.heading)")
+        .accessibilityLabel("Scene \(scene.label), \(scene.scene.heading)" + (scene.scene.color.map { ", \($0.title)" } ?? ""))
     }
 }
 
@@ -143,11 +218,13 @@ struct ScriptDetail: View {
             PageView(workspace: workspace)
                 .toolbar { ScriptToolbar(workspace: workspace) }
                 .sheet(isPresented: $workspace.showingSides) { SidesSheet(workspace: workspace) }
+                .sheet(isPresented: $workspace.showingSnapshots) { SnapshotsSheet(workspace: workspace) }
         } else if let path = workspace.currentFile, let document = workspace.store.documents[path] {
             ScriptEditorPane(workspace: workspace, document: document)
                 .id(path)
                 .toolbar { ScriptToolbar(workspace: workspace) }
                 .sheet(isPresented: $workspace.showingSides) { SidesSheet(workspace: workspace) }
+                .sheet(isPresented: $workspace.showingSnapshots) { SnapshotsSheet(workspace: workspace) }
         } else if let error = workspace.openError {
             ContentUnavailableView("Can't Open Script", systemImage: "exclamationmark.triangle", description: Text(error))
         } else {
@@ -172,7 +249,9 @@ struct ScriptEditorPane: View {
                 frameHighlight: workspace.frameHighlight,
                 theme: theme,
                 sources: workspace.completionSources,
-                spelling: workspace.spelling
+                spelling: workspace.spelling,
+                focusMode: workspace.focusMode,
+                typewriter: workspace.typewriter
             )
             Divider()
             ScriptStatusBar(workspace: workspace, document: document)
@@ -192,7 +271,7 @@ struct ScriptStatusBar: View {
                 Text(caret.kind.title).fontWeight(.medium)
             }
             if let scene = workspace.currentScene {
-                Text("Scene \(scene.number) of \(book.scenes.count)")
+                Text("Scene \(scene.label) · \(scene.number) of \(book.scenes.count)")
                 Text("\(book.isExact ? "" : "~")\(ScriptEstimate.formatEighths(scene.eighths)) pg · \(ScriptEstimate.formatDuration(scene.duration))")
             }
             Spacer()

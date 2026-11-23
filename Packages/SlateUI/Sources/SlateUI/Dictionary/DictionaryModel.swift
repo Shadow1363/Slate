@@ -103,9 +103,10 @@ final class DictionaryModel {
             ignoredWords: ignoredWords(characters: characters),
             matcher: matcher,
             matcherVersion: version,
-            grammar: area == .script ? settings.grammarInScript : settings.grammarInNotes,
+            grammar: settings.grammar[area] ?? false,
             autocorrect: settings.autocorrect,
-            language: settings.language
+            language: settings.language,
+            checking: settings.check[area] ?? true
         )
     }
 

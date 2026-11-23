@@ -24,6 +24,7 @@ struct CanvasPane: View {
                 DocumentEditor(store: session.store, document: document, close: { session.universeSelection = nil })
             } else {
                 CanvasBoard(session: session, model: model)
+                    .onAppear { model.spelling = session.dictionary.spelling(for: .cards, characters: session.script.characterNames) }
             }
         }
         .navigationTitle(((document.relativePath as NSString).lastPathComponent as NSString).deletingPathExtension)
@@ -471,6 +472,15 @@ struct CanvasEdgesLayer: View {
     let model: CanvasModel
     let connector: Color
 
+    /// A card's name for VoiceOver: its label, file, link or first line.
+    static func name(_ id: String, in model: CanvasModel) -> String {
+        guard let node = model.canvas.nodes.first(where: { $0.id == id }) else { return "a card" }
+        if let label = node.label, !label.isEmpty { return label }
+        if let file = node.file { return ((file as NSString).lastPathComponent as NSString).deletingPathExtension }
+        if let url = node.url { return url }
+        return node.text.split(separator: "\n").first.map(String.init) ?? "a text card"
+    }
+
     var body: some View {
         Canvas { context, _ in
             for edge in model.canvas.edges {
@@ -492,6 +502,14 @@ struct CanvasEdgesLayer: View {
                     context.fill(Path(roundedRect: box, cornerRadius: 4), with: .color(Color(nsColor: .windowBackgroundColor)))
                     context.draw(text, in: box.insetBy(dx: 5, dy: 2))
                 }
+            }
+        }
+        // Connections are drawn, so VoiceOver gets one element each.
+        .accessibilityChildren {
+            ForEach(model.canvas.edges) { edge in
+                Rectangle()
+                    .accessibilityLabel("Connection from \(Self.name(edge.fromNode, in: model)) to \(Self.name(edge.toNode, in: model))"
+                        + (edge.label.map { ", \($0)" } ?? ""))
             }
         }
     }

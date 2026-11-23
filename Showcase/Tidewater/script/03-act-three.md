@@ -2,7 +2,7 @@
 
 = Two turns back, Juno gets there first. The price is her place in the story.
 
-EXT. THE DROWNED MARKET - EARLIER THAT NIGHT {#s009}
+EXT. THE DROWNED MARKET - EARLIER THAT NIGHT {#s009 color=red}
 
 The market before the storm: crowded, bright, loud. Ellis is buying sweets.
 
@@ -31,7 +31,7 @@ He goes.
 
 Across the market, Captain Ida Marsh watches, a [[Greyline Salvage]] crew at her back. She marks something in a notebook.
 
-INT. THE LIGHTHOUSE - KEEPER'S ROOM - DAY {#s010}
+INT. THE LIGHTHOUSE - KEEPER'S ROOM - DAY {#s010 color=green}
 
 2024. The same kettle. Tobias, old again, pours two cups.
 

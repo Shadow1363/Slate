@@ -84,7 +84,10 @@ struct StoryboardDetail: View {
             StoryboardBoard(session: session)
                 // Small minimums, so opening the Links/Define inspector squeezes the board instead of widening the window.
                 .frame(minWidth: 240, maxWidth: .infinity, maxHeight: .infinity)
-            if let ref = model.selection, let frame = model.frame(ref) {
+            if model.selected.count > 1 {
+                MultiFrameInspector(model: model)
+                    .frame(minWidth: 220, idealWidth: 280, maxWidth: 380, maxHeight: .infinity)
+            } else if let ref = model.selection, let frame = model.frame(ref) {
                 FrameInspector(session: session, ref: ref, frame: frame)
                     .id(ref)
                     .frame(minWidth: 220, idealWidth: 280, maxWidth: 380, maxHeight: .infinity)
@@ -134,10 +137,11 @@ struct StoryboardBoard: View {
         .focusEffectDisabled()
         .focused($focused)
         .onKeyPress(keys: [.delete, .deleteForward]) { _ in
-            guard let ref = model.selection else { return .ignored }
-            model.delete(ref)
+            guard !model.selected.isEmpty || model.selection != nil else { return .ignored }
+            model.delete(model.selected.isEmpty ? [model.selection!] : Array(model.selected))
             return .handled
         }
+        .onCommand(#selector(NSResponder.selectAll(_:))) { model.selectAll() }
         .onPasteCommand(of: [.fileURL, .png, .tiff, .image]) { _ in
             guard let row = pasteRow else { return }
             _ = model.paste(toRow: row)
@@ -203,6 +207,9 @@ private struct SceneBoardRow: View {
         HStack(spacing: 10) {
             switch row.kind {
             case .scene:
+                if let color = row.scene?.scene.color {
+                    Circle().fill(Color(sceneColor: color)).frame(width: 8, height: 8).help(color.title)
+                }
                 Text(row.scene?.label ?? "")
                     .font(.callout.monospacedDigit().weight(.bold))
                     .padding(.horizontal, 7).padding(.vertical, 2)
@@ -329,7 +336,7 @@ struct FrameThumb: View {
     private var model: StoryboardModel { session.storyboard }
 
     var body: some View {
-        let selected = model.selection == ref
+        let selected = model.selected.contains(ref) || model.selection == ref
         VStack(alignment: .leading, spacing: 4) {
             ZStack {
                 Rectangle().fill(Color.black.opacity(0.85))
@@ -376,7 +383,9 @@ struct FrameThumb: View {
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { open() }
-        .onTapGesture { model.select(ref) }
+        .onTapGesture {
+            if NSEvent.modifierFlags.contains(.command) { model.toggleSelection(ref) } else { model.select(ref) }
+        }
         .draggable(ref.payload) {
             if let image = model.thumbnails.thumbnail(for: ref.path, url: model.url(ref)) {
                 Image(nsImage: image).resizable().scaledToFit().frame(width: 120)
@@ -654,6 +663,66 @@ private struct ClipTrim: View {
         model.update(ref, "Trim Clip") { frame in
             if let start { frame.inPoint = start <= 0.05 ? nil : (start * 10).rounded() / 10 }
             if let end { frame.outPoint = end >= length - 0.05 ? nil : (end * 10).rounded() / 10 }
+        }
+    }
+}
+
+// MARK: - Several frames
+
+/// The inspector for several selected frames: the fields they can share.
+private struct MultiFrameInspector: View {
+    let model: StoryboardModel
+    @Environment(\.undoManager) private var undoManager
+
+    private var frames: [(ref: FrameRef, frame: StoryboardFrame)] {
+        model.selected.sorted { ($0.folder, $0.file) < ($1.folder, $1.file) }.compactMap { ref in model.frame(ref).map { (ref, $0) } }
+    }
+
+    static let mixed = "\u{0}mixed"
+
+    /// The frames' common text value ("" when none), or `mixed` when they differ.
+    private func shared(_ value: (StoryboardFrame) -> String?) -> String {
+        let values = Set(frames.map { value($0.frame) ?? "" })
+        return values.count == 1 ? values.first! : Self.mixed
+    }
+
+    private func change(_ action: String, _ body: @escaping (inout StoryboardFrame) -> Void) {
+        undoManager?.beginUndoGrouping()
+        for item in frames { model.update(item.ref, action, body) }
+        undoManager?.endUndoGrouping()
+        undoManager?.setActionName(action)
+    }
+
+    var body: some View {
+        Form {
+            Section("\(frames.count) Frames") {
+                picker("Shot", value: shared(\.shot), options: ShotSize.allCases.map { ($0.rawValue, "\($0.rawValue) · \($0.title)") }) { value in
+                    change("Change Shot") { $0.shot = value }
+                }
+                picker("Move", value: shared(\.move), options: CameraMove.allCases.map { ($0.rawValue, $0.title) }) { value in
+                    change("Change Camera Move") { $0.move = value }
+                }
+                let duration = shared { $0.duration.map { FrameInspector.number($0) } }
+                CommitField(title: "Duration (s)", value: duration == Self.mixed ? "" : duration,
+                            placeholder: duration == Self.mixed ? "mixed" : "auto") { text in
+                    change("Change Duration") { $0.duration = Double(text.trimmingCharacters(in: .whitespaces)) }
+                }
+            }
+            Section {
+                Button("Move \(frames.count) Frames to Trash", role: .destructive) { model.delete(frames.map(\.ref)) }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    /// A picker that shows "Mixed" until a value is chosen for all.
+    private func picker(_ title: String, value: String, options: [(tag: String, label: String)], set: @escaping (String?) -> Void) -> some View {
+        Picker(title, selection: Binding(get: { value }, set: { chosen in
+            if chosen != Self.mixed { set(chosen.isEmpty ? nil : chosen) }
+        })) {
+            if value == Self.mixed { Text("Mixed").tag(Self.mixed) }
+            Text("None").tag("")
+            ForEach(options, id: \.tag) { Text($0.label).tag($0.tag) }
         }
     }
 }

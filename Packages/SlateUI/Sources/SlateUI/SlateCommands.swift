@@ -40,8 +40,8 @@ public struct SlateCommands: Commands {
             Button("Quick Open…") { actions?.quickOpen() }
                 .keyboardShortcut("p")
                 .disabled(actions == nil)
-            Button("Import Screenplay…") {
-                if let url = model.importScreenplay() {
+            Button("Import…") {
+                if let url = model.importProject() {
                     openWindow(id: SlateWindowID.project, value: url)
                 }
             }
@@ -84,6 +84,14 @@ public struct SlateCommands: Commands {
                 }
             }
             .disabled(actions == nil)
+            Divider()
+            Button("New Act File") { actions?.script(.newActFile) }
+                .disabled(actions == nil)
+            Button("Save Snapshot…") { actions?.script(.saveSnapshot) }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Button("Snapshots…") { actions?.script(.showSnapshots) }
+                .disabled(actions == nil)
             Divider()
             Button("Add To-do…") { actions?.addTodo() }
                 .keyboardShortcut("t", modifiers: [.command, .shift])
@@ -138,6 +146,12 @@ public struct SlateCommands: Commands {
                 .keyboardShortcut("d", modifiers: [.command, .option, .control])
                 .disabled(actions == nil)
         }
+        CommandGroup(replacing: .help) {
+            Button("Welcome to Slate") { openWindow(id: SlateWindowID.welcome) }
+            Button("Open Sample Film") {
+                if let root = model.makeSampleProject() { openWindow(id: SlateWindowID.project, value: root) }
+            }
+        }
         CommandGroup(before: .sidebar) {
             ForEach(ProjectArea.allCases) { area in
                 Button(area.title) { actions?.selectArea(area) }
@@ -147,6 +161,22 @@ public struct SlateCommands: Commands {
             Button("Toggle Inspector") { actions?.toggleInspector() }
                 .keyboardShortcut("0", modifiers: [.command, .option])
                 .disabled(actions == nil)
+            Toggle("Focus Mode", isOn: Binding(get: { actions?.focusMode ?? false }, set: { _ in actions?.script(.toggleFocus) }))
+                .keyboardShortcut(.return, modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Toggle("Typewriter Scrolling", isOn: Binding(get: { actions?.typewriter ?? false }, set: { _ in actions?.script(.toggleTypewriter) }))
+                .disabled(actions == nil)
+            Menu("Theme for This Project") {
+                Picker("Theme for This Project", selection: Binding(get: { actions?.projectTheme ?? "" },
+                                                                    set: { actions?.setProjectTheme($0.isEmpty ? nil : $0) })) {
+                    Text("Use Settings").tag("")
+                    Divider()
+                    ForEach(model.themes.themes) { Text($0.name).tag($0.name) }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+            .disabled(actions == nil)
             Divider()
         }
     }

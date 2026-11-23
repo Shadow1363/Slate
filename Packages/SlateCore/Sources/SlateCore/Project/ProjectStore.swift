@@ -291,13 +291,16 @@ public final class ProjectStore {
     }
 
     /// Moves a file to the Trash and closes its document.
-    public func trashFile(_ relativePath: String) throws {
+    /// Moves a file to the Trash; returns where it went there (to put it back on undo).
+    @discardableResult
+    public func trashFile(_ relativePath: String) throws -> URL? {
         if let open = documents[relativePath] {
             open.autosaveTask?.cancel()
             documents[relativePath] = nil
         }
-        try CoordinatedFileIO.trash(try url(for: relativePath), presenter: watcher.filePresenter)
+        let trashed = try CoordinatedFileIO.trash(try url(for: relativePath), presenter: watcher.filePresenter)
         rescan()
+        return trashed
     }
 
     /// Applies text edits across files: open documents change in memory (and

@@ -68,14 +68,20 @@ public enum CoordinatedFileIO {
     }
 
     /// Moves a file to the Trash (never deletes it outright).
-    public static func trash(_ url: URL, presenter: (any NSFilePresenter)? = nil) throws {
+    /// Moves an item to the Trash and returns where it went there.
+    @discardableResult
+    public static func trash(_ url: URL, presenter: (any NSFilePresenter)? = nil) throws -> URL? {
         let coordinator = NSFileCoordinator(filePresenter: presenter)
         var coordinationError: NSError?
-        var result: Result<Void, any Error> = .success(())
+        var result: Result<URL?, any Error> = .success(nil)
         coordinator.coordinate(writingItemAt: url, options: [.forDeleting], error: &coordinationError) { url in
-            result = Result { try FileManager.default.trashItem(at: url, resultingItemURL: nil) }
+            result = Result {
+                var trashed: NSURL?
+                try FileManager.default.trashItem(at: url, resultingItemURL: &trashed)
+                return trashed as URL?
+            }
         }
         if let coordinationError { throw coordinationError }
-        try result.get()
+        return try result.get()
     }
 }

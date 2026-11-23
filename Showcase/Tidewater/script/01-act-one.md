@@ -2,7 +2,7 @@
 
 = Juno keeps the light her brother died under, and finds the clock that could undo it.
 
-EXT. SALTMARROW HARBOUR - DAWN {#s001}
+EXT. SALTMARROW HARBOUR - DAWN {#s001 color=blue}
 
 Grey water. Gulls argue over a net. The town of Saltmarrow stacks itself up the cliff like crates nobody unloaded.
 
@@ -61,7 +61,7 @@ Outside the window, the tide pulls *out* when it should be coming *in*.
 
 SMASH CUT TO:
 
-EXT. SALTMARROW HARBOUR - NIGHT {#s004 dur=1:15}
+EXT. SALTMARROW HARBOUR - NIGHT {#s004 dur=1:15 color=red}
 
 1987. Rain like thrown gravel. Boats strain at their ropes. The harbour lamps are gas, not electric.
 
@@ -111,7 +111,7 @@ Then I'll walk.
 
 She's gone before he can tell her there's no path. He looks at the empty doorway a long moment, then at the coins in the tin, as if one of them might be lying too.
 
-INT. HARBOUR OFFICE - CONTINUOUS {#s005}
+INT. HARBOUR OFFICE - CONTINUOUS {#s005 color=red}
 
 A cramped room of ledgers. CAPTAIN IDA MARSH (40s), Greyline Salvage badge on her coat, signs a manifest without reading it.
 

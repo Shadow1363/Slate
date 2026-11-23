@@ -178,14 +178,7 @@ public enum RevisionDiff {
                 continue
             }
             let oldKeys = ScriptParser.parse(oldText).lines.filter(printable).map(key)
-            let difference = newKeys.difference(from: oldKeys)
-            var inserted: Set<Int> = [], removed: Set<Int> = []
-            for change in difference {
-                switch change {
-                case .insert(let offset, _, _): inserted.insert(offset)
-                case .remove(let offset, _, _): removed.insert(offset)
-                }
-            }
+            let (inserted, removed) = LineDiff.changes(old: oldKeys, new: newKeys)
             for offset in inserted { changed.insert(SourceRef(file: fileIndex, line: newLines[offset].index)) }
             // A deletion marks the line that now stands where it was.
             var i = 0, j = 0

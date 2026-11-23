@@ -72,7 +72,11 @@ final class AnimaticPlayerModel {
         isBuilding = true
         defer { isBuilding = false }
         if clipLengths == nil { clipLengths = await storyboard.loadClipLengths() }
-        let timeline = storyboard.timeline(range, clipLengths: clipLengths ?? [:])
+        var timeline = storyboard.timeline(range, clipLengths: clipLengths ?? [:])
+        // Reduce Motion: stills hold still while playing (exports keep their moves).
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            for index in timeline.segments.indices { timeline.segments[index].motion = .none }
+        }
         do {
             let composed = try await AnimaticComposer.compose(timeline, root: root)
             guard !Task.isCancelled else { return }
@@ -383,16 +387,21 @@ private struct AnimaticTransport: View {
             HStack(spacing: 14) {
                 Group {
                     Button { model.stepScene(-1) } label: { Image(systemName: "backward.end.fill") }
+                        .accessibilityLabel("Previous Scene")
                         .help("Previous scene (⌥←)")
                     Button { model.stepFrame(-1) } label: { Image(systemName: "backward.frame.fill") }
+                        .accessibilityLabel("Previous Frame")
                         .help("Previous frame (←)")
                     Button { model.togglePlay() } label: {
                         Image(systemName: model.isPlaying ? "pause.fill" : "play.fill").font(.title2).frame(width: 28)
                     }
+                    .accessibilityLabel(model.isPlaying ? "Pause" : "Play")
                     .help("Play or pause (Space)")
                     Button { model.stepFrame(1) } label: { Image(systemName: "forward.frame.fill") }
+                        .accessibilityLabel("Next Frame")
                         .help("Next frame (→)")
                     Button { model.stepScene(1) } label: { Image(systemName: "forward.end.fill") }
+                        .accessibilityLabel("Next Scene")
                         .help("Next scene (⌥→)")
                 }
                 .buttonStyle(.borderless)
@@ -422,6 +431,7 @@ private struct AnimaticTransport: View {
                 .fixedSize()
                 .help("Shown while playing, and burned into the exported .mov")
                 Button(action: toggleFullScreen) { Image(systemName: "arrow.up.left.and.arrow.down.right") }
+                    .accessibilityLabel("Full Screen")
                     .buttonStyle(.borderless)
                     .help("Full screen (⌃⌘F)")
             }

@@ -23,6 +23,8 @@ final class CanvasModel {
     var viewSize = CGSize(width: 800, height: 600)
 
     @ObservationIgnored weak var undoManager: UndoManager?
+    /// Spell checking for text cards (Settings › Spelling › Canvas cards).
+    @ObservationIgnored var spelling: EditorSpelling = .none
     /// The text last written to (or read from) the document.
     @ObservationIgnored private var syncedText: String
     @ObservationIgnored private var writeWork: DispatchWorkItem?

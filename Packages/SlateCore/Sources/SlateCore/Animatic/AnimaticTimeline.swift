@@ -329,7 +329,7 @@ public struct AnimaticTimeline: Sendable, Equatable {
             owner[index] = covered.firstIndex { lines in speech.lines.contains { lines.contains($0) } }
         }
 
-        var cues: [(order: Int, cue: SubtitleCue)] = []
+        var cues: [(order: Int, cue: SubtitleCue, covered: Bool)] = []
         // Covered speeches share their frame's time by word count.
         for (segmentIndex, segment) in segments.enumerated() {
             let mine = speeches.indices.filter { owner[$0] == segmentIndex }
@@ -337,7 +337,7 @@ public struct AnimaticTimeline: Sendable, Equatable {
             var time = segment.start
             for index in mine {
                 let share = segment.duration * Double(max(speeches[index].words, 1)) / total
-                cues.append((index, cue(speeches[index], time, time + share)))
+                cues.append((index, cue(speeches[index], time, time + share), true))
                 time += share
             }
         }
@@ -353,15 +353,54 @@ public struct AnimaticTimeline: Sendable, Equatable {
             let first = speech.lines.first!, last = speech.lines.last!
             let from = position(first)
             let to = position(last) + (elements.firstIndex(of: last).map { weights[$0] } ?? 0) / max(totalWeight, 1)
-            cues.append((index, cue(speech, start + from * length, start + min(to, 1) * length)))
+            cues.append((index, cue(speech, start + from * length, start + min(to, 1) * length), false))
         }
 
         // In script order, never overlapping.
-        var ordered = cues.sorted { $0.cue.start != $1.cue.start ? $0.cue.start < $1.cue.start : $0.order < $1.order }.map(\.cue)
+        let sorted = cues.sorted { $0.cue.start != $1.cue.start ? $0.cue.start < $1.cue.start : $0.order < $1.order }
+        var ordered = sorted.map(\.cue)
         for index in ordered.indices.dropLast() where ordered[index].end > ordered[index + 1].start {
             ordered[index].end = ordered[index + 1].start
         }
+        ordered = readable(ordered, covered: sorted.map(\.covered), from: start, to: start + length)
         return ordered.filter { $0.end - $0.start > 0.05 }
+    }
+
+    /// Seconds a line needs on screen: a second plus 0.3 per word, up to 4.
+    static func readingTime(_ text: String) -> Double {
+        min(1 + 0.3 * Double(text.split(whereSeparator: \.isWhitespace).count), 4)
+    }
+
+    /// Back-to-back placed cues too short to read spread into the free time
+    /// around them (inside the scene). Cues on a frame's Covers stay put.
+    static func readable(_ cues: [SubtitleCue], covered: [Bool], from sceneStart: Double, to sceneEnd: Double) -> [SubtitleCue] {
+        var result = cues
+        var index = 0
+        while index < result.count {
+            guard !covered[index] else { index += 1; continue }
+            // A run of placed cues with no gap between them.
+            var last = index
+            while last + 1 < result.count, !covered[last + 1], result[last + 1].start - result[last].end < 0.05 { last += 1 }
+            let run = index...last
+            let wanted = run.map { readingTime(result[$0].text) }
+            let total = wanted.reduce(0, +)
+            let span = result[last].end - result[index].start
+            if span < total {
+                let windowStart = index > 0 ? result[index - 1].end : sceneStart
+                let windowEnd = last + 1 < result.count ? result[last + 1].start : sceneEnd
+                let newSpan = min(total, windowEnd - windowStart)
+                // Keep the run where it was as far as the room allows.
+                var time = max(windowStart, min(result[index].start, windowEnd - newSpan))
+                for (offset, position) in run.enumerated() {
+                    let duration = newSpan * wanted[offset] / total
+                    result[position].start = round(time)
+                    result[position].end = round(time + duration)
+                    time += duration
+                }
+            }
+            index = last + 1
+        }
+        return result
     }
 
     private static func cue(_ speech: Speech, _ start: Double, _ end: Double) -> SubtitleCue {

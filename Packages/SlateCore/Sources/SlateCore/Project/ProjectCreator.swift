@@ -74,10 +74,11 @@ public enum ProjectCreator {
 
     /// Copies a sample project (without its `.slate/` cache), then gives the
     /// copy its own name and ID so it's a separate project in the library.
-    static func copySample(_ source: URL, to root: URL, title: String) throws {
+    public static func copySample(_ source: URL, to root: URL, title: String, skipping: Set<String> = []) throws {
         let fm = FileManager.default
         try fm.createDirectory(at: root, withIntermediateDirectories: true)
-        for name in try fm.contentsOfDirectory(atPath: source.path) where name != ProjectLayout.cache && name != ".DS_Store" {
+        for name in try fm.contentsOfDirectory(atPath: source.path)
+        where name != ProjectLayout.cache && name != ".DS_Store" && !skipping.contains(name) {
             let target = root.appending(path: name)
             if fm.fileExists(atPath: target.path) { try fm.removeItem(at: target) }
             try fm.copyItem(at: source.appending(path: name), to: target)
@@ -99,6 +100,15 @@ public struct ProjectSummary: Sendable, Equatable {
     public var openTodos = 0
     /// The first storyboard image, in script order, for the Home card.
     public var cover: URL?
+    /// Printed pages and estimated runtime (one minute per page, or `dur=`).
+    public var pages = 0
+    public var runtime: TimeInterval = 0
+
+    /// `12 pp · 11 min`, or nil for an empty script.
+    public var lengthText: String? {
+        guard pages > 0 else { return nil }
+        return "\(pages) pp · \(ScriptEstimate.formatDuration(runtime))"
+    }
 
     /// Reads `project.json` and finds the newest file modification date,
     /// skipping `.slate/` and `exports/`. Safe to call off the main thread.
@@ -121,7 +131,21 @@ public struct ProjectSummary: Sendable, Equatable {
             }
         }
         let open = Reminders.todos(in: root).filter { !$0.done }.count
-        return ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open, cover: StoryboardCover.firstImage(in: root))
+        var summary = ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open, cover: StoryboardCover.firstImage(in: root))
+        // The script, laid out as it prints.
+        let script = root.appending(path: ProjectLayout.script, directoryHint: .isDirectory)
+        let names = ((try? FileManager.default.contentsOfDirectory(atPath: script.path)) ?? [])
+            .filter { $0 != "title-page.md" && ["md", "fountain", "txt"].contains(($0 as NSString).pathExtension.lowercased()) }
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let texts = names.compactMap { name in
+            (try? String(contentsOf: script.appending(path: name), encoding: .utf8)).map { (path: name, text: $0) }
+        }
+        if !texts.isEmpty {
+            let book = ScriptBook(texts: texts, paginator: Paginator(settings: PublishSettings(manifest: manifest)))
+            summary.pages = Int(book.pageCount)
+            summary.runtime = book.totalDuration
+        }
+        return summary
     }
 }
 

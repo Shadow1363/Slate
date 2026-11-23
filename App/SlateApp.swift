@@ -22,6 +22,20 @@ struct SlateApp: App {
         }
         .defaultSize(width: 1200, height: 780)
 
+        Window("Welcome to Slate", id: SlateWindowID.welcome) {
+            WelcomeView()
+                .environment(model)
+        }
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+
+        Window("Themes", id: SlateWindowID.themes) {
+            ThemeEditorView()
+                .environment(model)
+                .slateThemed()
+        }
+        .defaultSize(width: 1100, height: 700)
+
         Settings {
             SettingsView()
                 .environment(model)

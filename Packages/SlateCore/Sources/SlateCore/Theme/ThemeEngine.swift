@@ -68,7 +68,7 @@ public final class ThemeEngine {
     /// Problems with user theme files, one line each.
     public private(set) var loadErrors: [String] = []
 
-    @ObservationIgnored private let userThemesDirectory: URL?
+    @ObservationIgnored let userThemesDirectory: URL?
 
     public init(userThemesDirectory: URL?) {
         self.userThemesDirectory = userThemesDirectory

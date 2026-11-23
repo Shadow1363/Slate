@@ -29,6 +29,12 @@ public struct ProjectActions {
     public let production: @MainActor (ProductionCommand) -> Void
     /// For the Production menu's titles.
     public let productionFile: ProductionFile
+    public let script: @MainActor (ScriptCommand) -> Void
+    public let focusMode: Bool
+    public let typewriter: Bool
+    /// `project.json` › `theme`, or nil to follow Settings.
+    public let projectTheme: String?
+    public let setProjectTheme: @MainActor (String?) -> Void
 }
 
 extension FocusedValues {
@@ -93,6 +99,9 @@ struct ProjectContent: View {
     let store: ProjectStore
     @State private var session: ProjectSession
     @Environment(SlateAppModel.self) private var model
+    @State private var columns: NavigationSplitViewVisibility = .all
+    /// What focus mode hid, to put back when it ends.
+    @State private var beforeFocus: (columns: NavigationSplitViewVisibility, margin: Bool, inspector: Bool)?
 
     init(store: ProjectStore) {
         self.store = store
@@ -101,7 +110,7 @@ struct ProjectContent: View {
 
     var body: some View {
         @Bindable var session = session
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columns) {
             List(ProjectArea.allCases, selection: $session.area) { area in
                 Label(area.title, systemImage: area.systemImage)
                     .badge(Text("⌘\(area.shortcutNumber)").foregroundStyle(.tertiary))
@@ -178,7 +187,27 @@ struct ProjectContent: View {
                 Banner(systemImage: "exclamationmark.triangle.fill", message: error) {}
             }
         }
-        .onChange(of: session.area) { session.selectedFile = nil }
+        .onChange(of: session.area) {
+            session.selectedFile = nil
+            if session.area != .script { session.script.focusMode = false }
+        }
+        .onChange(of: session.script.focusMode) { _, on in
+            if on {
+                beforeFocus = (columns, session.script.showingMargin, session.showingInspector)
+                withAnimation {
+                    columns = .detailOnly
+                    session.script.showingMargin = false
+                    session.showingInspector = false
+                }
+            } else if let saved = beforeFocus {
+                withAnimation {
+                    columns = saved.columns
+                    session.script.showingMargin = saved.margin
+                    session.showingInspector = saved.inspector
+                }
+                beforeFocus = nil
+            }
+        }
         .onAppear {
             model.register(session)
             // Renames board folders to match headings, and moves boards whose scene is gone to orphans/.
@@ -267,7 +296,21 @@ struct ProjectContent: View {
                 if case .sides = command { session.area = .script }
                 session.script.perform(command)
             },
-            productionFile: session.script.production
+            productionFile: session.script.production,
+            script: { command in
+                if case .toggleTypewriter = command {} else { session.area = .script }
+                session.script.perform(command)
+            },
+            focusMode: session.script.focusMode,
+            typewriter: session.script.typewriter,
+            projectTheme: store.manifest.theme,
+            setProjectTheme: { name in
+                do {
+                    try store.updateManifest { $0.theme = name }
+                } catch {
+                    SlateAppModel.showError("Couldn't save the project's theme", error)
+                }
+            }
         ))
     }
 }

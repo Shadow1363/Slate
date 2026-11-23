@@ -461,6 +461,14 @@ private struct TimelineConnections: View {
                 }
             }
         }
+        .accessibilityChildren {
+            let events = context.model.timeline.events
+            ForEach(Array(context.model.timeline.jumps.enumerated()), id: \.offset) { _, jump in
+                let from = events.first { $0.id == jump.from }?.title ?? jump.from
+                let to = events.first { $0.id == jump.to }?.title ?? jump.to
+                Rectangle().accessibilityLabel("Jump from \(from) to \(to)")
+            }
+        }
         .frame(width: geometry.width, height: geometry.height)
     }
 

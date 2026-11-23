@@ -15,6 +15,10 @@ struct ScriptEditor: NSViewRepresentable {
     let theme: ResolvedTheme
     let sources: ScriptCompletion.Sources
     let spelling: EditorSpelling
+    /// Dim everything but the paragraph being written.
+    var focusMode = false
+    /// Keep the caret's line near the middle.
+    var typewriter = false
 
     func makeCoordinator() -> ScriptEditorController {
         ScriptEditorController()
@@ -67,6 +71,8 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
     /// comparing against it is cheap).
     private var syncedText = ""
     private var frameObserver: (any NSObjectProtocol)?
+    /// The paragraph left undimmed in focus mode (nil when off).
+    private var focusedRange: NSRange?
 
     private struct LineSignature: Equatable {
         let kind: ScriptElementKind
@@ -167,6 +173,8 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         }
         terms.apply(config.spelling, color: NSColor(theme.editor.termUnderline))
         highlightAnchors()
+        layoutColumn()
+        applyFocus()
         if let reveal = config.reveal, reveal.token != lastRevealToken, reveal.file == path {
             lastRevealToken = reveal.token
             perform(reveal)
@@ -208,8 +216,10 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         guard let textView else { return }
         let column = inch * 6
         let side = max(20, ((textView.frame.width - column) / 2).rounded(.down))
-        if textView.textContainerInset.width != side {
-            textView.textContainerInset = NSSize(width: side, height: 32)
+        // Typewriter scrolling needs room to bring the last line up to the middle.
+        let vertical: CGFloat = config.typewriter ? max(32, (scrollView.contentView.bounds.height * 0.45).rounded()) : 32
+        if textView.textContainerInset != NSSize(width: side, height: vertical) {
+            textView.textContainerInset = NSSize(width: side, height: vertical)
         }
         if textView.textContainer?.size.width != column {
             textView.textContainer?.size = NSSize(width: column, height: .greatestFiniteMagnitude)
@@ -538,6 +548,8 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         updateTypingAttributes()
         publishCaret()
         highlightAnchors()
+        applyFocus()
+        typewriterScroll()
         terms.textChanged()
 
         if wantsCompletion {
@@ -576,6 +588,57 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         }
         updateTypingAttributes()
         publishCaret()
+        applyFocus()
+        typewriterScroll()
+    }
+
+    // MARK: - Focus mode and typewriter scrolling
+
+    /// Focus mode: every paragraph but the caret's drawn at a third of its strength
+    /// (a rendering attribute, so the file and undo are untouched).
+    private func applyFocus() {
+        guard let textView, let layout = textView.textLayoutManager, let content = layout.textContentManager else { return }
+        let wanted = config.focusMode ? currentParagraph() : nil
+        guard wanted != focusedRange else { return }
+        focusedRange = wanted
+        layout.removeRenderingAttribute(.foregroundColor, for: layout.documentRange)
+        guard let wanted else { return }
+        let dim = NSColor(theme.editor.text).withAlphaComponent(0.3)
+        let length = (textView.string as NSString).length
+        for range in [NSRange(location: 0, length: wanted.location), NSRange(location: wanted.upperBound, length: length - wanted.upperBound)]
+        where range.length > 0 {
+            guard let start = content.location(content.documentRange.location, offsetBy: range.location),
+                  let end = content.location(start, offsetBy: range.length),
+                  let textRange = NSTextRange(location: start, end: end) else { continue }
+            layout.addRenderingAttribute(.foregroundColor, value: dim, for: textRange)
+        }
+    }
+
+    /// The caret's paragraph: the run of non-blank lines around it (a whole speech, say).
+    private func currentParagraph() -> NSRange {
+        let lines = parsed.lines
+        guard !lines.isEmpty else { return NSRange(location: 0, length: 0) }
+        let caret = min(parsed.lineIndex(containing: textView.selectedRange().location), lines.count - 1)
+        var first = caret, last = caret
+        while first > 0, !lines[first - 1].isEmpty { first -= 1 }
+        while last + 1 < lines.count, !lines[last + 1].isEmpty { last += 1 }
+        return NSRange(location: lines[first].range.location, length: lines[last].range.upperBound - lines[first].range.location)
+    }
+
+    /// Typewriter scrolling: the caret's line sits 45% of the way down.
+    private func typewriterScroll() {
+        guard config.typewriter, let textView, let window = textView.window else { return }
+        let screenRect = textView.firstRect(forCharacterRange: textView.selectedRange(), actualRange: nil)
+        guard screenRect != .zero else { return }
+        let caret = textView.convert(window.convertFromScreen(screenRect), from: nil)
+        let clip = scrollView.contentView
+        let target = caret.midY - clip.bounds.height * 0.45
+        let maxY = max(0, textView.frame.height - clip.bounds.height)
+        let y = min(max(0, target), maxY)
+        if abs(clip.bounds.origin.y - y) > 1 {
+            clip.scroll(to: NSPoint(x: clip.bounds.origin.x, y: y))
+            scrollView.reflectScrolledClipView(clip)
+        }
     }
 
     func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {

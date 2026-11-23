@@ -67,9 +67,17 @@ Tests use Swift Testing and work on temp copies of the sample project in `Fixtur
 4. Edit that file in TextEdit or VS Code and save it. Slate reloads it within a second.
 5. Type in Slate, then edit the same file outside before Slate autosaves (it waits 2 s). A **Changed on disk** banner offers Keep Mine or Load Theirs.
 
+## Home and the library
+
+- **Welcome window** on launch (turn it off in its corner or Settings › General; Help › Welcome to Slate brings it back): open the sample film, start a project, or open a folder.
+- **Cards or a list** (the toolbar switch). Cards show the cover, last edit, length (`12 pp · 11 min`) and open to-dos.
+- **Right-click a project:** Open, Show in Finder, Pin, Rename…, Duplicate, Export as .zip…, Remove from Library (files stay), Move to Trash….
+- **Watched folders:** the + beside "Watched Folders" (or Settings › Library) adds a folder; Slate lists every project inside it. Right-click › Stop Watching.
+- **Import…** (⇧⌘I or Home's Import button) takes a Slate project folder (added in place or copied), a project `.zip`, a screenplay (Fountain, Final Draft, text, Markdown), or a folder of Markdown notes such as an Obsidian vault, which becomes a project with its notes in `universe/` (links, canvases and attachments kept; `.obsidian` left out).
+
 ## Showcase project
 
-**Easiest:** Home › New Project › Template: **Showcase (sample film)**. Slate copies *Tidewater*, a made-up short film that uses every feature built so far, into a new project under your title, ready to poke at. Make as many copies as you like; follow the `SHOWCASE.md` checklist inside.
+**Easiest:** Home › New Project › Template: **Showcase (sample film)**, or Help › Open Sample Film. Slate copies *Tidewater*, a made-up short film that uses every feature built so far, into a new project under your title, ready to poke at. Make as many copies as you like; follow the `SHOWCASE.md` checklist inside.
 
 The original lives in the repo at `Showcase/Tidewater` and is built into the app. Edit it there (not through a copy) to change what new copies get; `ShowcaseTests` keeps it valid, and it grows with each milestone. Opening the repo copy directly with ⌘O works too, but Slate then tidies folders and writes its cache inside it.
 
@@ -79,7 +87,11 @@ Scripts are standard [Fountain](https://fountain.io/syntax) in `script/`. Act fi
 
 - A scene heading is a line starting with `INT.`, `EXT.`, `INT./EXT.`, `I/E` or `EST.` after a blank line. Any other heading is forced with a leading `.` (`.THE VAULT`). The editor adds or removes that `.` for you, and capitalises the heading, when you leave the line.
 - `#`, `##`, … lines are Fountain sections (acts, sequences). They organise the script but never print.
-- Each scene heading becomes a scene in the navigator and, from Milestone 9, a scene in the storyboard.
+- Each scene heading becomes a scene in the navigator and a row in the storyboard.
+- **Colour labels:** right-click a scene in the navigator › Colour. The label is stored in the scene's tag (`{#s014 color=blue}`) and never prints.
+- **Act files:** the navigator's New Act File button (or Script › New Act File) adds the next one. Drag a scene onto another act file (or right-click › Move to) to move it there.
+- **Focus mode** (⇧⌘↩) hides the side columns and dims everything but the paragraph you're writing. **Typewriter scrolling** (View menu) keeps your line near the middle.
+- **Snapshots:** ⇧⌘S saves a named copy of the script to `script/.snapshots/`. Script › Snapshots… lists them, compares any one with the script now, side by side, and restores it (saving today's script first).
 
 | Key | In the script editor |
 | --- | --- |
@@ -203,6 +215,8 @@ Packages/
   SlateUI/              SwiftUI and AppKit views
   SlateExport/          PDF renderer, Fountain/FDX/Markdown import and export, animatic (AVFoundation) and boards PDF, Courier Prime
 Fixtures/SampleProject  Sample project used by tests
+Fixtures/MarkdownVault  A small Obsidian-style vault for the import tests
+Scripts/                make-icon.swift (app icon), release.sh (signing and notarization)
 Fixtures/Fountain       Reference scripts and PDFs from fountain.io
 Fixtures/Snapshots      Golden page layouts
 ```
@@ -222,6 +236,9 @@ Fixtures/Snapshots      Golden page layouts
 | ⌘= / ⌘− | Canvas and map: zoom in / out. Timeline: wider / narrower |
 | ⌘0 | Map: fit |
 | ⇧⌘K | New sketch (storyboard) |
+| ⇧⌘S | Save a snapshot of the script |
+| ⇧⌘↩ | Focus mode |
+| ⌘A, ⌘-click | Storyboard: select every frame in a row, or add one to the selection |
 | ⌥⌘↩ | Watch the animatic |
 | Space, ← / →, ⌥← / ⌥→ | Player: play/pause, previous/next frame, previous/next scene |
 | ⇧⌘T | Add to-do at the caret |
@@ -236,5 +253,22 @@ Fixtures/Snapshots      Golden page layouts
 | ⇧⌘\\ | Draft / Page view |
 | ⇧⌘E | Publish PDF |
 | ⌥⌘P | Print script |
-| ⇧⌘I | Import a screenplay |
+| ⇧⌘I | Import a project, .zip, screenplay or Markdown folder |
 | ⌘, | Settings (appearance, spelling, reminders) |
+
+## Themes and settings
+
+- **Settings › General:** the welcome window. **Appearance:** Light, Dark or Follow System, a theme for each, and text size (85–150%; Publish always prints at 12 pt). **Spelling:** language, auto-correct, and spelling and grammar switches for the script, notes, canvas cards and margin sheets. **Reminders.** **Library:** watched folders.
+- **Edit Themes…** (Settings › Appearance) opens the theme editor: duplicate a theme, change any colour, font or size with a live preview, and Reset a token to its base. Themes are `.slatetheme` JSON files in `~/Library/Application Support/Slate/Themes/` that store only what differs from their base; Import and Export share them.
+- **View › Theme for This Project** overrides the theme for one project (saved in `project.json`).
+
+## Distribution
+
+Slate ships outside the Mac App Store as a Developer ID app, unsandboxed, with the hardened runtime.
+
+- **Test the packaging without an Apple account:** `Scripts/release.sh --adhoc` makes a Release build, signs it ad hoc and writes `build/release/Slate-<version>.zip`.
+- **For real, once you have a Developer ID Application certificate in your keychain:**
+  1. Once: `xcrun notarytool store-credentials slate-notary --apple-id you@example.com --team-id TEAMID` (it asks for an app-specific password from appleid.apple.com).
+  2. Each release: `TEAM_ID=TEAMID NOTARY_PROFILE=slate-notary Scripts/release.sh`. It archives, signs with your Developer ID, notarizes, staples the ticket, checks with `spctl`, and zips the app.
+- **App icon:** `swift Scripts/make-icon.swift` redraws `App/Assets.xcassets/AppIcon.appiconset` from code.
+

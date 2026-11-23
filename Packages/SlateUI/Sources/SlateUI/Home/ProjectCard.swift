@@ -32,6 +32,9 @@ struct ProjectCard: View {
                     Text(lastEditedText)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let length = summary?.lengthText {
+                        Text(length).font(.caption).foregroundStyle(.secondary)
+                    }
                     Text(todoText)
                         .font(.caption)
                         .foregroundStyle(.tertiary)
@@ -68,7 +71,7 @@ struct ProjectCard: View {
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 10, topTrailingRadius: 10))
     }
 
-    @ViewBuilder private var menu: some View {
+    @ViewBuilder var menu: some View {
         Button("Open", action: open).disabled(isMissing)
         Button("Show in Finder") {
             NSWorkspace.shared.activateFileViewerSelecting([entry.lastKnownURL])
@@ -81,9 +84,18 @@ struct ProjectCard: View {
             Button("Locate…", action: locate)
         }
         Divider()
+        Button("Rename…") { LibraryActions.rename(entry, current: summary?.name ?? entry.folderName, model: model) }
+            .disabled(isMissing)
+        Button("Duplicate") { LibraryActions.duplicate(entry, model: model) }
+            .disabled(isMissing)
+        Button("Export as .zip…") { LibraryActions.exportZip(entry) }
+            .disabled(isMissing)
+        Divider()
         Button("Remove from Library") {
             model.library.remove(entry.id)
         }
+        Button("Move to Trash…") { LibraryActions.moveToTrash(entry, name: summary?.name ?? entry.folderName, model: model) }
+            .disabled(isMissing)
     }
 
     private var todoText: String {

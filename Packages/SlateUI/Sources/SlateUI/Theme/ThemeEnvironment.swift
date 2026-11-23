@@ -50,6 +50,8 @@ public enum AppearancePreferences {
     public static let appearance = "appearance"
     public static let lightTheme = "lightTheme"
     public static let darkTheme = "darkTheme"
+    /// Text size in the editors: 1 = the theme's sizes.
+    public static let textScale = "textScale"
 }
 
 /// Resolves the theme for a window from the app settings (and an optional
@@ -60,6 +62,7 @@ struct SlateThemeModifier: ViewModifier {
     @AppStorage(AppearancePreferences.appearance) private var appearance = Appearance.system.rawValue
     @AppStorage(AppearancePreferences.lightTheme) private var lightTheme = "Light"
     @AppStorage(AppearancePreferences.darkTheme) private var darkTheme = "Dark"
+    @AppStorage(AppearancePreferences.textScale) private var textScale = 1.0
 
     var projectOverride: String?
 
@@ -70,6 +73,7 @@ struct SlateThemeModifier: ViewModifier {
             darkTheme: darkTheme
         )
         let theme = model.themes.theme(isDark: colorScheme == .dark, settings: settings, projectOverride: projectOverride)
+            .scaled(by: textScale)
         content
             .environment(\.slateTheme, theme)
             .tint(Color(theme.chrome.accent))

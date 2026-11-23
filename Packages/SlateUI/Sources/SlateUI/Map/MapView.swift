@@ -320,6 +320,16 @@ private struct MapShapes: View {
                 }
             }
         }
+        .accessibilityChildren {
+            ForEach(model.map.regions + model.map.paths) { item in
+                if model.isVisible(item) {
+                    Rectangle()
+                        .accessibilityLabel("\(item.kind == .region ? "Region" : "Path"): \(item.title.isEmpty ? "untitled" : item.title)")
+                        .accessibilityAddTraits(model.selection == item.id ? [.isButton, .isSelected] : .isButton)
+                        .accessibilityAction { model.selection = item.id }
+                }
+            }
+        }
     }
 }
 

@@ -249,4 +249,24 @@ struct ShowcaseTests {
         #expect(rows[6] == ["6", "", "OMITTED", "", "", "", ""])
         #expect(ProductionReport.characters.rows(files: parsed, paginated: paginated, labels: layout.sceneLabels!).first?.first == "JUNO")
     }
+
+    @Test func labelsAndSnapshots() throws {
+        let folder = try TempFolder()
+        let store = try Self.open(folder)
+        let book = try Self.book(store)
+        let colors = Dictionary(uniqueKeysWithValues: book.scenes.compactMap { scene in scene.scene.color.map { (scene.scene.sceneID!, $0) } })
+        #expect(colors == ["s001": .blue, "s004": .red, "s005": .red, "s006": .red, "s007": .red, "s009": .red, "s010": .green])
+
+        // The snapshot predates the ticket hut, and isn't an act file.
+        let snapshots = ScriptSnapshot.all(in: store.rootURL)
+        let snapshot = try #require(snapshots.first)
+        #expect(snapshot.name == "Before the ticket hut")
+        #expect(!Self.paths(store).contains { $0.contains(".snapshots") })
+        let old = try snapshot.files()
+        #expect(old.map(\.name) == ["01-act-one.md", "02-act-two.md", "03-act-three.md"])
+        let now = try store.readText(at: "script/01-act-one.md")
+        let rows = LineDiff.rows(old: old[0].text.components(separatedBy: "\n"), new: now.components(separatedBy: "\n"))
+        // New since the snapshot (paired with s005's heading, which gained its colour label).
+        #expect(rows.contains { $0.kind != .same && $0.new == "INT. HARBOUR TICKET HUT - NIGHT {#s011}" })
+    }
 }

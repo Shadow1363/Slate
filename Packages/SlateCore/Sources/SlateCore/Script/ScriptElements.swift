@@ -79,6 +79,8 @@ public struct ScriptScene: Sendable, Equatable, Identifiable {
     public let range: NSRange
     /// A `dur=` override from the tag, in seconds.
     public let durationOverride: TimeInterval?
+    /// A colour label from the tag (`color=blue`).
+    public var color: SceneColor? = nil
 
     public var id: String { sceneID ?? "line-\(headingLine)" }
 }

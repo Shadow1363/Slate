@@ -1,5 +1,97 @@
 # Changes
 
+## Milestone 12 — Polish and ship (2026-11-23)
+
+**Build:** Debug and Release build with no compiler warnings.
+**Tests:** 398 pass: 278 in SlateCore, 93 in SlateUI and 27 in SlateExport (the backlog pass and this milestone together added 21).
+**Dependencies:** none added (`ditto`, `notarytool` and `stapler` ship with macOS and Xcode).
+
+### What works
+- **Welcome window** at launch, and from Help › Welcome to Slate:
+  - Open the Sample Film (a fresh Tidewater copy), New Project, or Open a Folder;
+  - a short tour of the four areas;
+  - a "show at launch" switch.
+
+  Help › Open Sample Film makes a copy directly.
+- **Theme editor**, from Settings › Appearance › Edit Themes…:
+  - the theme list, with Duplicate, Delete, Import and Export;
+  - every token grouped as in SPEC's table, edited with colour wells, font and weight menus, numbers and switches, each with a Reset;
+  - a live preview.
+
+  User themes store only what differs from their base. A change that would break a theme is refused.
+- **Per-project theme:** View › Theme for This Project (saved in `project.json`).
+- **Settings:**
+  - **General:** the welcome window.
+  - **Appearance:** adds Text size, from 85% to 150%.
+  - **Spelling:** per-area switches.
+  - **Reminders.**
+  - **Library:** watched folders.
+- **Import…** (⇧⌘I) takes:
+  - a Slate folder, added in place or copied;
+  - a project `.zip`;
+  - a screenplay;
+  - a folder of Markdown such as an Obsidian vault. It becomes a project with the notes in `universe/`; links, canvases and attachments are kept and `.obsidian` is skipped.
+- **Accessibility:**
+  - VoiceOver can reach canvas connections, timeline jumps, and map regions and paths (selectable);
+  - the player's icon-only buttons have labels;
+  - Reduce Motion stops push-ins in the player.
+- **App icon:** a film slate, drawn by `Scripts/make-icon.swift` into the asset catalog.
+- **Distribution:** `Scripts/release.sh` builds, signs with Developer ID, notarizes, staples, checks and zips. `--adhoc` runs the same pipeline without notarization, and works here: valid ad-hoc signature, hardened runtime on, zip written. README › Distribution has the two commands to run once you have the certificate.
+
+### Showcase and fixtures
+- `SHOWCASE.md` has a Milestone 12 checklist: welcome, theme editor, text size, vault import, VoiceOver, icon.
+- New `Fixtures/MarkdownVault`: notes in a subfolder, an image, a canvas, a clashing `draft.md` and an `.obsidian` folder, used by the import tests.
+- A new test checks that sample copies get free names (`Tidewater`, `Tidewater 2`) and bring the snapshot and revision copies.
+
+### Stubbed or not yet
+- **Not checked by hand:** I could launch the app, but not look at windows. The welcome window, theme editor, Import panel and VoiceOver passes need trying.
+- **Notarization** hasn't run, since there's no Developer ID certificate on this Mac. The script stops with a clear message if `TEAM_ID` or `NOTARY_PROFILE` is missing.
+- **The theme preview** is drawn from the theme's tokens, not with the real editors.
+- **Text size** scales the editors' fonts; sidebars and other system text follow macOS's own size settings.
+- **Default projects folder:** `~/Documents/Slate` can't be changed yet; watched folders can.
+- **Imports:** a Markdown folder's Obsidian embeds (`![[key.png]]`) are kept as text, but Slate doesn't show the image inline.
+
+### Please try
+1. Quit Slate and open it: the welcome window. Open the Sample Film.
+2. Settings › Appearance › Edit Themes…: duplicate Dark, recolour the scene heading, then pick it in View › Theme for This Project.
+3. Import… `Fixtures/MarkdownVault` and click through the notes and the canvas.
+4. Set Text size to 130% and look at the script.
+5. Run `Scripts/release.sh --adhoc` and open `build/release/export/Slate.app`.
+
+## Backlog pass (2026-11-23)
+
+The SPEC features still missing from earlier milestones, and the most noticeable gaps from their "Stubbed or not yet" lists.
+
+### What's new
+- **Home:**
+  - Rename…, Duplicate, Export as .zip… and Move to Trash… on every project, as SPEC lists;
+  - a grid/list switch;
+  - cards show page count and runtime;
+  - watched folders can be added (the + in the sidebar) and removed.
+- **Scene colour labels:** right-click a scene › Colour. They're saved in its tag (`{#s014 color=blue}`) and shown in the navigator, Jump to Scene and storyboard rows.
+- **Act files:**
+  - New Act File, from the navigator button or the Script menu;
+  - drag a scene onto another act file, or right-click › Move to.
+  - A scene ID repeated across act files (a file copied in Finder) is renumbered when the script loads.
+- **Focus mode** (⇧⌘↩): the side columns close and other paragraphs dim. **Typewriter scrolling** is in the View menu.
+- **Snapshots:** ⇧⌘S saves one to `script/.snapshots/`. Script › Snapshots… compares any snapshot with the script now, side by side, and restores it after saving "Before restore".
+- **Spell check per area:** spelling and grammar switches for the script, notes, canvas cards and margin sheets. Cards and margin notes now use the project's word list too.
+- **Subtitles** too short to read spread into free time around them.
+- **Storyboard:**
+  - adding and deleting frames can be undone (files go to the Trash and come back);
+  - ⌘A selects a row, ⌘-click adds a frame;
+  - Delete, shot, move and duration work on all selected frames.
+
+### Showcase
+- **Tidewater:**
+  - colour labels: blue for the present, red for 1987, green for the ending;
+  - a snapshot, "Before the ticket hut".
+- **`ShowcaseTests`** check the labels, that the snapshot is read but isn't an act file, and that it differs from today's script where expected.
+
+### Stubbed or not yet
+- **Not checked by hand:** drag between act files, focus dimming, typewriter scrolling and the Snapshots sheet.
+- **Dragging to reorder** frames still moves one frame at a time, even with several selected.
+
 ## Milestone 11 — Production features (2026-11-23)
 
 **Build:** `xcodebuild … build` succeeds with no compiler warnings.

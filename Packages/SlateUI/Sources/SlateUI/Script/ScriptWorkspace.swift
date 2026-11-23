@@ -68,6 +68,13 @@ final class ScriptWorkspace {
     /// Bumped when production.json or the baseline changes, so layouts redo.
     var productionVersion = 0
     var showingSides = false
+    var showingSnapshots = false
+    /// Hides the side columns and dims everything but the paragraph being written.
+    var focusMode = false
+    /// Keeps the caret's line near the middle of the editor.
+    var typewriter = UserDefaults.standard.bool(forKey: "script.typewriter") {
+        didSet { UserDefaults.standard.set(typewriter, forKey: "script.typewriter") }
+    }
 
     @ObservationIgnored private var parseCache: [String: (text: String, parsed: ParsedScript)] = [:]
     @ObservationIgnored private var bookCache: (key: [String], exact: Bool, book: ScriptBook)?
@@ -119,6 +126,7 @@ final class ScriptWorkspace {
         if currentFile == nil, !showingTitlePage {
             currentFile = scriptFiles.first?.relativePath
         }
+        repairDuplicateSceneIDs()
         refreshProduction()
     }
 

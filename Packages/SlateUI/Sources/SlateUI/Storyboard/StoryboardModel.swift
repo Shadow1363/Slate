@@ -48,7 +48,10 @@ final class StoryboardModel {
     let store: ProjectStore
     let script: ScriptWorkspace
 
+    /// The frame the inspector shows.
     var selection: FrameRef?
+    /// Every selected frame (⌘-click, ⌘A), including `selection`.
+    var selected: Set<FrameRef> = []
     /// A row to scroll to.
     var focusedRow: String?
     /// Set to open the sketch pad.
@@ -97,6 +100,7 @@ final class StoryboardModel {
             version += 1
         }
         if let selection, frame(selection) == nil { self.selection = nil }
+        selected = selected.filter { frame($0) != nil }
     }
 
     /// `frames.json` (an open buffer wins), plus media dropped into the folder by hand, at the end.
@@ -188,8 +192,30 @@ final class StoryboardModel {
         return result
     }
 
+    /// Adds or removes a frame from the selection (⌘-click).
+    func toggleSelection(_ ref: FrameRef) {
+        if selected.contains(ref) {
+            selected.remove(ref)
+            if selection == ref { select(selected.first, keepingOthers: true) }
+        } else {
+            selected.insert(ref)
+            select(ref, keepingOthers: true)
+        }
+    }
+
+    /// ⌘A: every frame in the selected frame's row, or the focused row.
+    func selectAll() {
+        let rowID = selection.flatMap { ref in (rows + orphanRows).first { $0.folder?.path == ref.folder }?.id } ?? focusedRow
+        guard let rowID, let row = row(rowID), let folder = row.folder else { return }
+        let refs = row.frames.map { FrameRef(folder: folder.path, file: $0.file) }
+        guard let first = refs.first else { return }
+        selected = Set(refs)
+        select(selection.flatMap { refs.contains($0) ? $0 : nil } ?? first, keepingOthers: true)
+    }
+
     /// Selects a frame and tints its lines in the script.
-    func select(_ ref: FrameRef?) {
+    func select(_ ref: FrameRef?, keepingOthers: Bool = false) {
+        if !keepingOthers { selected = ref.map { [$0] } ?? [] }
         selection = ref
         if let ref, let frame = frame(ref), let range = frame.scriptRange, let scene = scene(forFolder: ref.folder) {
             script.frameHighlight = FrameHighlight(sceneID: scene.scene.sceneID!, range: range)
@@ -297,6 +323,13 @@ final class StoryboardModel {
         refresh()
         let refs = names.map { FrameRef(folder: folder, file: $0) }
         select(refs.first)
+        // Undo sends the new frames to the Trash (and redo brings them back).
+        if let undoManager = registrableUndo {
+            undoManager.registerUndo(withTarget: self) { model in
+                MainActor.assumeIsolated { model.delete(refs, action: action) }
+            }
+            undoManager.setActionName(action)
+        }
         return refs
     }
 
@@ -361,21 +394,64 @@ final class StoryboardModel {
         (rows + orphanRows).first { $0.folder?.path == folder }?.id
     }
 
-    /// Sends a frame's files to the Trash (so it can be recovered there) and drops it from the list.
-    func delete(_ ref: FrameRef) {
-        guard var file = framesByFolder[ref.folder] else { return }
-        let strokes = ref.folder + "/" + StoryboardMedia.strokesFile(for: ref.file)
-        do {
-            if paths.contains(ref.path) { try store.trashFile(ref.path) }
-            if paths.contains(strokes) { try store.trashFile(strokes) }
-        } catch {
-            SlateAppModel.showError("Couldn't move the frame to the Trash", error)
-            return
+    func delete(_ ref: FrameRef) { delete([ref]) }
+
+    /// Sends frames' files (and sketch strokes) to the Trash and drops them from
+    /// their lists. Undo puts the files back from the Trash.
+    func delete(_ refs: [FrameRef], action: String? = nil) {
+        let action = action ?? (refs.count == 1 ? "Delete Frame" : "Delete Frames")
+        var trashed: [(path: String, trash: URL)] = []
+        var before: [String: FramesFile] = [:]
+        for ref in refs {
+            guard var file = framesByFolder[ref.folder] else { continue }
+            if before[ref.folder] == nil { before[ref.folder] = file }
+            for path in [ref.path, ref.folder + "/" + StoryboardMedia.strokesFile(for: ref.file)] where paths.contains(path) {
+                do {
+                    if let url = try store.trashFile(path) { trashed.append((path, url)) }
+                } catch {
+                    SlateAppModel.showError("Couldn't move the frame to the Trash", error)
+                }
+            }
+            file.frames.removeAll { $0.file == ref.file }
+            save(file, folder: ref.folder)
         }
-        file.frames.removeAll { $0.file == ref.file }
-        save(file, folder: ref.folder)
-        if selection == ref { select(nil) }
+        if let selection, refs.contains(selection) { select(nil) }
+        selected.subtract(refs)
         refresh()
+        guard let undoManager = registrableUndo, !before.isEmpty else { return }
+        undoManager.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated { model.restore(trashed, lists: before, refs: refs, action: action) }
+        }
+        undoManager.setActionName(action)
+    }
+
+    /// Undoes a delete: files back from the Trash, lists as they were.
+    private func restore(_ trashed: [(path: String, trash: URL)], lists: [String: FramesFile], refs: [FrameRef], action: String) {
+        for item in trashed {
+            do {
+                let destination = try store.url(for: item.path)
+                try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try FileManager.default.moveItem(at: item.trash, to: destination)
+            } catch {
+                SlateAppModel.showError("Couldn't bring “\((item.path as NSString).lastPathComponent)” back from the Trash", error)
+            }
+        }
+        store.rescan()
+        for (folder, file) in lists { save(file, folder: folder) }
+        refresh()
+        selected = Set(refs)
+        select(refs.first, keepingOthers: true)
+        registrableUndo?.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated { model.delete(refs, action: action) }
+        }
+        registrableUndo?.setActionName(action)
+    }
+
+    /// The undo manager, when it can take a registration now (an open group, or
+    /// automatic grouping as in the app).
+    private var registrableUndo: UndoManager? {
+        guard let undoManager, undoManager.groupsByEvent || undoManager.groupingLevel > 0 || undoManager.isUndoing || undoManager.isRedoing else { return nil }
+        return undoManager
     }
 
     // MARK: - Folders: renames, missing scenes, orphans

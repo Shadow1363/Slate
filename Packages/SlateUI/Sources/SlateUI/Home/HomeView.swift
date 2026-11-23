@@ -15,6 +15,7 @@ public struct HomeView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var section: HomeSection? = .all
     @State private var search = ""
+    @AppStorage("home.listView") private var listView = false
 
     public init() {}
 
@@ -27,21 +28,49 @@ public struct HomeView: View {
                     Label("Recent", systemImage: "clock").tag(HomeSection.recent)
                     Label("Pinned", systemImage: "pin").tag(HomeSection.pinned)
                 }
-                Section("Watched Folders") {
+                Section {
                     ForEach(model.library.watchedFolders, id: \.self) { folder in
                         Label(folder.lastPathComponent, systemImage: "folder")
                             .help(folder.path)
                             .tag(HomeSection.watched(folder))
+                            .contextMenu {
+                                Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([folder]) }
+                                Button("Stop Watching") {
+                                    if section == .watched(folder) { section = .all }
+                                    model.library.removeWatchedFolder(folder)
+                                }
+                            }
+                    }
+                } header: {
+                    HStack {
+                        Text("Watched Folders")
+                        Spacer()
+                        Button {
+                            LibraryActions.chooseWatchedFolder(model: model)
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Watch another folder for projects")
+                        .accessibilityLabel("Add Watched Folder")
                     }
                 }
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
-            ProjectGrid(entries: visibleEntries, emptyMessage: emptyMessage, open: open)
+            ProjectGrid(entries: visibleEntries, emptyMessage: emptyMessage, listView: listView, open: open)
         }
         .navigationTitle(title)
         .searchable(text: $search, placement: .toolbar, prompt: "Search projects")
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Picker("View", selection: $listView) {
+                    Label("Grid", systemImage: "square.grid.2x2").tag(false)
+                    Label("List", systemImage: "list.bullet").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .help("Show projects as cards or a list")
+            }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button {
                     model.showingNewProject = true
@@ -56,11 +85,11 @@ public struct HomeView: View {
                 }
                 .help("Open a project folder (⌘O)")
                 Button {
-                    if let url = model.importScreenplay() { openWindow(id: SlateWindowID.project, value: url) }
+                    if let url = model.importProject() { openWindow(id: SlateWindowID.project, value: url) }
                 } label: {
                     Label("Import", systemImage: "square.and.arrow.down")
                 }
-                .help("Import a Fountain, Final Draft, text or Markdown screenplay (⇧⌘I)")
+                .help("Import a project folder or .zip, a screenplay, or a folder of Markdown notes (⇧⌘I)")
             }
         }
         .sheet(isPresented: $model.showingNewProject) {
@@ -70,6 +99,10 @@ public struct HomeView: View {
             LaunchRemindersSheet()
         }
         .task {
+            if UserDefaults.standard.object(forKey: WelcomePreferences.showAtLaunch) as? Bool ?? true, !model.welcomeShown {
+                model.welcomeShown = true
+                openWindow(id: SlateWindowID.welcome)
+            }
             model.library.scanWatchedFolders()
             model.library.refreshStatuses()
             model.checkLaunchReminders()
@@ -127,16 +160,21 @@ public struct HomeView: View {
 public enum SlateWindowID {
     public static let home = "home"
     public static let project = "project"
+    public static let themes = "themes"
+    public static let welcome = "welcome"
 }
 
 struct ProjectGrid: View {
     let entries: [LibraryEntry]
     let emptyMessage: String
+    var listView = false
     let open: (LibraryEntry) -> Void
 
     var body: some View {
         if entries.isEmpty {
             ContentUnavailableView("No Projects", systemImage: "film.stack", description: Text(emptyMessage))
+        } else if listView {
+            ProjectList(entries: entries, open: open)
         } else {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220, maximum: 280), spacing: 20)], spacing: 20) {

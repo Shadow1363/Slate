@@ -22,7 +22,7 @@ struct DictionaryUITests {
         for word in ["Riley", "Chronoshift", "chronoshifted", "Mara", "Voss"] {
             #expect(ignored.contains(word), "missing \(word)")
         }
-        #expect(m.textView.isGrammarCheckingEnabled == SpellingPreferences.current.grammarInNotes)
+        #expect(m.textView.isGrammarCheckingEnabled == SpellingPreferences.current.grammar[.notes])
     }
 
     @Test func underlinesDefinedWords() throws {

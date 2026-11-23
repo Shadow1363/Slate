@@ -78,5 +78,19 @@ The script was locked (scene numbers and pages) and a Blue revision started; the
 - [ ] Sides…: pick 4A. The PDF has page 2 and 2A only, with scenes 3, 4 and 5 crossed out.
 - [ ] Unlock Scene Numbers (it asks first): scenes renumber 1–11 and OMITTED goes away. Locking again locks the new numbers, so try this on a fresh Showcase copy.
 
-## Milestone 12 onwards
-Polish will be added here as it's built.
+## Backlog pass
+- [ ] Script sidebar: scenes have colour dots: blue for the present, red for 1987, green for the ending. Right-click a scene › Colour to change one; the storyboard rows show it too.
+- [ ] Drag a scene from act one onto `02-act-two.md` in the sidebar (or right-click › Move to); undo. New Act File (the sidebar's button) adds `04-act-four.md`.
+- [ ] ⇧⌘↩ for focus mode: the sidebars close and only your paragraph is bright. View › Typewriter Scrolling, then type.
+- [ ] Script › Snapshots…: "Before the ticket hut" compares with today's script. The ticket hut and the colour labels show as changes. ⇧⌘S saves a new one; Restore saves "Before restore" first.
+- [ ] Storyboard: click a frame in s001, press ⌘A, change the shot for all three, then Delete and ⌘Z: they come back.
+- [ ] Settings › Spelling: turn spelling on for canvas cards and type a misspelling in a text card on the canvas.
+- [ ] Home: right-click this project › Duplicate, Rename… (close it first), Export as .zip…; switch to List view.
+
+## Milestone 12: Polish and ship
+- [ ] Quit and reopen Slate: the welcome window appears. "Open the Sample Film" makes another copy of this project.
+- [ ] Settings › Appearance › Edit Themes…: duplicate Dark, change Screenplay Elements › Scene Heading › Color, watch the preview, then View › Theme for This Project › "Dark Copy". Reset the token.
+- [ ] Settings › Appearance › Text size 130%: the script and notes get bigger; Publish still prints at 12 pt.
+- [ ] Import… the repo's `Fixtures/MarkdownVault` folder: a new project with Mara Voss and The Brass Key in Universe, their links working, and the Plot canvas.
+- [ ] Turn VoiceOver on (⌘F5) and move through the canvas, the timeline's jump arc and the map's Old Town region.
+- [ ] The Dock shows the slate icon.
