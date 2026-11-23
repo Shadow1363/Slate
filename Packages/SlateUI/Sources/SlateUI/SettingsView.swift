@@ -60,8 +60,12 @@ public struct SettingsView: View {
                 .tabItem { Label("Library", systemImage: "books.vertical") }
             SearchSettings()
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }
+            VoiceSettingsView()
+                .tabItem { Label("Voice", systemImage: "mic") }
+            ShortcutsSettings()
+                .tabItem { Label("Shortcuts", systemImage: "command") }
         }
-        .frame(width: 560, height: 480)
+        .frame(width: 620, height: 520)
         .slateThemed()
     }
 

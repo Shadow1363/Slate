@@ -170,8 +170,9 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **Links:** typing `[[` suggests notes by name or alias, and ⌥⌘K inserts a link. ⌘-click a link to open it; clicking an unresolved link (red, dashed) offers to create the note. Links work in the script too.
 - **Links inspector** (⌥⌘0) lists backlinks from notes, scenes, margin notes and the rough draft. For a character it also lists the scenes they speak in.
 - **Renaming** a note (press Return in its name, or right-click › Rename…) offers to update every link to it, and renames the file. Its `id` stays the same.
-- **Heading index:** every note in the Universe sidebar (and the draft) has a triangle that opens its headings as a nested tree: H2 › H3 › H4…. Click a heading to jump to it; ⌥-click a triangle to open or close every level below; right-click › Expand All / Collapse All. What's open is remembered per project.
+- **Contents (heading index):** under a note's infobox, on the fields side, **Contents** lists the note's headings as a nested tree: H2 › H3 › H4…. Click a heading to jump to it; a triangle folds its children (⌥-click: every level); right-click › Expand All / Collapse All. The sidebar lists notes only. The draft keeps its outline in the sidebar.
 - **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script. It's optional: right-click Draft › Move to Trash, and + › New Rough Draft makes a fresh one.
+- **Voice notes:** File › Import Voice Note… (or + › Import Voice Note…) transcribes recordings into Freeform Notes tagged `voice-note`. See [Voice](#voice).
 - **Tags:** type them under a note's name (Return or comma adds one, × removes it), or right-click a scene in the Script navigator › Tags…. Notes keep them in `tags:`, scenes in their hidden tag (`{#s014 tags=storm,flashback}`, never printed). The Universe sidebar's **Tags** section lists every tag; right-click one to rename it or remove it everywhere.
 
 ## Search (⌘K)
@@ -286,13 +287,26 @@ Fixtures/Fountain       Reference scripts and PDFs from fountain.io
 Fixtures/Snapshots      Golden page layouts
 ```
 
+## Voice
+
+- **Dictate (⇧⌘D)** in the script, a note, the draft or the dictionary book. A panel at the cursor shows the level (and, with Apple, the words as you speak). Press ⇧⌘D again or Insert to put the text in; Esc cancels. It's one undo step.
+- **Import Voice Note…** (File menu, or Universe › +) turns each recording (m4a, mp3, wav, aiff…) into a Freeform Note named after its first sentence, tagged `voice-note`, with `recording:` naming the file.
+- **Settings › Voice** picks who transcribes:
+  - **Apple** (default, recommended): on this Mac, offline, nothing to download. If macOS says the language isn't available offline, turn on Dictation in System Settings › Keyboard once.
+  - **Whisper:** on this Mac with whisper.cpp. Download a model there first (Base 142 MB, Small 466 MB, Large Turbo 547 MB).
+  - **OpenAI:** online; paste an API key (kept in your keychain). Up to 25 MB per recording.
+- macOS asks for microphone and speech recognition permission the first time.
+
 ## Keyboard shortcuts
+
+Every menu shortcut can be changed in **Settings › Shortcuts**: click one, press the new keys. Clashes with another command or macOS are refused. Reset puts one back; Reset All puts them all back.
 
 | Shortcut | Action |
 | --- | --- |
 | ⌘N | New Note (in a project window; Add Word in the Dictionary) / New Project (elsewhere) |
 | ⌥⌘N | New Project (from a project window) |
-| ⌘K | Search (change it in Settings › Search) |
+| ⌘K | Search |
+| ⇧⌘D | Dictate at the cursor |
 | ⇧⌘F | Search all text |
 | ⌥⌘K | Insert link |
 | ⌥⌘0 | Inspector (Links and Define) |
@@ -320,11 +334,11 @@ Fixtures/Snapshots      Golden page layouts
 | ⇧⌘E | Publish PDF |
 | ⌥⌘P | Print script |
 | ⇧⌘I | Import a project, .zip, screenplay or Markdown folder |
-| ⌘, | Settings (appearance, spelling, reminders) |
+| ⌘, | Settings (appearance, spelling, reminders, voice, shortcuts) |
 
 ## Themes and settings
 
-- **Settings › General:** the welcome window. **Appearance:** Light, Dark or Follow System, a theme for each, and text size (85–150%; Publish always prints at 12 pt). **Spelling:** language, auto-correct, and spelling and grammar switches for the script, notes, canvas cards and margin sheets. **Reminders.** **Library:** watched folders.
+- **Settings › General:** the welcome window. **Appearance:** Light, Dark or Follow System, a theme for each, and text size (85–150%; Publish always prints at 12 pt). **Spelling:** language, auto-correct, and spelling and grammar switches for the script, notes, canvas cards and margin sheets. **Reminders.** **Library:** watched folders. **Search:** bangs. **Voice:** transcription engine, language, Whisper models, OpenAI key. **Shortcuts:** every menu shortcut, remappable.
 - **Edit Themes…** (Settings › Appearance) opens the theme editor: duplicate a theme, change any colour, font or size with a live preview, and Reset a token to its base. Themes are `.slatetheme` JSON files in `~/Library/Application Support/Slate/Themes/` that store only what differs from their base; Import and Export share them.
 - **View › Theme for This Project** overrides the theme for one project (saved in `project.json`).
 
@@ -337,8 +351,22 @@ Slate ships outside the Mac App Store as a Developer ID app, unsandboxed, with t
 - **Screenshots:** `Scripts/screenshots.sh` builds a Debug copy under its own bundle ID, runs a tour of the showcase and captures each step into `docs/screenshots/` (your terminal needs Screen Recording permission).
 
 - **Test the packaging without an Apple account:** `Scripts/release.sh --adhoc` makes a Release build, signs it ad hoc and writes `build/release/Slate-<version>.zip`.
-- **For real, once you have a Developer ID Application certificate in your keychain:**
-  1. Once: `xcrun notarytool store-credentials slate-notary --apple-id you@example.com --team-id TEAMID` (it asks for an app-specific password from appleid.apple.com).
-  2. Each release: `TEAM_ID=TEAMID NOTARY_PROFILE=slate-notary Scripts/release.sh`. It archives, signs with your Developer ID, notarizes, staples the ticket, checks with `spctl`, and zips the app.
+- **Developer ID signing and notarization** (no "can't verify" warning). One-time setup:
+  1. **Certificate:** Xcode › Settings › Accounts › your team › Manage Certificates › + › **Developer ID Application**. Only the account holder can make one. Then, in Keychain Access, right-click that certificate › Export… as a `.p12` with a password.
+  2. **API key:** App Store Connect › Users and Access › Integrations › App Store Connect API › Team Keys › + (Developer access). Download the `AuthKey_….p8` and note the Key ID and Issuer ID.
+  3. **Run `Scripts/setup-signing.sh`.** It saves a `slate-notary` profile on this Mac, checks that Apple accepts it, and stores the certificate and key as encrypted secrets on the GitHub repo. It never prints a secret.
+
+  From then on, every release from `main` is Developer ID signed and notarized. Without the secrets the workflow falls back to ad-hoc signing. To build a signed copy locally: `TEAM_ID=… NOTARY_PROFILE=slate-notary Scripts/release.sh`. A signed Slate only installs updates signed by the same team.
 - **App icon:** `swift Scripts/make-icon.swift` redraws `App/Assets.xcassets/AppIcon.appiconset` from code.
 
+## License
+
+Slate © 2026 Tomás Martinez, licensed under [Creative Commons Attribution-NonCommercial-ShareAlike 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) (CC BY-NC-SA 4.0). Full text: [LICENSE](LICENSE).
+
+In short, you may use, copy and change Slate as long as you:
+
+- **credit it:** name Slate and its author, link to this repository and the license, and say what you changed;
+- **don't use it commercially:** no selling it, charging for a copy or a modified version, or using it in a paid product or service;
+- **share alike:** anything you build from Slate must be released under this same license, source included.
+
+Parts made by others keep their own licenses (whisper.cpp, Yams, swift-markdown, swift-cmark, Courier Prime): see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). As the copyright holder, the author can still publish Slate elsewhere, including the Mac App Store.

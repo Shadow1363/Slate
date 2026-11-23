@@ -67,6 +67,8 @@ private struct InfoboxPane: View {
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) { editing = true }
                 }
+                NoteIndex(session: session, path: note.path,
+                          tree: HeadingTree.build(note.headings, droppingTitle: note.name))
             }
             .padding(14)
         }
@@ -82,6 +84,67 @@ private struct InfoboxPane: View {
             .background(.bar)
         }
         .background(Color(nsColor: .controlBackgroundColor).opacity(0.5))
+    }
+}
+
+/// The note's headings as a nested index, under the infobox. Everything
+/// starts open; a chevron folds a heading's children (⌥-click: every level).
+struct NoteIndex: View {
+    let session: ProjectSession
+    let path: String
+    let tree: [HeadingTree.Node]
+    @State private var closed: Set<String> = []
+
+    var body: some View {
+        if !tree.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Contents").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    .padding(.bottom, 2)
+                ForEach(HeadingTree.rows(tree, isOpen: { !closed.contains($0) })) { row in
+                    HStack(spacing: 4) {
+                        if row.node.children.isEmpty {
+                            Color.clear.frame(width: 14, height: 14)
+                        } else {
+                            OutlineChevron(isOpen: !closed.contains(row.node.key)) { branch in
+                                withAnimation(.snappy(duration: 0.15)) { toggle(row.node, branch: branch) }
+                            }
+                        }
+                        Button {
+                            session.open(heading: row.node.heading, in: path)
+                        } label: {
+                            Text(row.node.heading.title)
+                                .font(.callout)
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Go to “\(row.node.heading.title)”")
+                    }
+                    .padding(.leading, CGFloat(row.depth) * 12)
+                    .draggable("slate-heading:" + row.node.heading.title)
+                    .contextMenu {
+                        Button("Go to Heading") { session.open(heading: row.node.heading, in: path) }
+                        Divider()
+                        Button("Expand All") { closed = [] }
+                        Button("Collapse All") { closed = Set(HeadingTree.keys(tree)) }
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Heading \(row.node.heading.title), level \(row.node.heading.level)")
+                }
+            }
+            .padding(.top, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func toggle(_ node: HeadingTree.Node, branch: Bool) {
+        let keys = [node.key] + (branch ? HeadingTree.keys(node.children) : [])
+        if closed.contains(node.key) {
+            closed.subtract(keys)
+        } else {
+            closed.formUnion(keys)
+        }
     }
 }
 

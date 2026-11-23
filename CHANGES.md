@@ -1,5 +1,40 @@
 # Changes
 
+## Voice, shortcuts, and a tidier window (2026-11-23)
+
+### What works
+- **Dictate (Edit › Dictate, ⇧⌘D)** in every editor: script, notes, draft, dictionary book. A panel at the cursor shows the level and timer; with Apple the words appear as you speak. ⇧⌘D again (or Insert) puts the text in as one undo step, with spacing and sentence capitals fixed; Esc cancels.
+- **Import Voice Note…** (File menu and Universe › +): each recording becomes a Freeform Note named after its first sentence, tagged `voice-note`, with `recording:` naming the file. A bar shows progress and can cancel.
+- **Settings › Voice:** Apple (default, on-device, offline, nothing to download), Whisper (on-device, models downloaded there: Base, Small, Large Turbo) or OpenAI (API key in the keychain; `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `whisper-1`). Language: automatic or fixed.
+- **New package SlateVoice** with whisper.cpp vendored as `Vendor/whisper.xcframework`, embedded in the app. Microphone and speech permission strings, and the `audio-input` entitlement for the hardened runtime.
+- **Settings › Shortcuts:** every menu shortcut, grouped by menu, with a filter. Click and press keys to remap; clashes with another command or macOS are refused; Reset, None and Reset All. The menu bar and the area badges (⌘1–⌘4) follow at once.
+- **Contents** (the heading index) moved from the Universe sidebar to the fields side, under the infobox. It starts open. The sidebar lists notes only; the draft keeps its outline there.
+- **Window title:** the folder path under the area title is gone; the area's own icon (globe, script, storyboard, book) sits to its left.
+- **License:** CC BY-NC-SA 4.0 (`LICENSE`), with `THIRD_PARTY_NOTICES.md` for whisper.cpp, Yams, swift-markdown, swift-cmark and Courier Prime, and a License section in the README.
+- SPEC (new Voice section, Shortcuts, Contents, Milestone 13), README and DECISIONS 203–210 updated. README screenshots retaken.
+
+### Checked
+- Whisper end to end: a line spoken by `say` is transcribed by the vendored framework (opt-in test, `SLATE_WHISPER_MODEL=/path/ggml-tiny.en.bin`).
+- The Debug app launches with the framework under the hardened runtime.
+
+### Fixed before it shipped
+- ggml's Metal backend aborts at exit if a Whisper model is still loaded, so Slate frees it when quitting.
+
+### Not checked by hand
+- Speaking into the microphone (the permission prompts and the live panel) and an OpenAI call with a real key need trying on your Mac.
+
+## Developer ID signing, ready to switch on (2026-11-23)
+
+- **The release workflow signs and notarizes when it can.** With the signing secrets set, it imports the Developer ID certificate into a temporary keychain. It then signs with the hardened runtime, notarizes with an App Store Connect API key, staples the ticket and deletes the keychain. Without the secrets, releases stay ad-hoc signed, and the release notes say which kind each build is.
+- **`Scripts/release.sh`** notarizes with either a keychain profile or an API key (`NOTARY_KEY_PATH`, `NOTARY_KEY_ID`, `NOTARY_ISSUER_ID`).
+- **`Scripts/setup-signing.sh`:** the one-time setup. It finds your Developer ID identity, saves a `slate-notary` profile and checks it with Apple, then stores six GitHub secrets.
+- **Updater:** a Developer ID-signed Slate refuses an update signed by any other team.
+- **Waiting on you:**
+  1. Make the Developer ID Application certificate and an App Store Connect API key (steps in README › Distribution).
+  2. Run the setup script.
+
+  Your keychain has Apple Development and Apple Distribution certificates, but not Developer ID yet. The files in `~/Keys` are for Android and iOS and aren't needed.
+
 ## 0.9.0 beta: releases, updates and screenshots (2026-11-23)
 
 **Tests:** 440 pass: 306 in SlateCore, 107 in SlateUI and 27 in SlateExport (3 new). No compiler warnings.

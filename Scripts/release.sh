@@ -10,7 +10,13 @@
 #
 # For the full run, set these first (see README › Distribution):
 #   TEAM_ID          your 10-character Apple Developer team ID
-#   NOTARY_PROFILE   a keychain profile made with `xcrun notarytool store-credentials`
+# and either a notarytool keychain profile (on your Mac):
+#   NOTARY_PROFILE   made with `xcrun notarytool store-credentials`
+# or an App Store Connect API key (what the GitHub workflow uses):
+#   NOTARY_KEY_PATH  the AuthKey_XXXX.p8 file
+#   NOTARY_KEY_ID    its key ID
+#   NOTARY_ISSUER_ID the issuer ID shown above the keys in App Store Connect
+# SIGNING_KEYCHAIN optionally names the keychain holding the Developer ID identity.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -36,12 +42,21 @@ if [[ "$MODE" == "--adhoc" ]]; then
     cp -R "$ARCHIVE/Products/Applications/Slate.app" "$EXPORT/"
 else
     : "${TEAM_ID:?Set TEAM_ID to your Apple Developer team ID}"
-    : "${NOTARY_PROFILE:?Set NOTARY_PROFILE to a notarytool keychain profile}"
+    if [[ -n "${NOTARY_KEY_PATH:-}" ]]; then
+        : "${NOTARY_KEY_ID:?Set NOTARY_KEY_ID with NOTARY_KEY_PATH}"
+        : "${NOTARY_ISSUER_ID:?Set NOTARY_ISSUER_ID with NOTARY_KEY_PATH}"
+        NOTARY_AUTH=(--key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID")
+    else
+        : "${NOTARY_PROFILE:?Set NOTARY_PROFILE, or NOTARY_KEY_PATH/NOTARY_KEY_ID/NOTARY_ISSUER_ID}"
+        NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+    fi
+    KEYCHAIN_FLAG=()
+    if [[ -n "${SIGNING_KEYCHAIN:-}" ]]; then KEYCHAIN_FLAG=(OTHER_CODE_SIGN_FLAGS="--timestamp --keychain $SIGNING_KEYCHAIN"); fi
     echo "▸ Archiving (Release, Developer ID)…"
     xcodebuild -scheme Slate -configuration Release -destination 'generic/platform=macOS' \
         -archivePath "$ARCHIVE" archive \
         CODE_SIGN_IDENTITY="Developer ID Application" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="$TEAM_ID" \
-        OTHER_CODE_SIGN_FLAGS="--timestamp" "${STAMP[@]}" -quiet
+        OTHER_CODE_SIGN_FLAGS="--timestamp" "${KEYCHAIN_FLAG[@]}" "${STAMP[@]}" -quiet
     cat > "$OUT/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -58,7 +73,7 @@ PLIST
     xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportOptionsPlist "$OUT/ExportOptions.plist" -exportPath "$EXPORT" -quiet
     echo "▸ Notarizing (this can take a few minutes)…"
     ditto -c -k --keepParent "$EXPORT/Slate.app" "$OUT/Slate-notarize.zip"
-    xcrun notarytool submit "$OUT/Slate-notarize.zip" --keychain-profile "$NOTARY_PROFILE" --wait
+    xcrun notarytool submit "$OUT/Slate-notarize.zip" "${NOTARY_AUTH[@]}" --wait
     xcrun stapler staple "$EXPORT/Slate.app"
     rm "$OUT/Slate-notarize.zip"
 fi

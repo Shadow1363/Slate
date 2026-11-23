@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import Security
 import SlateCore
 import SwiftUI
 
@@ -142,7 +143,21 @@ public final class Updater {
             let bundle = Bundle(url: app), bundle.bundleIdentifier == Bundle.main.bundleIdentifier ?? "app.slate.mac"
         else { throw UpdateError.message("The download isn't a copy of Slate.") }
         try await run("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.path])
+        // A Developer ID copy only accepts an update signed by the same team.
+        if let team = teamID(of: Bundle.main.bundleURL), teamID(of: app) != team {
+            throw UpdateError.message("The download isn't signed by Slate's developer, so it wasn't installed.")
+        }
         return app
+    }
+
+    /// The signing team of an app, or nil when it's ad-hoc signed.
+    static func teamID(of app: URL) -> String? {
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(app as CFURL, [], &code) == errSecSuccess, let code else { return nil }
+        var info: CFDictionary?
+        guard SecCodeCopySigningInformation(code, SecCSFlags(rawValue: kSecCSSigningInformation), &info) == errSecSuccess,
+              let dictionary = info as? [String: Any] else { return nil }
+        return dictionary[kSecCodeInfoTeamIdentifier as String] as? String
     }
 
     /// Where the running app can be replaced, or why not.

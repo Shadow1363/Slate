@@ -140,10 +140,10 @@ struct SpotlightUITests {
     @Test func shortcutsParseAndClash() throws {
         let k = try #require(SearchShortcut("cmd+k"))
         #expect(k.display == "⌘K")
-        #expect(k.clash == nil)
+        #expect(Shortcuts.clash(k.text, excluding: Shortcuts.search, overrides: [:], search: "cmd+k") == nil)
         #expect(SearchShortcut("cmd+shift+space")?.display == "⇧⌘Space")
         #expect(SearchShortcut("k") == nil) // needs ⌘ or ⌃
-        #expect(SearchShortcut("cmd+s")?.clash == "Save")
+        #expect(Shortcuts.clash("cmd+s", excluding: Shortcuts.search, overrides: [:], search: "cmd+k") == "Save")
         #expect(SearchShortcut("ctrl+opt+f")?.text == "ctrl+opt+f")
     }
 }

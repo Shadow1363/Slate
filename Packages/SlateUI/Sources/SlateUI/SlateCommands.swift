@@ -9,68 +9,75 @@ public struct SlateCommands: Commands {
     @FocusedValue(\.projectActions) private var actions
     @Environment(\.openWindow) private var openWindow
     @AppStorage(SearchPreferences.shortcut) private var searchShortcut = SearchPreferences.defaultShortcut
+    @AppStorage(Shortcuts.overridesKey) private var shortcutOverrides = ""
 
     public init(model: SlateAppModel) {
         self.model = model
     }
 
     public var body: some Commands {
+        // Settings › Shortcuts can change any of these.
+        let key = ShortcutLookup(overridesJSON: shortcutOverrides, search: searchShortcut)
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") { model.updater.check(userInitiated: true) }
+                .keyboardShortcut(key("checkForUpdates"))
         }
         CommandGroup(replacing: .newItem) {
             // ⌘N makes a note inside a project window, a project elsewhere.
             if actions != nil {
                 Button(actions?.newItemTitle ?? "New Note…") { actions?.newNote() }
-                    .keyboardShortcut("n")
+                    .keyboardShortcut(key("newNote"))
                 Button("New Project…") {
                     openWindow(id: SlateWindowID.home)
                     model.showingNewProject = true
                 }
-                .keyboardShortcut("n", modifiers: [.command, .option])
+                .keyboardShortcut(key("newProject"))
             } else {
                 Button("New Project…") {
                     openWindow(id: SlateWindowID.home)
                     model.showingNewProject = true
                 }
-                .keyboardShortcut("n")
+                .keyboardShortcut(key("newNote"))
             }
             Button("Open Folder…") {
                 if let url = model.chooseProjectFolder() {
                     openWindow(id: SlateWindowID.project, value: url)
                 }
             }
-            .keyboardShortcut("o")
+            .keyboardShortcut(key("openFolder"))
+            Button("Import Voice Note…") { actions?.importVoiceNote() }
+                .keyboardShortcut(key("importVoiceNote"))
+                .disabled(actions == nil)
             Button("Import…") {
                 if let url = model.importProject() {
                     openWindow(id: SlateWindowID.project, value: url)
                 }
             }
-            .keyboardShortcut("i", modifiers: [.command, .shift])
+            .keyboardShortcut(key("import"))
             Divider()
             Button("Project Library") {
                 openWindow(id: SlateWindowID.home)
             }
-            .keyboardShortcut("l", modifiers: [.command, .shift])
+            .keyboardShortcut(key("projectLibrary"))
         }
         CommandGroup(replacing: .saveItem) {
             Button("Save") { actions?.save() }
-                .keyboardShortcut("s")
+                .keyboardShortcut(key("save"))
                 .disabled(actions == nil)
         }
         CommandGroup(replacing: .printItem) {
             // Print stays on ⌥⌘P, where it has always been in Slate.
             Button("Print Script…") { actions?.printScript() }
-                .keyboardShortcut("p", modifiers: [.command, .option])
+                .keyboardShortcut(key("printScript"))
                 .disabled(actions == nil)
         }
         CommandMenu("Script") {
             Button("Toggle Page View") { actions?.togglePageView() }
-                .keyboardShortcut("\\", modifiers: [.command, .shift])
+                .keyboardShortcut(key("togglePageView"))
                 .disabled(actions == nil)
             Menu("Publish") {
                 Button("PDF") { actions?.publish(.pdf) }
-                    .keyboardShortcut("e", modifiers: [.command, .shift])
+                    .keyboardShortcut(key("publishPDF"))
                 ForEach(ExportFormat.allCases.filter { $0.isScript && $0 != .pdf }) { format in
                     Button(format.title) { actions?.publish(format) }
                 }
@@ -98,10 +105,10 @@ public struct SlateCommands: Commands {
                     }
                     Divider()
                     Button("Next Film") { actions.script(.nextFilm) }
-                        .keyboardShortcut("]", modifiers: [.command, .control])
+                        .keyboardShortcut(key("nextFilm"))
                         .disabled(actions.films.count < 2)
                     Button("Previous Film") { actions.script(.previousFilm) }
-                        .keyboardShortcut("[", modifiers: [.command, .control])
+                        .keyboardShortcut(key("previousFilm"))
                         .disabled(actions.films.count < 2)
                     Divider()
                     Button("New Film…") { actions.script(.newFilm) }
@@ -113,40 +120,40 @@ public struct SlateCommands: Commands {
             }
             .disabled(actions == nil)
             Button("Save Snapshot…") { actions?.script(.saveSnapshot) }
-                .keyboardShortcut("s", modifiers: [.command, .shift])
+                .keyboardShortcut(key("saveSnapshot"))
                 .disabled(actions == nil)
             Button("Snapshots…") { actions?.script(.showSnapshots) }
                 .disabled(actions == nil)
             Divider()
             Button("Add To-do…") { actions?.addTodo() }
-                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .keyboardShortcut(key("addTodo"))
                 .disabled(actions == nil)
             Button("Add Margin Note…") { actions?.addMarginNote() }
-                .keyboardShortcut("t", modifiers: [.command, .option])
+                .keyboardShortcut(key("addMarginNote"))
                 .disabled(actions == nil)
             Button("Show All To-dos") { actions?.showAllTodos() }
                 .disabled(actions == nil)
             Button("Toggle Margin") { actions?.toggleMargin() }
-                .keyboardShortcut("m", modifiers: [.command, .shift])
+                .keyboardShortcut(key("toggleMargin"))
                 .disabled(actions == nil)
             Divider()
             Button("Jump to Scene…") { actions?.jumpToScene() }
-                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .keyboardShortcut(key("jumpToScene"))
                 .disabled(actions == nil)
             Divider()
             Button("Move Scene Up") { actions?.moveScene(-1) }
-                .keyboardShortcut(.upArrow, modifiers: [.command, .control])
+                .keyboardShortcut(key("moveSceneUp"))
                 .disabled(actions == nil)
             Button("Move Scene Down") { actions?.moveScene(1) }
-                .keyboardShortcut(.downArrow, modifiers: [.command, .control])
+                .keyboardShortcut(key("moveSceneDown"))
                 .disabled(actions == nil)
         }
         CommandMenu("Storyboard") {
             Button("Watch Animatic") { actions?.watchAnimatic() }
-                .keyboardShortcut(.return, modifiers: [.command, .option])
+                .keyboardShortcut(key("watchAnimatic"))
                 .disabled(actions == nil)
             Button("New Sketch…") { actions?.newSketch() }
-                .keyboardShortcut("k", modifiers: [.command, .shift])
+                .keyboardShortcut(key("newSketch"))
                 .disabled(actions == nil)
             Divider()
             Button("Export Animatic (.mov)") { actions?.publish(.animatic) }
@@ -160,19 +167,22 @@ public struct SlateCommands: Commands {
         }
         CommandGroup(after: .textEditing) {
             Divider()
-            let shortcut = SearchShortcut(searchShortcut) ?? SearchShortcut(SearchPreferences.defaultShortcut)!
             Button("Search…") { actions?.search("") }
-                .keyboardShortcut(shortcut.key, modifiers: shortcut.modifiers)
+                .keyboardShortcut(key(Shortcuts.search) ?? KeyboardShortcut("k"))
                 .disabled(actions == nil)
             Button("Search Text…") { actions?.search("!text ") }
-                .keyboardShortcut("f", modifiers: [.command, .shift])
+                .keyboardShortcut(key("searchText"))
                 .disabled(actions == nil)
             Button("Insert Link") {
                 NSApp.sendAction(#selector(SlateTextView.insertWikiLink(_:)), to: nil, from: nil)
             }
-            .keyboardShortcut("k", modifiers: [.command, .option])
+            .keyboardShortcut(key("insertLink"))
+            Button("Dictate") {
+                NSApp.sendAction(#selector(SlateTextView.toggleSlateDictation(_:)), to: nil, from: nil)
+            }
+            .keyboardShortcut(key("dictate"))
             Button("Define Selection") { actions?.defineSelection() }
-                .keyboardShortcut("d", modifiers: [.command, .option, .control])
+                .keyboardShortcut(key("defineSelection"))
                 .disabled(actions == nil)
         }
         CommandGroup(replacing: .help) {
@@ -184,14 +194,14 @@ public struct SlateCommands: Commands {
         CommandGroup(before: .sidebar) {
             ForEach(ProjectArea.allCases) { area in
                 Button(area.title) { actions?.selectArea(area) }
-                    .keyboardShortcut(KeyEquivalent(Character(String(area.shortcutNumber))), modifiers: .command)
+                    .keyboardShortcut(key("area." + area.rawValue))
                     .disabled(actions == nil)
             }
             Button("Toggle Inspector") { actions?.toggleInspector() }
-                .keyboardShortcut("0", modifiers: [.command, .option])
+                .keyboardShortcut(key("toggleInspector"))
                 .disabled(actions == nil)
             Toggle("Focus Mode", isOn: Binding(get: { actions?.focusMode ?? false }, set: { _ in actions?.script(.toggleFocus) }))
-                .keyboardShortcut(.return, modifiers: [.command, .shift])
+                .keyboardShortcut(key("focusMode"))
                 .disabled(actions == nil)
             Toggle("Typewriter Scrolling", isOn: Binding(get: { actions?.typewriter ?? false }, set: { _ in actions?.script(.toggleTypewriter) }))
                 .disabled(actions == nil)

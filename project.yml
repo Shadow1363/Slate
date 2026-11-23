@@ -21,6 +21,8 @@ packages:
     path: Packages/SlateUI
   SlateExport:
     path: Packages/SlateExport
+  SlateVoice:
+    path: Packages/SlateVoice
 
 targets:
   Slate:
@@ -36,6 +38,7 @@ targets:
       - package: SlateCore
       - package: SlateUI
       - package: SlateExport
+      - package: SlateVoice
     info:
       path: App/Info.plist
       properties:
@@ -46,6 +49,8 @@ targets:
         LSMinimumSystemVersion: "15.0"
         NSHumanReadableCopyright: ""
         NSDocumentsFolderUsageDescription: Slate keeps new projects in Documents/Slate.
+        NSMicrophoneUsageDescription: Slate listens while you dictate (Edit › Dictate) and types what you say.
+        NSSpeechRecognitionUsageDescription: Slate turns your dictation and voice notes into text on this Mac.
         # owner/repo on GitHub whose releases Slate updates from.
         SlateUpdateRepository: Shadow1363/Slate
     settings:
@@ -56,6 +61,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         PRODUCT_BUNDLE_IDENTIFIER: app.slate.mac
         ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: App/Slate.entitlements
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
@@ -76,3 +82,4 @@ schemes:
         - package: SlateCore/SlateCoreTests
         - package: SlateUI/SlateUITests
         - package: SlateExport/SlateExportTests
+        - package: SlateVoice/SlateVoiceTests

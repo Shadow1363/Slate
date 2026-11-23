@@ -10,9 +10,10 @@ let package = Package(
     dependencies: [
         .package(path: "../SlateCore"),
         .package(path: "../SlateExport"),
+        .package(path: "../SlateVoice"),
     ],
     targets: [
-        .target(name: "SlateUI", dependencies: ["SlateCore", "SlateExport"]),
+        .target(name: "SlateUI", dependencies: ["SlateCore", "SlateExport", "SlateVoice"]),
         .testTarget(name: "SlateUITests", dependencies: ["SlateUI", "SlateCore"]),
     ]
 )
