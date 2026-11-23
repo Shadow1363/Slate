@@ -1,5 +1,14 @@
 # Changes
 
+## Whisper is an optional download; beta.3 launch crash fixed (2026-11-23)
+
+- **0.9.0-beta.3 couldn't start.** The app linked `whisper.framework`, and the hardened runtime refused it because the app and framework were ad-hoc signed separately ("different Team IDs").
+- **Whisper is no longer part of Slate.** Settings › Voice › Whisper engine › **Download** (4 MB) installs it, checked against a SHA-256 built into Slate. **Remove** deletes it. Until then Slate never touches it, and Apple (the default) and OpenAI work without it.
+- **`Scripts/publish-whisper.sh`** packages the engine with its MIT license and uploads it as the `whisper-1` release (`--upload`, which refuses a zip whose checksum Slate doesn't expect).
+- **Ad-hoc and Debug builds** have no hardened runtime. **`Scripts/release.sh`** now launches the packaged app and fails if it quits, so a build that can't start is never published.
+- Tests: the packaged zip installs and a tampered one is refused; Whisper transcribes through the run-time loader.
+- **Waiting on you:** run `Scripts/publish-whisper.sh --upload` once, so the Download button has something to fetch.
+
 ## Voice, shortcuts, and a tidier window (2026-11-23)
 
 ### What works

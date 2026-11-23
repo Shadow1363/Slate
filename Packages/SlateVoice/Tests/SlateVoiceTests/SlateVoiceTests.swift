@@ -63,6 +63,12 @@ struct SettingsTests {
         #expect(VoiceSettings.current(defaults).isoLanguage == "pt")
     }
 
+    @Test func whisperIsOptional() {
+        #expect(WhisperEngine.downloadURL.absoluteString
+            == "https://github.com/Shadow1363/Slate/releases/download/whisper-\(WhisperEngine.version)/whisper-framework-\(WhisperEngine.version).zip")
+        #expect(WhisperEngine.sha256.count == 64)
+    }
+
     @Test func modelURLs() {
         #expect(WhisperModel.base.downloadURL.absoluteString
             == "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin")
@@ -102,9 +108,46 @@ struct WhisperEndToEndTests {
         say.waitUntilExit()
         defer { try? FileManager.default.removeItem(at: audio) }
         let samples = try AudioSamples.load(audio)
+        // The framework users download, straight from Vendor/.
+        WhisperTranscriber.frameworkBinary = URL(filePath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Vendor/whisper.xcframework/macos-arm64_x86_64/whisper.framework/Versions/A/whisper")
         let text = try await WhisperTranscriber.shared.transcribe(samples, modelPath: model, language: "en")
         WhisperTranscriber.shared.unload()
         #expect(text.lowercased().contains("lighthouse"))
         #expect(text.lowercased().contains("midnight"))
+    }
+}
+
+/// Runs when `Scripts/publish-whisper.sh` has packaged the engine: the zip
+/// users download must match the checksum Slate expects and unpack into place.
+@Suite("Whisper engine download")
+struct WhisperEngineInstallTests {
+    static let zip = URL(filePath: #filePath)
+        .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        .deletingLastPathComponent().deletingLastPathComponent()
+        .appending(path: "build/whisper/whisper-framework-\(WhisperEngine.version).zip")
+
+    @Test(.enabled(if: FileManager.default.fileExists(atPath: zip.path)))
+    func packagedZipInstalls() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "slate-whisper-\(UUID())", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        WhisperModel.folderOverride = folder
+        defer {
+            WhisperModel.folderOverride = nil
+            try? FileManager.default.removeItem(at: folder)
+        }
+        #expect(!WhisperEngine.isInstalled)
+        try WhisperEngine.install(zip: Self.zip)
+        #expect(WhisperEngine.isInstalled)
+        WhisperEngine.uninstall()
+        #expect(!WhisperEngine.isInstalled)
+    }
+
+    @Test func aWrongFileIsRefused() throws {
+        let bogus = FileManager.default.temporaryDirectory.appending(path: "bogus-\(UUID()).zip")
+        try Data("not the engine".utf8).write(to: bogus)
+        defer { try? FileManager.default.removeItem(at: bogus) }
+        #expect(throws: VoiceError.self) { try WhisperEngine.install(zip: bogus) }
     }
 }

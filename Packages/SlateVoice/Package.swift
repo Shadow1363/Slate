@@ -8,9 +8,11 @@ let package = Package(
         .library(name: "SlateVoice", targets: ["SlateVoice"]),
     ],
     targets: [
-        // whisper.cpp, built as a universal macOS framework (Metal + Accelerate).
-        .binaryTarget(name: "whisper", path: "Vendor/whisper.xcframework"),
-        .target(name: "SlateVoice", dependencies: ["whisper"]),
+        // whisper.cpp isn't linked: the user downloads it from Settings › Voice
+        // and CWhisper opens it at run time. Vendor/whisper.xcframework is the
+        // source of that download (Scripts/publish-whisper.sh) and of its headers.
+        .target(name: "CWhisper"),
+        .target(name: "SlateVoice", dependencies: ["CWhisper"]),
         .testTarget(name: "SlateVoiceTests", dependencies: ["SlateVoice"]),
     ]
 )

@@ -41,36 +41,58 @@ public enum WhisperModel: String, CaseIterable, Identifiable, Sendable {
 
     /// `~/Library/Application Support/Slate/Whisper`.
     public static var folder: URL {
-        URL.applicationSupportDirectory.appending(path: "Slate/Whisper", directoryHint: .isDirectory)
+        folderOverride ?? URL.applicationSupportDirectory.appending(path: "Slate/Whisper", directoryHint: .isDirectory)
     }
+
+    /// Tests install into a temporary folder instead.
+    nonisolated(unsafe) static var folderOverride: URL?
 
     public var localURL: URL { Self.folder.appending(path: fileName) }
 
     public var isDownloaded: Bool { FileManager.default.fileExists(atPath: localURL.path) }
 }
 
-/// Downloads a Whisper model, reporting progress. One download at a time.
+/// Something Settings › Voice can download for Whisper.
+public enum WhisperDownload: Equatable, Sendable {
+    case engine
+    case model(WhisperModel)
+}
+
+/// Downloads the Whisper engine or a model, reporting progress. One at a time.
 @MainActor
 @Observable
 public final class WhisperModelDownloads {
-    public private(set) var downloading: WhisperModel?
+    public private(set) var downloading: WhisperDownload?
     public private(set) var progress: Double = 0
     public private(set) var lastError: String?
-    /// Bumped when a model appears or disappears, so views re-read `isDownloaded`.
+    /// Bumped when something appears or disappears, so views re-read `isDownloaded` / `isInstalled`.
     public private(set) var revision = 0
 
     private var task: Task<Void, Never>?
 
     public init() {}
 
-    public func download(_ model: WhisperModel) {
+    public func download(_ item: WhisperDownload) {
         guard downloading == nil else { return }
-        downloading = model
+        downloading = item
         progress = 0
         lastError = nil
         task = Task {
             do {
-                try await fetch(model)
+                switch item {
+                case .engine:
+                    let zip = try await fetch(WhisperEngine.downloadURL)
+                    defer { try? FileManager.default.removeItem(at: zip) }
+                    try FileManager.default.createDirectory(at: WhisperModel.folder, withIntermediateDirectories: true)
+                    try await Task.detached(priority: .userInitiated) { try WhisperEngine.install(zip: zip) }.value
+                case .model(let model):
+                    let file = try await fetch(model.downloadURL)
+                    defer { try? FileManager.default.removeItem(at: file) }
+                    try FileManager.default.createDirectory(at: WhisperModel.folder, withIntermediateDirectories: true)
+                    try? FileManager.default.removeItem(at: model.localURL)
+                    try FileManager.default.moveItem(at: file, to: model.localURL)
+                }
+                progress = 1
             } catch is CancellationError {
             } catch {
                 lastError = error.localizedDescription
@@ -89,14 +111,20 @@ public final class WhisperModelDownloads {
         revision += 1
     }
 
-    private func fetch(_ model: WhisperModel) async throws {
+    public func uninstallEngine() {
+        WhisperEngine.uninstall()
+        revision += 1
+    }
+
+    /// Downloads to a temporary file and returns it.
+    private func fetch(_ url: URL) async throws -> URL {
         let delegate = DownloadDelegate { [weak self] fraction in
             Task { @MainActor in self?.progress = fraction }
         }
         let session = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
-        let task = session.downloadTask(with: model.downloadURL)
-        let downloaded: URL = try await withTaskCancellationHandler {
+        let task = session.downloadTask(with: url)
+        return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 delegate.finish = { continuation.resume(with: $0) }
                 task.resume()
@@ -104,11 +132,6 @@ public final class WhisperModelDownloads {
         } onCancel: {
             task.cancel()
         }
-        defer { try? FileManager.default.removeItem(at: downloaded) }
-        try FileManager.default.createDirectory(at: WhisperModel.folder, withIntermediateDirectories: true)
-        try? FileManager.default.removeItem(at: model.localURL)
-        try FileManager.default.moveItem(at: downloaded, to: model.localURL)
-        progress = 1
     }
 }
 

@@ -34,10 +34,13 @@ mkdir -p "$OUT"
 xcodegen generate --quiet
 
 if [[ "$MODE" == "--adhoc" ]]; then
+    # No hardened runtime: it's only for notarization, which an ad-hoc build
+    # can't have, and its library validation would refuse code signed apart
+    # from the app (such as the optional Whisper engine).
     echo "▸ Archiving (Release, ad-hoc signed)…"
     xcodebuild -scheme Slate -configuration Release -destination 'generic/platform=macOS' \
         -archivePath "$ARCHIVE" archive \
-        CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= "${STAMP[@]}" -quiet
+        CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= ENABLE_HARDENED_RUNTIME=NO "${STAMP[@]}" -quiet
     mkdir -p "$EXPORT"
     cp -R "$ARCHIVE/Products/Applications/Slate.app" "$EXPORT/"
 else
@@ -84,6 +87,21 @@ codesign --verify --deep --strict --verbose=2 "$APP"
 codesign -dv "$APP" 2>&1 | grep -E "Signature|flags|TeamIdentifier" || true
 if [[ "$MODE" != "--adhoc" ]]; then
     spctl -a -t exec -vv "$APP"
+fi
+
+# A build that can't start (a missing or refused library) dies within a second or two.
+echo "▸ Checking it launches…"
+"$APP/Contents/MacOS/Slate" -ApplePersistenceIgnoreState YES >/dev/null 2>&1 &
+LAUNCHED=$!
+sleep 8
+if kill -0 "$LAUNCHED" 2>/dev/null; then
+    kill "$LAUNCHED"
+    wait "$LAUNCHED" 2>/dev/null || true
+    echo "✓ Launches"
+else
+    wait "$LAUNCHED" && status=0 || status=$?
+    echo "✗ Slate quit at launch (exit $status)"
+    exit 1
 fi
 
 ZIP="$OUT/Slate-$VERSION.zip"

@@ -293,7 +293,7 @@ Fixtures/Snapshots      Golden page layouts
 - **Import Voice Note…** (File menu, or Universe › +) turns each recording (m4a, mp3, wav, aiff…) into a Freeform Note named after its first sentence, tagged `voice-note`, with `recording:` naming the file.
 - **Settings › Voice** picks who transcribes:
   - **Apple** (default, recommended): on this Mac, offline, nothing to download. If macOS says the language isn't available offline, turn on Dictation in System Settings › Keyboard once.
-  - **Whisper:** on this Mac with whisper.cpp. Download a model there first (Base 142 MB, Small 466 MB, Large Turbo 547 MB).
+  - **Whisper:** on this Mac with whisper.cpp. It's optional and not part of Slate: click **Download** next to "Whisper engine" (4 MB), then download a model (Base 142 MB, Small 466 MB, Large Turbo 547 MB). **Remove** takes it away again.
   - **OpenAI:** online; paste an API key (kept in your keychain). Up to 25 MB per recording.
 - macOS asks for microphone and speech recognition permission the first time.
 
