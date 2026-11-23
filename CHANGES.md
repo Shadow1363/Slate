@@ -1,5 +1,172 @@
 # Changes
 
+## 0.9.0 beta: releases, updates and screenshots (2026-11-23)
+
+**Tests:** 440 pass: 306 in SlateCore, 107 in SlateUI and 27 in SlateExport (3 new). No compiler warnings.
+
+### What works
+- **Version 0.9.0 (beta).** The marketing version is in `VERSION`, and `project.yml` reads it through `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`. `Scripts/release.sh` takes `SLATE_VERSION` and `SLATE_BUILD`.
+- **GitHub Actions:** `.github/workflows/release.yml`.
+  - Every push to `main` installs XcodeGen, runs every test, packages Slate (ad-hoc signed) and publishes a prerelease named `v0.9.0-beta.<run number>`, with install notes.
+  - The `dev` branch never releases.
+- **Auto-update:**
+  - Slate checks GitHub Releases at launch and downloads a newer version in the background. It unpacks it and checks its bundle ID and signature, then shows **Restart to Update**.
+  - Restarting saves open projects and quits. A small script replaces the app (putting the old one back if the copy fails) and opens the new version.
+  - **Slate › Check for Updates…** checks on demand.
+  - **Settings › General › Updates:** check at launch, download automatically and include betas (all on), plus Check Now.
+  - It refuses to update a copy macOS is running from a temporary location, or one in a folder you can't write to, and says why.
+- **README screenshots** of the showcase (script, page view, storyboard, a note, canvas, map, timeline, search), taken by the new `Scripts/screenshots.sh`. It drives a Debug-only screenshot tour under its own bundle ID.
+
+### Fixed
+- **A canvas or map could open at 5–10%,** squeezed into a corner, when its view was first laid out tiny. It now fits once the view has its real size.
+
+### Stubbed or not yet
+- **There's no GitHub repository yet:**
+  1. Create one (`gh repo create Shadow1363/Slate --public --source . --push`, or change `SlateUpdateRepository`).
+  2. Push `main`.
+
+  The first push makes the first release. Updates need the releases to be public.
+- **Runner Xcode:** the workflow uses the `macos-26` runner and its newest Xcode. Slate is built here with Xcode 27.2; if the runner's Xcode is too old for something, the Test step will say so.
+- **Builds are ad-hoc signed,** so the first launch still needs Privacy & Security › Open Anyway. Later updates replace the app in place and open without asking.
+- **Not checked by hand:** the update banner and a real update. That needs two releases.
+
+## Universe heading index (2026-11-23)
+
+**Tests:** 437 pass: 303 in SlateCore, 107 in SlateUI and 27 in SlateExport (8 new). No compiler warnings.
+
+### What works
+- **Headings in the sidebar.** Every Universe note with headings gets a disclosure triangle, and its headings open as a nested tree under it. The rough draft uses the same tree instead of the old flat list.
+  - Headings nest under the nearest heading above with a lower level, even across skipped levels.
+  - A note's H1 that only repeats its name is left out.
+- **Clicking a heading** opens the note at that heading.
+- **Triangles:** a click opens or closes one level; ⌥-click does every level below; right-click › Expand All / Collapse All.
+- **Remembered** per project, between launches. Notes start closed and the draft starts open. Renaming a note keeps its state, and so does editing elsewhere in it, because each heading is identified by its title path rather than its line.
+- Draft headings keep Turn into Scene. Any heading can be dragged onto a canvas.
+
+### Showcase
+- Juno's Ghost section now has `### 1987` › `#### The bell` and `### Now`. The draft's act two has `### The clock` and `### The price of a turn`. SHOWCASE.md has a checklist.
+
+### Stubbed or not yet
+- Headings come from the link index, so a new heading appears in the sidebar about a quarter of a second after you stop typing.
+- Not checked by hand: the indentation and triangles in the sidebar.
+
+## Search, tags and an optional draft (2026-11-23)
+
+**Build:** Debug builds with no compiler warnings.
+**Tests:** 429 pass: 298 in SlateCore, 104 in SlateUI and 27 in SlateExport (13 new).
+
+### What works
+- **Search (⌘K)** is one Spotlight-style panel over the project window. It replaces Quick Open (⌘P) and Find in Project (⇧⌘F now opens Search as `!text `).
+  - **Plain words** find notes by name and alias, scenes, films, dictionary words, timeline events, map places, canvases and files, then matching lines of text.
+  - **Bangs** search one part. Template bangs: `!c` `!l` `!r` `!f` `!i` `!e` `!n`. Area bangs: `!u` `!s` `!film` `!act` `!cue` `!x` `!b` `!todo` `!mn` `!tl` `!m` `!cv` `!d` `!w` `!t` `!file` `!text` (or `/`). They can go anywhere in the query and combine.
+  - **Filters:**
+    - `#tag`;
+    - any note field (`role:lead`);
+    - scene fields (`time:`, `place:`, `int:`, `ext:`, `color:`, `film:2`, `long:`);
+    - frame fields (`shot:`, `move:`, `empty:`);
+    - to-do fields (`due:`, `done:`);
+    - `"exact words"`.
+  - **Suggestions:** typing `!` shows the bangs and `#` shows tags with counts; Tab completes them. An empty field shows recent searches.
+  - **Opening a result** goes to the right area and film:
+    - a scene or speech, at its line;
+    - a word in the Dictionary;
+    - a timeline event or map place, selected on its timeline or map;
+    - a frame, selected in the Storyboard;
+    - a to-do, in the margin.
+  - **Settings › Search:**
+    - record a different shortcut (clashes with Slate's own are refused);
+    - rename area bangs;
+    - Reset.
+
+    Templates get a **Search bang** field, checked for duplicates.
+  - **Insert Link** moved to ⌥⌘K (`[[` still works).
+- **Tags:**
+  - a tag field under every note's name;
+  - **Tags…** for a scene in the Script navigator, with tags shown under the scene heading;
+  - a **Tags** section in the Universe sidebar (click to search, right-click to Rename… or Remove from All…).
+
+  Tags are normalised ("Good Guy" → `good-guy`). Scene tags live in the hidden scene tag and never print.
+- **The rough draft is optional.** Right-click Draft › Move to Trash; the section disappears, and the Universe + menu offers **New Rough Draft**.
+
+### Showcase
+- Tidewater's characters are tagged: Juno `protagonist, good`; Ellis `good`; Ida `antagonist`; Tobias `mentor, good`.
+- The 1987 scenes are tagged `1987` (`storm` for the two storm scenes), and Slack Water's market scene is `mystery`.
+- SHOWCASE.md has a Search checklist. ShowcaseTests cover tags, bangs and filters across both films.
+
+### Stubbed or not yet
+- **Not checked by hand:** the panel's look, keyboard handling (↑/↓ inside the field), the shortcut recorder and the tag field need trying in the app.
+- **The shortcut works in project windows only;** it isn't a system-wide hotkey.
+- **Matching:**
+  - whole words find results as written; letters in order (`mrv`) only when nothing matches exactly;
+  - full text uses the same scan as before, which is fast for normal projects.
+- **No tags yet** on storyboard frames or dictionary words.
+
+### Please try
+1. ⌘K, type `!`: the list of bangs. Try `!c #good`, `!t good protagonist`, `!cue juno`, `!s time:night`, `!film slack !s`, `!b empty:`, `/always empty`.
+2. Open a character, add a tag under the name; right-click a scene › Tags….
+3. Universe sidebar › Tags › right-click › Rename….
+4. Settings › Search: record ⌃Space, then use it.
+5. On a copy: right-click Draft › Move to Trash, then + › New Rough Draft.
+
+## Templates: nothing fixed (2026-11-23)
+
+**Build:** Debug builds with no compiler warnings.
+**Tests:** 416 pass: 290 in SlateCore, 99 in SlateUI and 27 in SlateExport (4 new).
+
+### What works
+- **Delete any template**, including Slate's Character, Location, Rule, Faction, Item, Event and Freeform. Deleting a built-in writes a short `removed: true` file in `templates/` (this project) or in the global templates folder (every project, chosen with "Saved in"). Your own templates just go to the Trash.
+- **Restore:** deleted templates are listed under **Deleted** in the Templates window, each with a Restore button. Deleting the `removed: true` file in Finder does the same.
+- **Built-ins edit like any template.** "Save a Copy" is now plain **Save**. Your version replaces Slate's, and **Revert to Built-in** brings Slate's back.
+- **Fields are all editable:**
+  - the name field's key and type can change, and it can be removed (the next text field becomes the name);
+  - any text field can be the **Name field**, not just `name` or `title`.
+- **Renaming a template's type** works even when notes use it, and rewrites `type:` in each of those notes.
+- **Notes outlive their template.** Notes of a deleted type keep every field and stay in the Universe sidebar under their folder.
+- **With every template deleted,** New Note offers what's left. The Templates window explains how to make or restore one.
+
+### Still fixed, on purpose
+- Field keys `type`, `id`, `layout` and `infobox` are reserved, because Slate writes them in every note.
+- Script autocomplete and spell check still read character names from `universe/characters/`. If you move Character notes to another folder, the script won't know those names.
+
+### Please try
+1. Universe › + › Edit Templates…: select Faction › Delete Template. It moves to Deleted; Restore it.
+2. Rename Location's type to `place`, save, and open a location note: it says `type: place`.
+3. In Character, add a text field `callsign`, pick it as the Name field, then remove `name`.
+
+## Sagas: several films in one project (2026-11-23)
+
+**Build:** Debug builds with no compiler warnings.
+**Tests:** 412 pass: 288 in SlateCore, 97 in SlateUI and 27 in SlateExport (14 new).
+**Dependencies:** none added.
+
+### What works
+- **One project, many films.** Each film is a folder in `script/`: `script/01 Tidewater/`, `script/02 Slack Water/`… Each has its own act files, title page, `production.json` (locked numbers, pages, revisions), `revisions/` and `.snapshots/`. The folder's number sets the saga's order and the rest is the film's title.
+- **Shared by every film:** the universe, the dictionary, the margin's to-dos and notes, the storyboard folder, timelines, maps and canvases.
+- **New Film…** comes from Script › Film, the navigator's film button, or the film bar's ⋯ menu. In a one-film project, the first New Film moves the existing script (act files, title page, production lock, revisions, snapshots) into `script/01 <project name>/`. It asks first, and canvas cards pointing at the old act files are updated. Projects you never split stay exactly as they were.
+- **Switching films:** in a saga, a film bar above the Script and Storyboard navigators picks the film; both areas follow it. Script › Film lists them, and ⌃⌘] / ⌃⌘[ step through. Following a link, a scene card, a to-do or a timeline event to another film's scene switches to that film.
+- **Scene IDs are unique across the saga.** A new heading in film 2 continues after film 1's highest ID. A scene pasted or copied from another film gets a fresh ID, and the earlier film keeps the original. So each storyboard folder, to-do and timeline event points at exactly one scene.
+- **Storyboard:** each film's scenes become that film's rows. Boards of the other films aren't treated as "Scene Missing" and are never tidied into `orphans/`. Watch and Export Animatic and Boards PDF cover the open film.
+- **Per film:** scene numbers and page counts start at 1 in each film. Publish, Print, reports and sides use the film's title page, and files in `exports/` are named after the film.
+- **Saga-wide:** the timeline's Story order runs through every film in order, and its scene picker shows "Film · HEADING". Margin to-dos sort film by film. Home cards read "2 films · 132 pp · 2:12:00".
+- **Rename Film…** keeps the number. **Move Film to Trash…** asks first; that film's boards move to `orphans/` when the project closes.
+
+### Showcase
+- Tidewater is now a two-film saga. The original script moved to `script/01 Tidewater/` with its production lock, Blue revision and snapshot. `script/02 Slack Water/` is a three-scene sequel (s012–s014) with one board (s012), a to-do (@s013) and a link to The Drowned Market. The story-web canvas cards point at the new paths.
+- `SHOWCASE.md` has a Sagas checklist. ShowcaseTests check both films, that IDs don't overlap, the shared boards and to-dos, and the Home summary.
+
+### Stubbed or not yet
+- **Reordering films** means renumbering their folders in Finder. Slate picks the new order up straight away.
+- **Quick Open** lists the open film's scenes; other films' act files are listed as files and open in their film.
+- **Publish covers one film at a time.** There's no saga-wide PDF or report yet.
+- **The first film can't be renamed** in a project that hasn't been split; it uses the project's name.
+- **Not checked by hand:** the film bar, the menus and the New Film prompt need a look in the running app.
+
+### Please try
+1. Open a fresh Sample Film: the Script navigator shows the film bar with "1. Tidewater" and "2. Slack Water". Switch films, then open the Storyboard: s012 has its frame and Tidewater's boards are untouched.
+2. In Slack Water, type a new scene heading: its ID is s015.
+3. On a copy of one of your one-film projects, Script › Film › New Film…, then check the folders in Finder.
+4. Timeline: Story order now runs through both films.
+
 ## Milestone 12 — Polish and ship (2026-11-23)
 
 **Build:** Debug and Release build with no compiler warnings.

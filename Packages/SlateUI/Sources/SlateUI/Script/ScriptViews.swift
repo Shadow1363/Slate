@@ -50,6 +50,9 @@ struct ScriptNavigator: View {
                                         }
                                     }
                                 }
+                                if let session, let id = scene.scene.sceneID {
+                                    Button(scene.scene.tags.isEmpty ? "Tags…" : "Tags (\(scene.scene.tags.count))…") { session.sheet = .sceneTags(id) }
+                                }
                                 Divider()
                                 if let session {
                                     Button("Show in Storyboard") {
@@ -74,11 +77,14 @@ struct ScriptNavigator: View {
                 ContentUnavailableView {
                     Label("No Script Yet", systemImage: "text.page")
                 } description: {
-                    Text("Act files in script/ join in name order.")
+                    Text("Act files in \(workspace.film.folder)/ join in name order.")
                 } actions: {
                     Button("Create script.md") { workspace.createScriptFile() }
                 }
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            FilmBar(workspace: workspace)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
@@ -89,7 +95,14 @@ struct ScriptNavigator: View {
                         Label("New Act File", systemImage: "doc.badge.plus")
                     }
                     .buttonStyle(.borderless)
-                    .help("Add the next act file to script/")
+                    .help("Add the next act file to \(workspace.film.folder)/")
+                    Button {
+                        workspace.promptForNewFilm()
+                    } label: {
+                        Label("New Film", systemImage: "film.stack")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Add another film to this project, for a saga or series")
                     Spacer()
                     Button {
                         workspace.showingSnapshots = true
@@ -175,10 +188,17 @@ struct SceneRow: View {
                 Text("\(isExact ? "" : "~")\(ScriptEstimate.formatEighths(scene.eighths)) pg · \(ScriptEstimate.formatDuration(scene.duration))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if !scene.scene.tags.isEmpty {
+                    Text(scene.scene.tags.map { "#" + $0 }.joined(separator: " "))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                }
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Scene \(scene.label), \(scene.scene.heading)" + (scene.scene.color.map { ", \($0.title)" } ?? ""))
+        .accessibilityLabel("Scene \(scene.label), \(scene.scene.heading)" + (scene.scene.color.map { ", \($0.title)" } ?? "")
+                            + (scene.scene.tags.isEmpty ? "" : ", tagged " + scene.scene.tags.joined(separator: ", ")))
     }
 }
 
@@ -212,8 +232,8 @@ struct ScriptDetail: View {
 
     var body: some View {
         if workspace.showingTitlePage {
-            DocumentPane(store: workspace.store, relativePath: ScriptWorkspace.titlePagePath, close: {})
-                .id(ScriptWorkspace.titlePagePath)
+            DocumentPane(store: workspace.store, relativePath: workspace.titlePagePath, close: {})
+                .id(workspace.titlePagePath)
         } else if workspace.showingPages {
             PageView(workspace: workspace)
                 .toolbar { ScriptToolbar(workspace: workspace) }

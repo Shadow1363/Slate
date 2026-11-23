@@ -275,6 +275,13 @@ public enum TemplateLibrary {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appending(path: Slug.make(template.type) + ".md")
         try CoordinatedFileIO.writeText(template.text, to: url)
+        // Saving a type brings it back if it had been deleted.
+        for folder in [projectTemplates, globalTemplates] {
+            for tombstone in NoteTemplates.tombstones(in: folder)
+            where tombstone.template.type == template.type && tombstone.url.standardizedFileURL != url.standardizedFileURL {
+                try CoordinatedFileIO.trash(tombstone.url)
+            }
+        }
         if let old, let oldURL = fileURL(of: old, projectTemplates: projectTemplates, globalTemplates: globalTemplates),
            oldURL.standardizedFileURL != url.standardizedFileURL,
            FileManager.default.fileExists(atPath: oldURL.path) {
@@ -289,6 +296,40 @@ public enum TemplateLibrary {
         guard let url = fileURL(of: template, projectTemplates: projectTemplates, globalTemplates: globalTemplates),
               FileManager.default.fileExists(atPath: url.path) else { return }
         try CoordinatedFileIO.trash(url)
+    }
+
+    /// Deletes a template, built-ins too. Its own file goes to the Trash; if
+    /// another template of the type would show through (Slate's built-in, or an
+    /// every-project one under a project one), a `removed: true` file hides it.
+    /// A built-in is deleted from `location`: this project, or every project.
+    public static func delete(_ template: NoteTemplate, from location: Location, projectTemplates: URL, globalTemplates: URL) throws {
+        let folder: URL
+        switch template.origin {
+        case .builtIn: folder = location == .project ? projectTemplates : globalTemplates
+        case .project: folder = projectTemplates
+        case .global: folder = globalTemplates
+        }
+        if let own = fileURL(of: template, projectTemplates: projectTemplates, globalTemplates: globalTemplates),
+           FileManager.default.fileExists(atPath: own.path) {
+            try CoordinatedFileIO.trash(own)
+        }
+        let still = NoteTemplates.load(projectTemplates: template.origin == .global ? nil : projectTemplates, globalTemplates: globalTemplates)
+        let showsThrough = template.origin == .global
+            ? NoteTemplates.load(projectTemplates: nil, globalTemplates: globalTemplates).contains { $0.type == template.type }
+            : still.contains { $0.type == template.type }
+        guard showsThrough || template.origin == .builtIn else { return }
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try CoordinatedFileIO.writeText(NoteTemplate.tombstone(type: template.type, label: template.label),
+                                        to: folder.appending(path: Slug.make(template.type) + ".md"))
+    }
+
+    /// Brings a deleted template back by moving its `removed: true` files to the Trash.
+    public static func restore(type: String, projectTemplates: URL, globalTemplates: URL) throws {
+        for folder in [projectTemplates, globalTemplates] {
+            for tombstone in NoteTemplates.tombstones(in: folder) where tombstone.template.type == type {
+                try CoordinatedFileIO.trash(tombstone.url)
+            }
+        }
     }
 
     public static func fileURL(of template: NoteTemplate, projectTemplates: URL, globalTemplates: URL) -> URL? {

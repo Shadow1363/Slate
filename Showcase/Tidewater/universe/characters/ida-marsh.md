@@ -10,7 +10,7 @@ first appearance: "[[Harbour Office]]"
 allies: []
 backstory: Runs Greyline's Saltmarrow crew. Knows more about the clock than she says.
 portrait:
-tags: [greyline]
+tags: [greyline, antagonist]
 ---
 ## Want
 The clock, for [[Greyline Salvage]].

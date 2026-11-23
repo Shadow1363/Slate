@@ -254,16 +254,20 @@ private struct SceneCard: View {
 
     var body: some View {
         let scene = session.script.book.scenes.first { $0.scene.sceneID == sceneID }
+        // A scene in another film of a saga.
+        let elsewhere = scene == nil ? session.script.otherFilms.lazy.compactMap { outline in
+            outline.scenes.first { $0.id == sceneID }.map { (film: outline.film.title, heading: $0.heading) }
+        }.first : nil
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "film").foregroundStyle(.secondary)
-                Text(scene.map { "Scene \($0.label)" } ?? "Scene").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text(scene.map { "Scene \($0.label)" } ?? elsewhere?.film ?? "Scene").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
                 if let scene { Text(eighths(scene.eighths)).font(.caption).foregroundStyle(.secondary) }
             }
-            Text(scene?.scene.heading ?? "Scene \(sceneID) isn't in the script any more")
+            Text(scene?.scene.heading ?? elsewhere?.heading ?? "Scene \(sceneID) isn't in the script any more")
                 .font(.system(size: 15, weight: .bold, design: .monospaced))
-                .foregroundStyle(scene == nil ? .secondary : .primary)
+                .foregroundStyle(scene == nil && elsewhere == nil ? .secondary : .primary)
             Spacer(minLength: 0)
             Text((file as NSString).lastPathComponent).font(.caption2).foregroundStyle(.tertiary)
         }

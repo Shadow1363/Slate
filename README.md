@@ -2,6 +2,21 @@
 
 A native macOS app for writing films. One project holds the world-building, the screenplay, the storyboard and a glossary, all as plain files in one folder. See [SPEC.md](SPEC.md) for the full design, [CHANGES.md](CHANGES.md) for what's built so far, and [DECISIONS.md](DECISIONS.md) for choices made along the way.
 
+**Status: beta (0.9.0).** Every planned milestone is built; it's being tested by writers now. Download the newest build from [Releases](../../releases); Slate then keeps itself up to date.
+
+| | |
+| --- | --- |
+| ![The script editor, with scene navigator, film switcher and margin to-dos](docs/screenshots/script.png) | ![Page view: the script laid out as it prints](docs/screenshots/script-pages.png) |
+| **Script:** Fountain with live formatting, scenes and timings, to-dos in the margin, several films per project. | **Page view:** exact pages, locked scene numbers and revisions. |
+| ![The storyboard: frames per scene with shot types and durations](docs/screenshots/storyboard.png) | ![A character note with its tags, nested headings and infobox](docs/screenshots/universe-note.png) |
+| **Storyboard:** frames per scene, sketches, and an animatic player. | **Universe:** typed notes with infoboxes, tags and a nested heading index. |
+| ![A canvas of notes, scenes and images](docs/screenshots/canvas.png) | ![A map with pins, regions and paths](docs/screenshots/map.png) |
+| **Canvas:** notes, scenes, images and links on a board. | **Maps:** pins, regions and paths linked to notes and scenes. |
+| ![A timeline with lanes and events](docs/screenshots/timeline.png) | ![Search with a bang and a tag: !c #good](docs/screenshots/search.png) |
+| **Timelines:** world order, story order and time travel. | **Search (⌘K):** bangs like `!c` and `!s`, `#tags` and filters. |
+
+The screenshots are of the showcase project, taken by `Scripts/screenshots.sh`.
+
 ## Requirements
 
 - macOS 15 or later
@@ -93,6 +108,25 @@ Scripts are standard [Fountain](https://fountain.io/syntax) in `script/`. Act fi
 - **Focus mode** (⇧⌘↩) hides the side columns and dims everything but the paragraph you're writing. **Typewriter scrolling** (View menu) keeps your line near the middle.
 - **Snapshots:** ⇧⌘S saves a named copy of the script to `script/.snapshots/`. Script › Snapshots… lists them, compares any one with the script now, side by side, and restores it (saving today's script first).
 
+### Sagas: several films in one project
+
+A project can hold any number of films: a saga, a trilogy, a series. Script › Film › New Film… (or the film button under the navigator) adds one:
+
+```text
+script/
+├── 01 Tidewater/            the first film: act files, title-page.md,
+│   ├── 01-act-one.md        production.json, revisions/, .snapshots/
+│   └── title-page.md
+├── 02 Slack Water/          the second film, the same layout
+└── margin/                  to-dos and notes, shared by every film
+```
+
+- The first New Film moves your existing script into `script/01 <project name>/`. It asks first.
+- The film bar above the Script and Storyboard navigators switches films, and both areas follow. ⌃⌘] and ⌃⌘[ step through them.
+- Each film has its own scene numbers, pages, production lock, revisions, snapshots and exports.
+- Universe notes, the dictionary, to-dos, timelines, maps and the storyboard folder are shared. Scene IDs never repeat across films, so each storyboard row and to-do belongs to one scene.
+- Films play in folder order. To reorder them, renumber the folders in Finder.
+
 | Key | In the script editor |
 | --- | --- |
 | Return | Next element: Heading → Action, Action → Action, Character → Dialogue, Parenthetical → Dialogue, Dialogue → Action, Transition → Heading |
@@ -107,7 +141,7 @@ Scene IDs such as `{#s014}` are added when you finish typing a heading. They sho
 
 - **Page view** (⇧⌘\\ or the Draft/Page switch) shows the script exactly as it will print. You edit in Draft view, and the pages catch up a moment after you stop typing.
 - **Script › Publish** writes PDF (⇧⌘E), Final Draft (.fdx), Fountain or Markdown into the project's `exports/` folder, and also offers the animatic and boards PDF (see Animatic).
-- **Print Script…** (⌥⌘P) uses the same renderer. ⌘P is kept for Quick Open.
+- **Print Script…** (⌥⌘P) uses the same renderer.
 - **Publish settings** (the sliders button in the Script toolbar): page size, scene numbers, automatic (CONT'D), and bold/italic/underline. They're saved in `project.json`.
 - **Import Screenplay…** (⇧⌘I, or Import on the home screen) makes a new project from a `.fountain`, `.fdx`, `.txt` or `.md` file. Fountain `# Sections` become act files.
 
@@ -125,14 +159,45 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 ## Universe notes
 
 - **Notes** live in `universe/<type>/<name>.md`: YAML frontmatter for fields, then a Markdown body. Use + or ⌘N to make a note from a template: Character, Location, Rule, Faction, Item, Event or Freeform.
-- **Templates** are `.md` files too. Make and edit them in **Universe › + › Edit Templates…**. A copy in the project's `templates/` (or in `~/Library/Application Support/Slate/Templates/`) replaces the built-in template of the same type, and Revert to Built-in removes it. The sample project overrides Character.
+- **Templates** are `.md` files too. Make and edit them in **Universe › + › Edit Templates…**. Nothing is fixed: Slate's starting templates (Character, Location, Rule, Faction, Item, Event, Freeform) can be changed, renamed or deleted like your own.
+  - **Editing** any template saves your version in the project's `templates/` folder, or in `~/Library/Application Support/Slate/Templates/` when "Saved in" is Every project. **Revert to Built-in** brings Slate's version back.
+  - **Delete Template** works on every template. Deleting a built-in leaves a small `removed: true` file in `templates/` (or the global folder). The list's **Deleted** section restores it, and so does deleting that file. Notes made from a deleted template keep all their fields.
+  - **Fields:** any field can be renamed, retyped or removed. Pick any text field as the note's **Name field**.
+  - **Renaming a type** (say `character` → `person`) also rewrites `type:` in every note made from it.
+  - The sample project overrides Character.
 - **The wiki page:** a note opens with its body on the left and an infobox on the right. **Edit** turns the infobox into a form with these field types: text, long text, number, date, choice, yes/no, list, link, links and image. Each change rewrites only that field's lines, so comments and key order in the file stay as you wrote them.
 - **Obsidian infobox notes** work as they are: `infobox: Character` picks the template, `title:` is the name, `subtitle:` sits under it, and a `layout:` list adds section headers (`type: header`, `above: key`) and columns (`type: columns`, `keys: [...]`). `||text||` is a spoiler, hidden until clicked.
-- **Links:** typing `[[` suggests notes by name or alias, and ⌘K inserts a link. ⌘-click a link to open it; clicking an unresolved link (red, dashed) offers to create the note. Links work in the script too.
+- **Links:** typing `[[` suggests notes by name or alias, and ⌥⌘K inserts a link. ⌘-click a link to open it; clicking an unresolved link (red, dashed) offers to create the note. Links work in the script too.
 - **Links inspector** (⌥⌘0) lists backlinks from notes, scenes, margin notes and the rough draft. For a character it also lists the scenes they speak in.
 - **Renaming** a note (press Return in its name, or right-click › Rename…) offers to update every link to it, and renames the file. Its `id` stays the same.
-- **Find in Project** is ⇧⌘F. **Quick Open** (⌘P) opens any note, scene or file.
-- **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script.
+- **Heading index:** every note in the Universe sidebar (and the draft) has a triangle that opens its headings as a nested tree: H2 › H3 › H4…. Click a heading to jump to it; ⌥-click a triangle to open or close every level below; right-click › Expand All / Collapse All. What's open is remembered per project.
+- **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script. It's optional: right-click Draft › Move to Trash, and + › New Rough Draft makes a fresh one.
+- **Tags:** type them under a note's name (Return or comma adds one, × removes it), or right-click a scene in the Script navigator › Tags…. Notes keep them in `tags:`, scenes in their hidden tag (`{#s014 tags=storm,flashback}`, never printed). The Universe sidebar's **Tags** section lists every tag; right-click one to rename it or remove it everywhere.
+
+## Search (⌘K)
+
+One search for everything in the project. Type a name, or start with a **bang** to search one part. `!` on its own lists them all.
+
+| Bang | Searches |
+| --- | --- |
+| `!c` `!l` `!r` `!f` `!i` `!e` `!n` | Characters, locations, rules, factions, items, events, freeform notes (one per template; set in Edit Templates) |
+| `!u` | Every universe note |
+| `!s` | Scenes in every film. Filters: `time:night`, `place:harbour`, `int:`, `ext:`, `color:red`, `film:2`, `long:` |
+| `!film` | Films; `!film slack !s` searches one film's scenes |
+| `!cue` | What a character says: `!cue juno`, `!cue juno tide` |
+| `!act`, `!x` | Act files and sections; transitions, centred text and boneyard notes |
+| `!b` | Storyboard frames. `shot:CU`, `move:pan`, `empty:` for scenes with no frames |
+| `!todo`, `!mn` | To-dos (`due:` soonest first, `done:` finished ones) and margin notes |
+| `!tl`, `!m`, `!cv`, `!d` | Timeline events, map places, canvases, rough-draft headings |
+| `!w` | Dictionary words |
+| `!t` | Tags: `!t good protagonist` finds everything tagged both |
+| `!file` | Any file |
+| `!text` or `/` | Every line of text that matches; `"quotes"` for exact words (⇧⌘F opens Search like this) |
+
+- `#tag` anywhere narrows to things with that tag: `!c #good`.
+- `key:value` filters on any note field: `!c role:lead`.
+- ↑/↓ choose, Return opens (switching area and film), ⌘Return opens and keeps Search open, ⌘1–⌘9 jump, Tab completes a bang or tag, Esc closes.
+- **Settings › Search** changes the shortcut (⌘K by default) and renames area bangs. Template bangs are set per template.
 
 ## Canvas
 
@@ -227,9 +292,9 @@ Fixtures/Snapshots      Golden page layouts
 | --- | --- |
 | ⌘N | New Note (in a project window; Add Word in the Dictionary) / New Project (elsewhere) |
 | ⌥⌘N | New Project (from a project window) |
-| ⌘P | Quick Open |
-| ⇧⌘F | Find in Project |
-| ⌘K | Insert link |
+| ⌘K | Search (change it in Settings › Search) |
+| ⇧⌘F | Search all text |
+| ⌥⌘K | Insert link |
 | ⌥⌘0 | Inspector (Links and Define) |
 | ⌃⌥⌘D | Define the selected word |
 | ⌘0 / ⇧⌘0 | Canvas: fit everything / 100% |
@@ -250,6 +315,7 @@ Fixtures/Snapshots      Golden page layouts
 | ⌘1 – ⌘4 | Universe, Script, Storyboard, Dictionary |
 | ⇧⌘O | Jump to scene |
 | ⌃⌘↑ / ⌃⌘↓ | Move the current scene up / down |
+| ⌃⌘] / ⌃⌘[ | Next / previous film (in a saga) |
 | ⇧⌘\\ | Draft / Page view |
 | ⇧⌘E | Publish PDF |
 | ⌥⌘P | Print script |
@@ -265,6 +331,10 @@ Fixtures/Snapshots      Golden page layouts
 ## Distribution
 
 Slate ships outside the Mac App Store as a Developer ID app, unsandboxed, with the hardened runtime.
+
+- **Beta releases are automatic.** Every push to `main` runs `.github/workflows/release.yml` on GitHub's Macs: it runs the tests, builds with `Scripts/release.sh --adhoc` and publishes a prerelease `v0.9.0-beta.<run number>` with `Slate-0.9.0-beta.<n>.zip`. Day-to-day work happens on the `dev` branch, so nothing is released until `dev` is merged into `main`. The marketing version lives in `VERSION`.
+- **Updates:** at launch Slate asks GitHub (`SlateUpdateRepository` in `project.yml`, `owner/repo`) for a newer release, downloads it in the background and shows **Restart to Update**: open projects are saved, Slate quits, swaps itself for the new copy and reopens. Slate › Check for Updates… checks on demand; Settings › General turns checking, automatic downloads and betas on or off. The repository's releases must be public for this to work.
+- **Screenshots:** `Scripts/screenshots.sh` builds a Debug copy under its own bundle ID, runs a tour of the showcase and captures each step into `docs/screenshots/` (your terminal needs Screen Recording permission).
 
 - **Test the packaging without an Apple account:** `Scripts/release.sh --adhoc` makes a Release build, signs it ad hoc and writes `build/release/Slate-<version>.zip`.
 - **For real, once you have a Developer ID Application certificate in your keychain:**

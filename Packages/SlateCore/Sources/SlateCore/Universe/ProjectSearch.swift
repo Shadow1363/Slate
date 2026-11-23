@@ -24,6 +24,11 @@ public enum ProjectSearch {
         public let path: String
         public let matches: [Match]
         public var id: String { path }
+
+        public init(path: String, matches: [Match]) {
+            self.path = path
+            self.matches = matches
+        }
     }
 
     /// Searchable paths: text files outside `.slate/` and `exports/`.

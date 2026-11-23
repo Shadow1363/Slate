@@ -1,0 +1,70 @@
+# Every push to main builds Slate, runs the tests and publishes a beta
+# prerelease: v<VERSION>-beta.<run number>, e.g. v0.9.0-beta.12.
+# Work on other branches (dev) never makes a release.
+name: Beta release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Version
+        id: version
+        run: |
+          BASE=$(tr -d '[:space:]' < VERSION)
+          echo "version=${BASE}-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          echo "build=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: |
+          xcodegen generate --quiet
+          xcodebuild -project Slate.xcodeproj -scheme Slate -destination 'platform=macOS' test -quiet
+
+      - name: Build and package
+        env:
+          SLATE_VERSION: ${{ steps.version.outputs.version }}
+          SLATE_BUILD: ${{ steps.version.outputs.build }}
+        run: Scripts/release.sh --adhoc
+
+      - name: Publish the prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ZIP="build/release/Slate-${VERSION}.zip"
+          cat > notes.md <<NOTES
+          Slate ${VERSION}: a beta build of $(git rev-parse --short HEAD).
+
+          **Install:** unzip, move Slate to Applications and open it. The first time, macOS says it can't verify Slate (it isn't notarized yet): click Done, then System Settings › Privacy & Security › Open Anyway. Needs macOS 15 or newer.
+
+          **Changes:** see CHANGES.md.
+          NOTES
+          gh release create "v${VERSION}" "$ZIP" \
+            --title "Slate ${VERSION}" \
+            --notes-file notes.md \
+            --prerelease \
+            --target "${GITHUB_SHA}"

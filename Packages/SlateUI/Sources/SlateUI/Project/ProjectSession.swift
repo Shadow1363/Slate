@@ -11,8 +11,6 @@ import SwiftUI
 final class ProjectSession {
     enum Sheet: Identifiable {
         case jumpToScene
-        case quickOpen
-        case search
         /// Rename a note, optionally with a name already typed.
         case rename(String, String?)
         /// New note; the name is pre-filled when creating from a link.
@@ -25,12 +23,12 @@ final class ProjectSession {
         case wordEntry(WordEntry?, word: String)
         /// Universe › Templates…, optionally opened on one template.
         case templates(String?)
+        /// Tags for one scene.
+        case sceneTags(String)
 
         var id: String {
             switch self {
             case .jumpToScene: "jump"
-            case .quickOpen: "quick"
-            case .search: "search"
             case .rename(let path, _): "rename:" + path
             case .newNote(let type, let name): "new:\(type ?? ""):\(name)"
             case .addTodo: "addTodo"
@@ -39,6 +37,7 @@ final class ProjectSession {
             case .editNote(let note): "editNote:" + note.id
             case .wordEntry(let entry, let word): "word:\(entry?.id ?? ""):\(word)"
             case .templates: "templates"
+            case .sceneTags(let id): "sceneTags:" + id
             }
         }
     }
@@ -68,6 +67,13 @@ final class ProjectSession {
     var selectedText: String?
     /// The open note or file in Universe.
     var universeSelection: String?
+    /// The Search panel (⌘K) while it's open.
+    var spotlight: SpotlightModel?
+    /// A timeline event or map place to select when its file shows.
+    var pendingItemSelection: PendingSelection?
+    @ObservationIgnored private weak var responderBeforeSearch: NSResponder?
+    /// Open notes and headings in the Universe sidebar's index.
+    let outline: OutlineState
     /// Caret placement for the Markdown editors.
     var noteReveal: RevealRequest?
     /// An item for the open map to point out ("Show on Map").
@@ -77,8 +83,9 @@ final class ProjectSession {
     /// A path whose name field should take focus (a note just created).
     var focusNameField: String?
     private(set) var templates: [NoteTemplate] = []
+    /// Deleted templates that can be restored (type, label).
+    private(set) var removedTemplates: [(type: String, label: String)] = []
     /// Search text, kept between openings of Find in Project.
-    var searchQuery = ""
 
     /// An animatic or boards export in progress.
     var exportJob: ExportJob?
@@ -92,6 +99,7 @@ final class ProjectSession {
 
     init(store: ProjectStore, globalWordsURL: URL = GlobalWords.defaultURL) {
         self.store = store
+        outline = OutlineState(projectRoot: store.rootURL)
         links = LinkIndex(store: store)
         script = ScriptWorkspace(store: store)
         dictionary = DictionaryModel(store: store, globalURL: globalWordsURL)
@@ -103,7 +111,7 @@ final class ProjectSession {
         script.followLink = { [weak self] target in self?.peekLink(target) ?? false }
         script.linkPreview = { [weak self] target in self?.linkPreview(target) }
         script.textDidChange = { [weak self] path, text in self?.textDidChange(path: path, text: text) }
-        universeSelection = ProjectLayout.draft
+        if store.files[.universe]?.contains(where: { $0.relativePath == ProjectLayout.draft }) == true { universeSelection = ProjectLayout.draft }
         script.dictionaryActions = dictionaryActions(inScript: true)
         script.showFrames = { [weak self] sceneID, line in
             guard let self else { return }
@@ -142,6 +150,7 @@ final class ProjectSession {
     /// Call when files may have changed on disk without the file list changing.
     func contentsChanged() {
         script.refreshProduction()
+        script.refreshOtherFilms()
         links.refresh()
         storyboard.refresh()
     }
@@ -152,6 +161,11 @@ final class ProjectSession {
             globalTemplates: Self.globalTemplatesFolder
         )
         if loaded != templates { templates = loaded }
+        let removed = NoteTemplates.removed(
+            projectTemplates: store.rootURL.appending(path: ProjectLayout.templates, directoryHint: .isDirectory),
+            globalTemplates: Self.globalTemplatesFolder
+        )
+        if removed.map(\.type) != removedTemplates.map(\.type) { removedTemplates = removed }
     }
 
     func template(for type: String?) -> NoteTemplate? {
@@ -187,15 +201,18 @@ final class ProjectSession {
             self.area = .universe
             universeSelection = path
             if let location { noteReveal = RevealRequest(file: path, location: location, focus: true) }
-        case ProjectLayout.script where script.scriptFiles.contains(where: { $0.relativePath == path }):
+        case ProjectLayout.script where Films.isActFile(path):
             self.area = .script
+            if let film = Films.film(containing: path, in: script.films) { script.select(film: film) }
             script.reveal(file: path, location: location ?? 0)
         case ProjectLayout.dictionary where path == WordBook.path:
             self.area = .dictionary
             showingWordBookSource = true
             if let location { noteReveal = RevealRequest(file: path, location: location, focus: true) }
-        case ProjectLayout.script where path == ScriptWorkspace.titlePagePath:
+        case ProjectLayout.script where (path as NSString).lastPathComponent == "title-page.md"
+            && Films.film(containing: path, in: script.films)?.titlePagePath == path:
             self.area = .script
+            if let film = Films.film(containing: path, in: script.films) { script.select(film: film) }
             script.showTitlePage()
         default:
             self.area = ProjectArea.allCases.first { $0.folder == area } ?? .universe
@@ -213,6 +230,7 @@ final class ProjectSession {
     }
 
     func open(sceneID: String) {
+        if let film = script.film(containingScene: sceneID) { script.select(film: film) }
         if let scene = script.book.scenes.first(where: { $0.scene.sceneID == sceneID }) { open(scene: scene) }
     }
 
@@ -278,6 +296,48 @@ final class ProjectSession {
         return path
     }
 
+    /// Opens Search, optionally with a query typed (`!text `, `!t storm `).
+    /// With no query, the shortcut toggles it: pressed again, Search closes.
+    func showSearch(_ query: String = "") {
+        if let spotlight {
+            guard !query.isEmpty else {
+                closeSearch()
+                return
+            }
+            spotlight.reload()
+            spotlight.query = query
+            return
+        }
+        // Take the keyboard from the editor so the search field can have it,
+        // and remember where it was to give it back.
+        let window = NSApp.keyWindow
+        responderBeforeSearch = window?.firstResponder
+        window?.makeFirstResponder(nil)
+        spotlight = SpotlightModel(session: self, query: query)
+    }
+
+    /// Closes Search and puts the keyboard back where it was (unless a result moved it).
+    func closeSearch(restoringFocus: Bool = true) {
+        guard spotlight != nil else { return }
+        spotlight = nil
+        let previous = responderBeforeSearch
+        responderBeforeSearch = nil
+        guard restoringFocus, let previous, let window = (previous as? NSView)?.window else { return }
+        DispatchQueue.main.async { window.makeFirstResponder(previous) }
+    }
+
+    /// Makes `universe/draft.md` again after it was deleted.
+    func createDraft() {
+        do {
+            _ = try store.createTextFile(at: ProjectLayout.draft, contents: "# \(store.manifest.name)\n\n")
+            store.rescan()
+            area = .universe
+            universeSelection = ProjectLayout.draft
+        } catch {
+            SlateAppModel.showError("Couldn't make the rough draft", error)
+        }
+    }
+
     func trash(_ path: String) {
         do {
             try store.trashFile(path)
@@ -300,6 +360,7 @@ final class ProjectSession {
                 links.update(path: document.relativePath, text: document.text)
             }
             if universeSelection == plan.notePath { universeSelection = newPath }
+            outline.move(plan.notePath, to: newPath)
             script.refreshAuxiliary()
             dictionary.refresh()
         } catch {
@@ -307,32 +368,4 @@ final class ProjectSession {
         }
     }
 
-    // MARK: - Quick Open
-
-    var quickOpenItems: [QuickOpen.Item] {
-        var items: [QuickOpen.Item] = []
-        let graph = links.graph
-        for note in graph.notes {
-            items.append(QuickOpen.Item(kind: .note, title: note.name, subtitle: template(for: note.type)?.label ?? note.type?.capitalized ?? "Note",
-                                        path: note.path, keywords: note.aliases))
-        }
-        for scene in script.book.scenes {
-            items.append(QuickOpen.Item(kind: .scene, title: scene.scene.heading.isEmpty ? "Untitled scene" : scene.scene.heading,
-                                        subtitle: "Scene \(scene.label)", path: scene.file, sceneRow: ScriptWorkspace.row(for: scene)))
-        }
-        let notePaths = Set(graph.notes.map(\.path))
-        for path in allPaths.sorted() where !notePaths.contains(path) && !path.hasPrefix(ProjectLayout.exports + "/") {
-            items.append(QuickOpen.Item(kind: .file, title: (path as NSString).lastPathComponent, subtitle: (path as NSString).deletingLastPathComponent, path: path))
-        }
-        return items
-    }
-
-    func open(_ item: QuickOpen.Item) {
-        if item.kind == .scene, let row = item.sceneRow,
-           let scene = script.book.scenes.first(where: { ScriptWorkspace.row(for: $0) == row }) {
-            open(scene: scene)
-        } else {
-            open(item.path)
-        }
-    }
 }

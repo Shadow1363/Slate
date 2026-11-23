@@ -1,0 +1,13 @@
+{
+  "scene": "s012",
+  "frames": [
+    {
+      "file": "01.png",
+      "duration": 4,
+      "shot": "EWS",
+      "move": "static",
+      "caption": "The same lighthouse, ten years on",
+      "scriptRange": "action-1"
+    }
+  ]
+}

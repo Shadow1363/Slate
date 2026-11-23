@@ -174,11 +174,13 @@ Inside a project, the window has a sidebar (Universe, Script, Storyboard, Dictio
 
 Universe is where the film is thought through before and while it is written: a rough draft, typed notes from templates, and three visual tools (canvas, timeline, map) that all point at the same notes.
 
-**Rough draft** — `universe/draft.md`, a plain Markdown editor with a heading outline on the left. Any heading can be dragged onto the canvas or turned into a scene stub in the script.
+**Rough draft** — `universe/draft.md`, a plain Markdown editor with a heading outline on the left. Any heading can be dragged onto the canvas or turned into a scene stub in the script. The draft is optional and can be deleted.
+
+**Search and tags** — one Spotlight-style search (⌘K, configurable) over the whole project, with bangs that limit it to one part (`!c` characters, `!s` scenes, `!cue` speeches, `!t` tags, `/` all text…), `#tag` and `key:value` filters. Notes and scenes carry tags (`tags:` in frontmatter, `tags=` in the scene tag).
 
 **Templated notes**
 
-- Built-in templates: Character, Location, Rule (how something works), Faction, Item, Event, Freeform.
+- Built-in templates: Character, Location, Rule (how something works), Faction, Item, Event, Freeform. They are only a starting set: every one can be edited, renamed or deleted (a `removed: true` template file hides a built-in), and any field, including the name field, can change.
 - A template is itself a `.md` file: frontmatter defines fields (text, long text, number, date, choice, yes/no, list, link, links, image), an optional `layout:` and an icon, and the body holds starter headings. Built-ins ship in the app; copies in `templates/` override them per project, and in `~/Library/Application Support/Slate/Templates/` globally. Universe › Templates… creates and edits them in a form with a live preview.
 - Each note opens as a wiki page: the Markdown body, with an infobox card beside it (title, subtitle, picture, fields, section headers and columns). Edit turns the infobox into a form. Editing either side rewrites the same file.
 - Notes in the wiki-infobox format are read as they are: `infobox: Character` names the template, `title:` the name, `subtitle:` the line under it, and a `layout:` list (`header` with `above:`, `columns` with `keys:`) arranges the infobox. `||text||` is a spoiler, hidden until clicked.
@@ -274,6 +276,7 @@ CUT TO:
 - Character cue = an ALL-CAPS line followed by dialogue; `(...)` lines under it are parentheticals; lines ending in `TO:` are transitions; `>THE END<` is centred; `/* ... */` is a boneyard comment left out of Publish. All per Fountain.
 - `[[Name]]` links to a universe note (instead of Fountain's `[[note]]` syntax, which Slate replaces with the margin).
 - Acts: either one `script.md`, or several files in `script/` that join in file-name order (`01-act-one.md`, `02-act-two.md`).
+- Sagas: a project can hold several films, one folder each in `script/` (`01 Tidewater/`, `02 Slack Water/`), each with its own act files, title page, production lock, revisions and snapshots. The universe, dictionary, margin and storyboard are shared, and scene IDs are unique across every film.
 
 **Editor**
 

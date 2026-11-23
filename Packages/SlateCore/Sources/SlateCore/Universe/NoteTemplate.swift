@@ -88,6 +88,8 @@ public struct NoteTemplate: Sendable, Equatable, Identifiable {
     public var label: String
     /// An SF Symbol name for menus and the sidebar, if set.
     public var icon: String?
+    /// The search bang for this type (`c` for `!c`), if set; otherwise Search picks one.
+    public var bang: String?
     /// The key holding the note's name: `name` or `title`.
     public var nameField: String
     public var fields: [Field]
@@ -97,6 +99,9 @@ public struct NoteTemplate: Sendable, Equatable, Identifiable {
     public var origin: Origin
     /// The file it was read from, e.g. `character.md`.
     public var fileName: String
+    /// A deleted template: a file with `removed: true` that hides the built-in
+    /// (or every-project) template of the same type.
+    public var isRemoved = false
     public var id: String { type }
 
     public init(type: String, label: String, folder: String, icon: String? = nil, nameField: String = "name",
@@ -125,6 +130,7 @@ public struct NoteTemplate: Sendable, Equatable, Identifiable {
         folder = string("folder") ?? type + "s"
         label = string("label") ?? type.prefix(1).uppercased() + type.dropFirst()
         icon = string("icon")
+        bang = string("bang").map(Bangs.normalize).flatMap { $0.isEmpty ? nil : $0 }
         nameField = string("nameField") ?? "name"
         var declared: [Field] = []
         if case .map(let entries)? = fields.first(where: { $0.key == "fields" })?.value {
@@ -147,7 +153,21 @@ public struct NoteTemplate: Sendable, Equatable, Identifiable {
         body = Frontmatter.split(text).body
         self.origin = origin
         self.fileName = fileName
+        isRemoved = fields.first { $0.key == "removed" }.map { $0.value == .bool(true) || $0.value.text.lowercased() == "true" } ?? false
         ensureNameField()
+    }
+
+    /// The file that deletes a template of this type: `removed: true`.
+    public static func tombstone(type: String, label: String) -> String {
+        """
+        ---
+        type: \(Frontmatter.emit(.string(type)))
+        label: \(Frontmatter.emit(.string(label)))
+        removed: true
+        ---
+        Slate's “\(label)” template was deleted here. Delete this file (or use Restore in Templates) to bring it back.
+
+        """
     }
 
     private mutating func ensureNameField() {
@@ -165,6 +185,7 @@ public struct NoteTemplate: Sendable, Equatable, Identifiable {
         var lines = ["---", "type: \(Frontmatter.emit(.string(type)))", "label: \(Frontmatter.emit(.string(label)))",
                      "folder: \(Frontmatter.emit(.string(folder)))"]
         if let icon, !icon.isEmpty { lines.append("icon: \(Frontmatter.emit(.string(icon)))") }
+        if let bang, !bang.isEmpty { lines.append("bang: \(Frontmatter.emit(.string(bang)))") }
         if nameField != "name" { lines.append("nameField: \(Frontmatter.emit(.string(nameField)))") }
         lines.append("fields:")
         for field in fields {
@@ -248,12 +269,17 @@ public enum NoteTemplates {
         }
     }
 
-    /// All templates, overrides replacing built-ins with the same type.
-    /// Unreadable template files are skipped.
+    /// All templates, overrides replacing built-ins with the same type, and
+    /// `removed: true` files taking a type away. Unreadable template files are skipped.
     public static func load(projectTemplates: URL?, globalTemplates: URL?) -> [NoteTemplate] {
         var byType: [String: NoteTemplate] = [:]
         var order: [String] = []
         func add(_ template: NoteTemplate) {
+            if template.isRemoved {
+                byType[template.type] = nil
+                order.removeAll { $0 == template.type }
+                return
+            }
             if byType[template.type] == nil { order.append(template.type) }
             byType[template.type] = template
         }
@@ -269,6 +295,31 @@ public enum NoteTemplates {
             }
         }
         return order.compactMap { byType[$0] }
+    }
+
+    /// Deleted templates (types and labels) that Restore can bring back.
+    public static func removed(projectTemplates: URL?, globalTemplates: URL?) -> [(type: String, label: String)] {
+        let loaded = Set(load(projectTemplates: projectTemplates, globalTemplates: globalTemplates).map(\.type))
+        var result: [(type: String, label: String)] = []
+        for folder in [globalTemplates, projectTemplates] {
+            for (_, template) in tombstones(in: folder) where !loaded.contains(template.type) && !result.contains(where: { $0.type == template.type }) {
+                result.append((template.type, template.label))
+            }
+        }
+        // Slate's own order first, then the rest by name.
+        func rank(_ type: String) -> Int { builtInOrder.firstIndex(of: type) ?? builtInOrder.count }
+        return result.sorted { rank($0.type) != rank($1.type) ? rank($0.type) < rank($1.type) : $0.label < $1.label }
+    }
+
+    /// `removed: true` files in a folder, by file URL.
+    static func tombstones(in folder: URL?) -> [(url: URL, template: NoteTemplate)] {
+        guard let folder, let names = try? FileManager.default.contentsOfDirectory(atPath: folder.path) else { return [] }
+        return names.sorted().filter { $0.lowercased().hasSuffix(".md") && !$0.hasPrefix(".") }.compactMap { name in
+            let url = folder.appending(path: name)
+            guard let text = try? CoordinatedFileIO.readText(url),
+                  let template = try? NoteTemplate(text: text, fileName: name, origin: .project), template.isRemoved else { return nil }
+            return (url, template)
+        }
     }
 }
 

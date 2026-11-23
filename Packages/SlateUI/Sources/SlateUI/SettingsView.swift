@@ -20,6 +20,7 @@ public struct SettingsView: View {
                     Button("Open Tidewater") { openWindow(id: SlateWindowID.welcome) }
                 }
                 Text("Help › Welcome to Slate shows it again at any time.").font(.caption).foregroundStyle(.secondary)
+                UpdateSettings()
             }
             .formStyle(.grouped)
             .tabItem { Label("General", systemImage: "gearshape") }
@@ -57,8 +58,10 @@ public struct SettingsView: View {
                 .tabItem { Label("Reminders", systemImage: "bell") }
             LibrarySettings()
                 .tabItem { Label("Library", systemImage: "books.vertical") }
+            SearchSettings()
+                .tabItem { Label("Search", systemImage: "magnifyingglass") }
         }
-        .frame(width: 520, height: 420)
+        .frame(width: 560, height: 480)
         .slateThemed()
     }
 

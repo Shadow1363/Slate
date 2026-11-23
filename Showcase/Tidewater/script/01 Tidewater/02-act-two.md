@@ -4,7 +4,7 @@
 
 = Juno learns the clock's rules: one night back for every turn, and the sea takes a price.
 
-EXT. THE DROWNED MARKET - NIGHT {#s006 color=red}
+EXT. THE DROWNED MARKET - NIGHT {#s006 color=red tags=1987,storm}
 
 Stalls on stilts over the water, lashed together with rope. Lanterns sway. The tide is rising fast.
 
@@ -32,7 +32,7 @@ You sound like my sister.
 
 The song drifts from a stall. An OLD FISHWIFE sings it, mending a net, not looking at either of them.
 
-INT. THE LIGHTHOUSE - LAMP ROOM - NIGHT {#s007 color=red}
+INT. THE LIGHTHOUSE - LAMP ROOM - NIGHT {#s007 color=red tags=1987,storm}
 
 1987. A YOUNGER TOBIAS (30s) tends the lamp. He turns as Juno bursts in, dripping.
 

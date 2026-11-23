@@ -12,7 +12,7 @@ backstory: |-
   Was nine the night of the storm.
   Has kept the light alone since Tobias's hip gave out.
 portrait:
-tags: [lead, traveller]
+tags: [lead, traveller, protagonist, good]
 ---
 ## Want
 To undo the night [[Ellis Hale|Ellis]] drowned.
@@ -25,3 +25,12 @@ She heard Ellis leave that night and didn't call out.
 
 ## Ghost
 [[The Great Storm]].
+
+### 1987
+The night the harbour flooded and the light went out.
+
+#### The bell
+She remembers the bell on the jetty ringing on its own, three times.
+
+### Now
+She still counts to three when the wind picks up.

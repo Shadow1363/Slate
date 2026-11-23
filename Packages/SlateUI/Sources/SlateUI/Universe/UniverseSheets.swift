@@ -217,7 +217,9 @@ struct NewNoteSheet: View {
 
     init(session: ProjectSession, type: String?, name: String) {
         self.session = session
-        _type = State(initialValue: type ?? (name.isEmpty ? "character" : "note"))
+        // A deleted template isn't offered: fall back to the first one there is.
+        let preferred = type ?? (name.isEmpty ? "character" : "note")
+        _type = State(initialValue: session.templates.contains { $0.type == preferred } ? preferred : session.templates.first?.type ?? preferred)
         _name = State(initialValue: name)
     }
 
@@ -339,89 +341,5 @@ struct PaletteSheet<Row: View>: View {
         guard index >= 0, index < count else { return }
         choose(index)
         dismiss()
-    }
-}
-
-/// ⌘P: notes, scenes and files by fuzzy name.
-struct QuickOpenSheet: View {
-    let session: ProjectSession
-    @State private var query = ""
-
-    var body: some View {
-        let items = QuickOpen.rank(session.quickOpenItems, query: query)
-        PaletteSheet(prompt: "Open note, scene or file", query: $query, count: items.count, emptyText: "No matches") { index, _ in
-            let item = items[index]
-            HStack(spacing: 8) {
-                Image(systemName: symbol(item)).foregroundStyle(.secondary).frame(width: 18)
-                Text(item.title).lineLimit(1)
-                Spacer()
-                Text(item.subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }
-        } choose: { index in
-            session.open(items[index])
-        }
-    }
-
-    private func symbol(_ item: QuickOpen.Item) -> String {
-        switch item.kind {
-        case .note: icon(for: session.links.graph.note(at: item.path)?.type)
-        case .scene: "film"
-        case .file: "doc"
-        }
-    }
-}
-
-/// ⇧⌘F: every text file in the project, open edits included.
-struct ProjectSearchSheet: View {
-    @Bindable var session: ProjectSession
-    @State private var results: [ProjectSearch.FileResult] = []
-    @State private var searching = false
-
-    var body: some View {
-        let matches = results.flatMap(\.matches)
-        PaletteSheet(prompt: "Find in project (use \"quotes\" for an exact phrase)", query: $session.searchQuery, count: matches.count,
-                     emptyText: session.searchQuery.isEmpty ? "Type to search notes, script and margin" : searching ? "Searching…" : "No matches") { index, _ in
-            let match = matches[index]
-            VStack(alignment: .leading, spacing: 2) {
-                if index == 0 || matches[index - 1].path != match.path {
-                    Text(match.path).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                }
-                Text(highlighted(match)).lineLimit(2)
-            }
-        } choose: { index in
-            session.open(matches[index].path, location: matches[index].range.location)
-        }
-        .task(id: session.searchQuery) {
-            let query = session.searchQuery
-            guard !query.trimmingCharacters(in: .whitespaces).isEmpty else {
-                results = []
-                return
-            }
-            searching = true
-            try? await Task.sleep(for: .milliseconds(120))
-            guard !Task.isCancelled else { return }
-            let root = session.store.rootURL
-            // Revision baselines are old copies of the script: not search results.
-            let paths = session.allPaths.filter { !$0.hasPrefix(ProductionFile.revisionsFolder + "/") }
-            let overrides = Dictionary(uniqueKeysWithValues: session.store.documents.values.filter(\.isDirty).map { ($0.relativePath, $0.text) })
-            let found = await Task.detached(priority: .userInitiated) {
-                ProjectSearch.search(query, root: root, paths: paths, overrides: overrides)
-            }.value
-            guard !Task.isCancelled else { return }
-            results = found
-            searching = false
-        }
-    }
-
-    private func highlighted(_ match: ProjectSearch.Match) -> AttributedString {
-        var text = AttributedString(match.snippet)
-        let ns = match.snippet as NSString
-        guard NSMaxRange(match.snippetRange) <= ns.length,
-              let range = Range(match.snippetRange, in: match.snippet),
-              let lower = AttributedString.Index(range.lowerBound, within: text),
-              let upper = AttributedString.Index(range.upperBound, within: text) else { return text }
-        text[lower..<upper].backgroundColor = .yellow.opacity(0.45)
-        text[lower..<upper].font = .body.bold()
-        return text
     }
 }

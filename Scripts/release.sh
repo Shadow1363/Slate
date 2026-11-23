@@ -4,6 +4,10 @@
 #   Scripts/release.sh --adhoc     Release build, ad-hoc signed, zipped (no Apple account needed)
 #   Scripts/release.sh             Developer ID signed, notarized, stapled, zipped
 #
+# The version comes from the VERSION file (0.9.0). Set these to override:
+#   SLATE_VERSION    what the zip and About box say, e.g. 0.9.0-beta.12
+#   SLATE_BUILD      the build number (CFBundleVersion), e.g. 12
+#
 # For the full run, set these first (see README › Distribution):
 #   TEAM_ID          your 10-character Apple Developer team ID
 #   NOTARY_PROFILE   a keychain profile made with `xcrun notarytool store-credentials`
@@ -14,7 +18,10 @@ MODE="${1:-developer-id}"
 OUT="build/release"
 ARCHIVE="$OUT/Slate.xcarchive"
 EXPORT="$OUT/export"
-VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" App/Info.plist 2>/dev/null || echo "0.1.0")
+MARKETING=$(tr -d '[:space:]' < VERSION)
+VERSION="${SLATE_VERSION:-$MARKETING}"
+BUILD="${SLATE_BUILD:-1}"
+STAMP=(MARKETING_VERSION="$MARKETING" CURRENT_PROJECT_VERSION="$BUILD")
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -24,7 +31,7 @@ if [[ "$MODE" == "--adhoc" ]]; then
     echo "▸ Archiving (Release, ad-hoc signed)…"
     xcodebuild -scheme Slate -configuration Release -destination 'generic/platform=macOS' \
         -archivePath "$ARCHIVE" archive \
-        CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= -quiet
+        CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= "${STAMP[@]}" -quiet
     mkdir -p "$EXPORT"
     cp -R "$ARCHIVE/Products/Applications/Slate.app" "$EXPORT/"
 else
@@ -34,7 +41,7 @@ else
     xcodebuild -scheme Slate -configuration Release -destination 'generic/platform=macOS' \
         -archivePath "$ARCHIVE" archive \
         CODE_SIGN_IDENTITY="Developer ID Application" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="$TEAM_ID" \
-        OTHER_CODE_SIGN_FLAGS="--timestamp" -quiet
+        OTHER_CODE_SIGN_FLAGS="--timestamp" "${STAMP[@]}" -quiet
     cat > "$OUT/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

@@ -31,7 +31,7 @@ extension ProjectSession {
                 storyboard.focusedRow = (storyboard.rows + storyboard.orphanRows).first { $0.folder?.path == ref.folder }?.id
                 storyboard.select(ref)
             }
-            let controller = AnimaticWindowController(model: model, title: "\(store.manifest.name) — Animatic")
+            let controller = AnimaticWindowController(model: model, title: "\(script.publishName) — Animatic")
             animaticWindow = controller
             return controller
         }()
@@ -60,7 +60,7 @@ extension ProjectSession {
     func exportAnimatic() {
         run("Exporting animatic") { [self] job in
             let timeline = storyboard.timeline(.film, clipLengths: await storyboard.loadClipLengths())
-            let url = AnimaticExporter.destination(projectName: store.manifest.name, projectRoot: store.rootURL)
+            let url = AnimaticExporter.destination(projectName: script.publishName, projectRoot: store.rootURL)
             try await AnimaticExporter.export(timeline, root: store.rootURL, overlays: AnimaticPlayerModel.savedOverlays, to: url) { fraction in
                 Task { @MainActor in job.progress = fraction }
             }
@@ -74,10 +74,10 @@ extension ProjectSession {
         run("Exporting boards") { [self] _ in
             let timeline = storyboard.timeline(.film, clipLengths: await storyboard.loadClipLengths())
             guard !timeline.segments.isEmpty else { throw AnimaticError.empty }
-            let boards = BoardsPDF(timeline: timeline, projectName: store.manifest.name, layout: layout,
+            let boards = BoardsPDF(timeline: timeline, projectName: script.publishName, layout: layout,
                                    pageSize: script.publishSettings.pageSize)
             let data = await boards.render(root: store.rootURL)
-            let url = BoardsPDF.destination(projectName: store.manifest.name, projectRoot: store.rootURL)
+            let url = BoardsPDF.destination(projectName: script.publishName, projectRoot: store.rootURL)
             try CoordinatedFileIO.write(data, to: url)
             return url
         }

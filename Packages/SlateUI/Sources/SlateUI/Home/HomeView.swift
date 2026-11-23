@@ -95,10 +95,18 @@ public struct HomeView: View {
         .sheet(isPresented: $model.showingNewProject) {
             NewProjectSheet { url in openWindow(id: SlateWindowID.project, value: url) }
         }
+        .safeAreaInset(edge: .top, spacing: 0) { UpdateBanner() }
         .sheet(isPresented: $model.showingLaunchReminders) {
             LaunchRemindersSheet()
         }
         .task {
+            #if DEBUG
+            if ScreenshotTour.folder != nil {
+                model.welcomeShown = true
+                ScreenshotTour.start(model: model) { openWindow(id: SlateWindowID.project, value: $0) }
+                return
+            }
+            #endif
             if UserDefaults.standard.object(forKey: WelcomePreferences.showAtLaunch) as? Bool ?? true, !model.welcomeShown {
                 model.welcomeShown = true
                 openWindow(id: SlateWindowID.welcome)
@@ -106,6 +114,7 @@ public struct HomeView: View {
             model.library.scanWatchedFolders()
             model.library.refreshStatuses()
             model.checkLaunchReminders()
+            model.updater.checkAtLaunch()
         }
         .onChange(of: model.pendingOpen) { _, root in
             // A due-date notification was clicked.

@@ -47,6 +47,9 @@ struct StoryboardNavigator: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            FilmBar(workspace: session.script)
+        }
         .overlay {
             if scenes.isEmpty && missing.isEmpty {
                 ContentUnavailableView("No Scenes Yet", systemImage: "rectangle.split.3x3",

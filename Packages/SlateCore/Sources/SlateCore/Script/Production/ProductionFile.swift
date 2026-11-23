@@ -180,13 +180,16 @@ public struct ProductionFile: TextBackedFile {
     public var nextColor: RevisionColor { revisions.last?.color.next ?? .blue }
 
     /// `script/revisions/01 blue` for the first revision.
-    public static func baselineFolder(index: Int, color: RevisionColor) -> String {
-        revisionsFolder + "/" + String(format: "%02d", index + 1) + " " + color.rawValue.lowercased()
+    public static func baselineFolder(index: Int, color: RevisionColor, in revisions: String = revisionsFolder) -> String {
+        revisions + "/" + String(format: "%02d", index + 1) + " " + color.rawValue.lowercased()
     }
 
-    public var currentBaselineFolder: String? {
+    public var currentBaselineFolder: String? { currentBaselineFolder(in: Self.revisionsFolder) }
+
+    /// The current revision's baseline inside a film's `revisions/` folder.
+    public func currentBaselineFolder(in folder: String) -> String? {
         guard let revision = currentRevision else { return nil }
-        return Self.baselineFolder(index: revisions.count - 1, color: revision.color)
+        return Self.baselineFolder(index: revisions.count - 1, color: revision.color, in: folder)
     }
 
     /// Anything to apply when publishing.

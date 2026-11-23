@@ -103,11 +103,13 @@ public struct ProjectSummary: Sendable, Equatable {
     /// Printed pages and estimated runtime (one minute per page, or `dur=`).
     public var pages = 0
     public var runtime: TimeInterval = 0
+    /// Films with act files (more than one in a saga).
+    public var films = 1
 
-    /// `12 pp · 11 min`, or nil for an empty script.
+    /// `12 pp · 11 min`, `5 films · 540 pp · 9:02:00`, or nil for an empty script.
     public var lengthText: String? {
         guard pages > 0 else { return nil }
-        return "\(pages) pp · \(ScriptEstimate.formatDuration(runtime))"
+        return (films > 1 ? "\(films) films · " : "") + "\(pages) pp · \(ScriptEstimate.formatDuration(runtime))"
     }
 
     /// Reads `project.json` and finds the newest file modification date,
@@ -132,18 +134,17 @@ public struct ProjectSummary: Sendable, Equatable {
         }
         let open = Reminders.todos(in: root).filter { !$0.done }.count
         var summary = ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open, cover: StoryboardCover.firstImage(in: root))
-        // The script, laid out as it prints.
-        let script = root.appending(path: ProjectLayout.script, directoryHint: .isDirectory)
-        let names = ((try? FileManager.default.contentsOfDirectory(atPath: script.path)) ?? [])
-            .filter { $0 != "title-page.md" && ["md", "fountain", "txt"].contains(($0 as NSString).pathExtension.lowercased()) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        let texts = names.compactMap { name in
-            (try? String(contentsOf: script.appending(path: name), encoding: .utf8)).map { (path: name, text: $0) }
-        }
-        if !texts.isEmpty {
+        // The script, laid out as it prints: every film of a saga, added up.
+        let films = Films.onDisk(root: root, projectName: manifest.name)
+        summary.films = films.filter { !$0.files.isEmpty }.count
+        for (_, files) in films {
+            let texts = files.compactMap { url in
+                (try? String(contentsOf: url, encoding: .utf8)).map { (path: url.lastPathComponent, text: $0) }
+            }
+            guard !texts.isEmpty else { continue }
             let book = ScriptBook(texts: texts, paginator: Paginator(settings: PublishSettings(manifest: manifest)))
-            summary.pages = Int(book.pageCount)
-            summary.runtime = book.totalDuration
+            summary.pages += Int(book.pageCount)
+            summary.runtime += book.totalDuration
         }
         return summary
     }

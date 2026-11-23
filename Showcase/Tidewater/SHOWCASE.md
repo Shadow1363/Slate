@@ -1,6 +1,6 @@
 # Tidewater: the Slate showcase
 
-A made-up short film that uses every feature Slate has so far. Open this folder in Slate (⌘O). Everything here is filler.
+A made-up short film, and the start of its sequel, that uses every feature Slate has so far. Open this folder in Slate (⌘O). Everything here is filler.
 Each milestone adds its features to this project; the checklist below grows with it.
 
 **Story:** Juno Hale keeps the lighthouse in Saltmarrow. She finds a clock that winds the tide back one night per turn, goes back to the 1987 storm to save her brother Ellis, and pays with her own place in the family.
@@ -10,7 +10,7 @@ Each milestone adds its features to this project; the checklist below grows with
 - [ ] Edit a file here in another app and watch Slate reload it.
 
 ## Milestone 2: Script editor
-- [ ] `script/` has three act files that join in name order: `# Act` sections, `=` synopses, a `## The storm night` sequence.
+- [ ] `script/01 Tidewater/` has three act files that join in name order: `# Act` sections, `=` synopses, a `## The storm night` sequence.
 - [ ] Every element: scene headings with hidden IDs (`{#s001}`…`{#s010}`), action, characters with (V.O.), (O.S.) and (CONT'D), parentheticals, dialogue, dual dialogue (`^` in s006), a lyric (`~`), centered text (`> … <`), transitions, a boneyard (`/* */` in s004), a page break (`===` in act two), *italic* and _underline_.
 - [ ] Spell check leaves Juno, Saltmarrow and Tidewind alone (they're in the dictionary).
 
@@ -67,7 +67,7 @@ Each milestone adds its features to this project; the checklist below grows with
 - [ ] Change a frame's duration while the player is open: it rebuilds and keeps its place.
 
 ## Milestone 11: Production
-The script was locked (scene numbers and pages) and a Blue revision started; then a scene was added, one cut, and two lines changed. `script/production.json` holds the lock; `script/revisions/01 blue/` is the script as it was when the revision started.
+The script was locked (scene numbers and pages) and a Blue revision started; then a scene was added, one cut, and two lines changed. `script/01 Tidewater/production.json` holds the lock; `script/01 Tidewater/revisions/01 blue/` is the script as it was when the revision started. (Paths in the earlier sections are inside `script/01 Tidewater/` since the project became a saga.)
 - [ ] Script sidebar: the footer says "Scenes and pages locked · Blue Rev. 2026-11-23". Scenes are numbered 1–5, **4A**, 7–11 (6 was cut).
 - [ ] **A-scene:** the ticket hut (s011, brought back from the boneyard note in act one) was added after scene 4, so it's **4A**. The storyboard, animatic and margin use the same numbers.
 - [ ] **OMITTED:** the ferry deck (s099) was cut after locking; Page view shows `6  OMITTED` between scenes 5 and 7.
@@ -94,3 +94,37 @@ The script was locked (scene numbers and pages) and a Blue revision started; the
 - [ ] Import… the repo's `Fixtures/MarkdownVault` folder: a new project with Mara Voss and The Brass Key in Universe, their links working, and the Plot canvas.
 - [ ] Turn VoiceOver on (⌘F5) and move through the canvas, the timeline's jump arc and the map's Old Town region.
 - [ ] The Dock shows the slate icon.
+
+## Sagas
+Tidewater is now the first of two films. `script/01 Tidewater/` is the original film, with its lock, revision and snapshot; `script/02 Slack Water/` is the sequel's opening: three scenes, s012–s014.
+- [ ] The Script navigator has a film bar: "1. Tidewater", "2. Slack Water". Switch to Slack Water: its own title page, scenes numbered 1–3, and no production lock.
+- [ ] Storyboard, in Slack Water: s012 has one frame (the lighthouse, ten years on), and s013 and s014 are empty. Switch back: Tidewater's boards are all there, and nothing is listed as Scene Missing.
+- [ ] Type a new scene heading in Slack Water: it gets s015, never an ID Tidewater uses.
+- [ ] Margin › All to-dos: "who drew the clock?" is anchored to s013. Click it in Tidewater and Slate switches to Slack Water.
+- [ ] The Drowned Market note's backlinks include Slack Water's s014.
+- [ ] Timeline › Story order runs through both films; the scene picker shows "Slack Water · EXT. THE DROWNED MARKET - NIGHT".
+- [ ] Publish a PDF from each film: each has its own title page, and the files are named after the film.
+- [ ] Script › Film › New Film… adds `script/03 …/`; ⌃⌘[ and ⌃⌘] step through the films. Rename Film… keeps the number.
+- [ ] Home: the card says "2 films · …".
+
+## Templates: nothing fixed
+- [ ] Universe › + › Edit Templates…: delete **Faction**. It moves to the Deleted section, `templates/faction.md` says `removed: true`, and New Note no longer offers it. Restore it.
+- [ ] Edit the built-in **Rule**: add a field and Save (no "copy"), then Revert to Built-in.
+- [ ] Character: add a text field `callsign`, choose it as the Name field, then remove `name` and rename another key.
+- [ ] Rename Location's type to `place`: Saltmarrow Harbour and the other location notes now say `type: place`. (Try it on a fresh copy.)
+
+## Search and tags
+- [ ] ⌘K, then `!` lists every bang. `!c #good` finds Juno, Ellis and Tobias; `!t good protagonist` finds only Juno.
+- [ ] `!s #storm` gives the two storm scenes of 1987; `!s #mystery` gives Slack Water's market; `!film slack !s` lists the sequel's three scenes.
+- [ ] `!cue may` lists May's two lines; Return opens the act file at the cue, in Slack Water.
+- [ ] `!c role:lead`, `!s time:night`, `!s int:`, `!b shot:WS`, `!b empty:`, `!todo due:`, `!w tide`, `!tl`, `!m harbour`.
+- [ ] `/always empty` lists every line with those words; ⇧⌘F opens Search the same way.
+- [ ] Juno's note: add a tag under her name. Script: right-click s001 › Tags…. Universe sidebar › Tags › right-click `1987` › Rename… to `the-storm-year` (on a copy).
+- [ ] Settings › Search: record another shortcut; rename `!s` to `!sc`; Reset Names.
+- [ ] On a copy: right-click Draft › Move to Trash, then + › New Rough Draft.
+
+## Heading index
+- [ ] Universe sidebar: click the triangle next to Juno Hale. Her headings appear; Ghost opens to 1987 › The bell, and Now.
+- [ ] ⌥-click Juno's triangle: every level opens at once. Click The bell to jump to it.
+- [ ] The Draft's tree: Act two: the rules › The clock, The price of a turn. Right-click a heading › Turn into Scene.
+- [ ] Quit and reopen: what was open is still open. Add a `### New` heading to a note and see it appear.

@@ -95,7 +95,7 @@ struct ProjectCreatorTests {
         let manifest = try ProjectManifest.decode(Data(contentsOf: root.appending(path: "project.json")))
         #expect(manifest.name == "My Tidewater")
         #expect(manifest.id != original.id)
-        for path in ["script/01-act-one.md", "universe/maps/saltmarrow.png", "storyboard/scenes/s003 int-the-lighthouse-lamp-room-night/02.mov",
+        for path in ["script/01 Tidewater/01-act-one.md", "script/02 Slack Water/01-act-one.md", "universe/maps/saltmarrow.png", "storyboard/scenes/s003 int-the-lighthouse-lamp-room-night/02.mov",
                      "SHOWCASE.md", ".slate"] {
             #expect(FileManager.default.fileExists(atPath: root.appending(path: path).path), "missing \(path)")
         }

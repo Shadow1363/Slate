@@ -71,10 +71,8 @@ public enum ProjectMigrator {
     // MARK: - 1 → 2
 
     private static func migrateHashHeadings(projectRoot: URL, backupFolder: String, presenter: (any NSFilePresenter)?) throws {
-        let script = projectRoot.appending(path: ProjectLayout.script, directoryHint: .isDirectory)
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: script.path)) ?? []
-        for name in names.sorted() where name != "title-page.md" && ["md", "fountain", "txt"].contains((name as NSString).pathExtension.lowercased()) {
-            let url = script.appending(path: name)
+        for url in Films.onDisk(root: projectRoot).flatMap(\.files) {
+            let name = String(url.path.dropFirst(projectRoot.appending(path: ProjectLayout.script).path.count + 1))
             guard let text = try? CoordinatedFileIO.readText(url, presenter: presenter) else { continue }
             let converted = fountainHeadings(from: text)
             guard converted != text else { continue }

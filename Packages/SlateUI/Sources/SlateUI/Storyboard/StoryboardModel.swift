@@ -84,7 +84,9 @@ final class StoryboardModel {
     var scenes: [ScriptBook.Scene] { script.book.scenes.filter { $0.scene.sceneID != nil } }
 
     var plan: StoryboardFolders.Plan {
-        StoryboardFolders.plan(scenes: scenes.map { ($0.scene.sceneID!, $0.scene.heading) },
+        // Every film's scenes count, so another film's boards aren't "missing".
+        StoryboardFolders.plan(scenes: scenes.map { ($0.scene.sceneID!, $0.scene.heading) }
+                                   + script.otherFilms.flatMap { $0.scenes.map { ($0.id, $0.heading) } },
                                folders: StoryboardFolders.folders(in: paths))
     }
 

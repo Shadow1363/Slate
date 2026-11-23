@@ -111,7 +111,7 @@ Then I'll walk.
 
 She's gone before he can tell her there's no path. He looks at the empty doorway a long moment, then at the coins in the tin, as if one of them might be lying too.
 
-INT. HARBOUR OFFICE - CONTINUOUS {#s005 color=red}
+INT. HARBOUR OFFICE - CONTINUOUS {#s005 color=red tags=1987}
 
 A cramped room of ledgers. CAPTAIN IDA MARSH (40s), Greyline Salvage badge on her coat, signs a manifest without reading it.
 

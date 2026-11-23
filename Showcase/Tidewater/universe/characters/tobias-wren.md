@@ -12,7 +12,7 @@ backstory: |-
   Keeper since 1983. Wound the clock once, in 1979,
   and paid with his brother's voice.
 portrait:
-tags: [keeper]
+tags: [keeper, mentor, good]
 ---
 ## Want
 For nobody to wind the clock again.

@@ -11,6 +11,12 @@ She finds [[The Tidewater Clock]] under the lamp room floor and winds it once.
 ## Act two: the rules
 Back in 1987 she meets young [[Tobias Wren|Tobias]] and learns the [[Tide Rules]] the hard way.
 
+### The clock
+One turn, one night back. It only works at the slack of the tide.
+
+### The price of a turn
+Every turn takes something small from the present. She doesn't notice at first.
+
 ## Act three: the price
 She saves Ellis, and the sea takes her place in the family. [[Greyline Salvage]] was watching all along.
 

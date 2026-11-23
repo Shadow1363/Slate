@@ -38,6 +38,11 @@ struct CanvasPane: View {
 // MARK: - The board
 
 struct CanvasBoard: View {
+    /// A fit waiting for the view's real size (the first layout pass can be a few points wide).
+    @State private var fitPending = false
+
+    static func hasRoom(_ size: CGSize) -> Bool { size.width > 200 && size.height > 150 }
+
     let session: ProjectSession
     @Bindable var model: CanvasModel
     @AppStorage("canvasSnapToGrid") private var snapToGrid = true
@@ -114,12 +119,19 @@ struct CanvasBoard: View {
                 model.viewSize = geometry.size
                 events.frame = geometry.frame(in: .global)
                 events.install(model: model)
-                if model.canvas.nodes.isEmpty == false, model.scale == 1, model.offset == CGPoint(x: 80, y: 80) { model.fit() }
+                // A fresh canvas fits its cards, once the view has its real size.
+                if model.canvas.nodes.isEmpty == false, model.scale == 1, model.offset == CGPoint(x: 80, y: 80) {
+                    if Self.hasRoom(geometry.size) { model.fit() } else { fitPending = true }
+                }
             }
             .onDisappear { events.remove() }
             .onChange(of: geometry.size) { _, size in
                 model.viewSize = size
                 events.frame = geometry.frame(in: .global)
+                if fitPending, Self.hasRoom(size) {
+                    fitPending = false
+                    model.fit()
+                }
             }
             .onChange(of: geometry.frame(in: .global)) { _, frame in events.frame = frame }
             .focusable()

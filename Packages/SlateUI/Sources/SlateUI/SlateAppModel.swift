@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 public final class SlateAppModel {
     public let library: ProjectLibrary
     public let themes: ThemeEngine
+    public let updater = Updater()
     /// Set by File › New Project… so the home window shows the sheet.
     public var showingNewProject = false
     /// The welcome window has opened this launch.
@@ -50,6 +51,9 @@ public final class SlateAppModel {
 
     public init() {
         SlateFonts.register()
+        defer {
+            updater.saveAll = { [weak self] in self?.saveAllProjects() }
+        }
         let support = Self.applicationSupport
         library = ProjectLibrary(directory: support, defaultWatchedFolder: Self.defaultProjectsFolder)
         themes = ThemeEngine(userThemesDirectory: support.appending(path: "Themes", directoryHint: .isDirectory))
@@ -145,6 +149,11 @@ public final class SlateAppModel {
     // MARK: - Open projects and jumps
 
     static func key(_ root: URL) -> String { root.standardizedFileURL.path }
+
+    /// Saves every open project (before an update restarts Slate).
+    public func saveAllProjects() {
+        for weak in sessions.values { weak.session?.store.saveAll() }
+    }
 
     func register(_ session: ProjectSession) {
         sessions[Self.key(session.store.rootURL)] = WeakSession(session)

@@ -27,6 +27,7 @@ struct NoteEditor: View {
                     VStack(spacing: 0) {
                         NoteHeader(session: session, document: document, note: note, template: template,
                                    infoboxShown: $infoboxShown)
+                        NoteTagStrip(session: session, note: note)
                         Divider()
                         MarkdownEditor(document: document, text: document.text, hidesFrontmatter: true, theme: theme,
                                        reveal: session.noteReveal, linkVersion: session.links.version, session: session,

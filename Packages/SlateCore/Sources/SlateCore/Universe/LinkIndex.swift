@@ -65,7 +65,7 @@ public struct IndexedFile: Sendable, Equatable, Codable {
             return path == WordBook.path ? .dictionary : nil
         case "script":
             if components.count == 3, components[1] == "margin", ext == "md" { return .margin }
-            if components.count == 2, components[1] != "title-page.md", ["md", "fountain", "txt"].contains(ext) { return .scene }
+            if Films.isActFile(path) { return .scene }
             return nil
         default:
             return nil

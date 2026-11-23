@@ -6,30 +6,33 @@ import SwiftUI
 /// notes grouped by type, then other files (canvases, timelines, maps).
 struct UniverseNavigator: View {
     @Bindable var session: ProjectSession
+    @AppStorage("universe.tagsExpanded") private var tagsExpanded = true
 
     var body: some View {
         let graph = session.links.graph
         let groups = groups(graph)
         List(selection: $session.universeSelection) {
-            Section("Rough Draft") {
-                Label("Draft", systemImage: "doc.richtext").tag(ProjectLayout.draft)
-                ForEach(draftHeadings(graph)) { heading in
-                    Button {
-                        session.universeSelection = ProjectLayout.draft
-                        session.noteReveal = RevealRequest(file: ProjectLayout.draft, location: heading.range.location, focus: true)
-                    } label: {
-                        Text(heading.title)
-                            .font(heading.level <= 1 ? .body : .callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.leading, CGFloat(max(heading.level - 1, 0)) * 10 + 22)
-                            .lineLimit(1)
+            // The rough draft is optional: delete it and the section goes; + › New Rough Draft brings it back.
+            if session.exists(ProjectLayout.draft) {
+                Section("Rough Draft") {
+                    let tree = HeadingTree.build(draftHeadings(graph))
+                    HStack(spacing: 4) {
+                        if tree.isEmpty {
+                            Color.clear.frame(width: 14, height: 14)
+                        } else {
+                            OutlineChevron(isOpen: session.outline.isOpen(ProjectLayout.draft)) { branch in
+                                withAnimation(.snappy(duration: 0.15)) {
+                                    session.outline.toggle(ProjectLayout.draft, tree: tree, branch: branch)
+                                }
+                            }
+                        }
+                        Label("Draft", systemImage: "doc.richtext")
                     }
-                    .buttonStyle(.plain)
-                    .draggable("slate-heading:" + heading.title)
-                    .contextMenu {
-                        Button("Turn into Scene") {
-                            session.area = .script
-                            session.script.appendSceneStub(heading: heading.title)
+                    .tag(ProjectLayout.draft)
+                    .contextMenu { fileMenu(ProjectLayout.draft) }
+                    if session.outline.isOpen(ProjectLayout.draft) {
+                        ForEach(HeadingTree.rows(tree, isOpen: { session.outline.isOpen(ProjectLayout.draft, heading: $0) })) { row in
+                            HeadingRow(session: session, path: ProjectLayout.draft, row: row, tree: tree)
                         }
                     }
                 }
@@ -37,11 +40,59 @@ struct UniverseNavigator: View {
             ForEach(groups, id: \.title) { group in
                 Section(group.title) {
                     ForEach(group.notes) { note in
-                        NoteRow(note: note, backlinks: graph.backlinks(to: note.path).count)
-                            .draggable("slate-note:" + note.path)
-                            .tag(note.path)
-                            .contextMenu { noteMenu(note) }
+                        let tree = HeadingTree.build(note.headings, droppingTitle: note.name)
+                        HStack(spacing: 4) {
+                            if tree.isEmpty {
+                                Color.clear.frame(width: 14, height: 14)
+                            } else {
+                                OutlineChevron(isOpen: session.outline.isOpen(note.path)) { branch in
+                                    withAnimation(.snappy(duration: 0.15)) { session.outline.toggle(note.path, tree: tree, branch: branch) }
+                                }
+                            }
+                            NoteRow(note: note, backlinks: graph.backlinks(to: note.path).count)
+                        }
+                        .draggable("slate-note:" + note.path)
+                        .tag(note.path)
+                        .contextMenu {
+                            noteMenu(note)
+                            if !tree.isEmpty {
+                                Divider()
+                                Button("Expand All Headings") { session.outline.expandAll(note.path, tree: tree) }
+                                Button("Collapse All Headings") { session.outline.collapseAll(note.path) }
+                            }
+                        }
+                        if session.outline.isOpen(note.path) {
+                            ForEach(HeadingTree.rows(tree, isOpen: { session.outline.isOpen(note.path, heading: $0) })) { row in
+                                HeadingRow(session: session, path: note.path, row: row, tree: tree)
+                            }
+                        }
                     }
+                }
+            }
+            let tags = session.tagIndex.tags
+            if !tags.isEmpty {
+                Section(isExpanded: $tagsExpanded) {
+                    ForEach(tags, id: \.tag) { tag in
+                        Button {
+                            session.showSearch("!t \(tag.tag) ")
+                        } label: {
+                            HStack {
+                                Label("#" + tag.tag, systemImage: "number")
+                                Spacer()
+                                Text("\(tag.count)").font(.caption.monospacedDigit()).foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .help("Show everything tagged #\(tag.tag)")
+                        .contextMenu {
+                            Button("Show All") { session.showSearch("!t \(tag.tag) ") }
+                            Button("Rename…") { session.promptRenameTag(tag.tag) }
+                            Divider()
+                            Button("Remove from All…", role: .destructive) { session.confirmRemoveTag(tag.tag) }
+                        }
+                    }
+                } header: {
+                    Text("Tags")
                 }
             }
             let canvases = canvasFiles
@@ -97,7 +148,7 @@ struct UniverseNavigator: View {
             }
         }
         .overlay {
-            if graph.notes.isEmpty && !session.exists(ProjectLayout.draft) {
+            if graph.notes.isEmpty && !session.exists(ProjectLayout.draft) && canvasFiles.isEmpty && session.timelineFiles.isEmpty && session.mapFiles.isEmpty {
                 ContentUnavailableView("No Notes Yet", systemImage: "globe.americas", description: Text("Add characters, locations and rules with +."))
             }
         }
@@ -130,6 +181,9 @@ struct UniverseNavigator: View {
                     Button("New Canvas") { session.createCanvas() }
                     Button("New Timeline") { session.createTimeline() }
                     Button("New Map") { session.createMap() }
+                    if !session.exists(ProjectLayout.draft) {
+                        Button("New Rough Draft") { session.createDraft() }
+                    }
                     Button("Edit Templates…") { session.sheet = .templates(nil) }
                 } label: {
                     Label("New Note", systemImage: "plus")

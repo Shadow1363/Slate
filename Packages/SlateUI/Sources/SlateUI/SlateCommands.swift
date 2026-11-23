@@ -8,12 +8,16 @@ public struct SlateCommands: Commands {
     let model: SlateAppModel
     @FocusedValue(\.projectActions) private var actions
     @Environment(\.openWindow) private var openWindow
+    @AppStorage(SearchPreferences.shortcut) private var searchShortcut = SearchPreferences.defaultShortcut
 
     public init(model: SlateAppModel) {
         self.model = model
     }
 
     public var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") { model.updater.check(userInitiated: true) }
+        }
         CommandGroup(replacing: .newItem) {
             // ⌘N makes a note inside a project window, a project elsewhere.
             if actions != nil {
@@ -37,9 +41,6 @@ public struct SlateCommands: Commands {
                 }
             }
             .keyboardShortcut("o")
-            Button("Quick Open…") { actions?.quickOpen() }
-                .keyboardShortcut("p")
-                .disabled(actions == nil)
             Button("Import…") {
                 if let url = model.importProject() {
                     openWindow(id: SlateWindowID.project, value: url)
@@ -58,7 +59,7 @@ public struct SlateCommands: Commands {
                 .disabled(actions == nil)
         }
         CommandGroup(replacing: .printItem) {
-            // ⌘P is Quick Open, so Print uses ⌥⌘P.
+            // Print stays on ⌥⌘P, where it has always been in Slate.
             Button("Print Script…") { actions?.printScript() }
                 .keyboardShortcut("p", modifiers: [.command, .option])
                 .disabled(actions == nil)
@@ -87,6 +88,30 @@ public struct SlateCommands: Commands {
             Divider()
             Button("New Act File") { actions?.script(.newActFile) }
                 .disabled(actions == nil)
+            Menu("Film") {
+                if let actions {
+                    ForEach(Array(actions.films.enumerated()), id: \.element.folder) { index, film in
+                        Toggle("\(index + 1). \(film.title)", isOn: Binding(
+                            get: { actions.currentFilm == film.folder },
+                            set: { _ in actions.script(.selectFilm(film.folder)) }
+                        ))
+                    }
+                    Divider()
+                    Button("Next Film") { actions.script(.nextFilm) }
+                        .keyboardShortcut("]", modifiers: [.command, .control])
+                        .disabled(actions.films.count < 2)
+                    Button("Previous Film") { actions.script(.previousFilm) }
+                        .keyboardShortcut("[", modifiers: [.command, .control])
+                        .disabled(actions.films.count < 2)
+                    Divider()
+                    Button("New Film…") { actions.script(.newFilm) }
+                    Button("Rename Film…") { actions.script(.renameFilm) }
+                        .disabled(actions.films.first { $0.folder == actions.currentFilm }?.isRoot ?? true)
+                    Button("Move Film to Trash…") { actions.script(.trashFilm) }
+                        .disabled(actions.films.count < 2 || (actions.films.first { $0.folder == actions.currentFilm }?.isRoot ?? true))
+                }
+            }
+            .disabled(actions == nil)
             Button("Save Snapshot…") { actions?.script(.saveSnapshot) }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
                 .disabled(actions == nil)
@@ -135,13 +160,17 @@ public struct SlateCommands: Commands {
         }
         CommandGroup(after: .textEditing) {
             Divider()
-            Button("Find in Project…") { actions?.findInProject() }
+            let shortcut = SearchShortcut(searchShortcut) ?? SearchShortcut(SearchPreferences.defaultShortcut)!
+            Button("Search…") { actions?.search("") }
+                .keyboardShortcut(shortcut.key, modifiers: shortcut.modifiers)
+                .disabled(actions == nil)
+            Button("Search Text…") { actions?.search("!text ") }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
                 .disabled(actions == nil)
             Button("Insert Link") {
                 NSApp.sendAction(#selector(SlateTextView.insertWikiLink(_:)), to: nil, from: nil)
             }
-            .keyboardShortcut("k")
+            .keyboardShortcut("k", modifiers: [.command, .option])
             Button("Define Selection") { actions?.defineSelection() }
                 .keyboardShortcut("d", modifiers: [.command, .option, .control])
                 .disabled(actions == nil)

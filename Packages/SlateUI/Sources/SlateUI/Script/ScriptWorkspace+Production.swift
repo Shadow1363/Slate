@@ -10,18 +10,18 @@ public enum ProductionCommand: Sendable {
 }
 
 /// Production mode: locked scene numbers and pages, revisions, reports and sides.
-/// Everything lives in `script/production.json` and `script/revisions/`.
+/// Everything lives in the film's `production.json` and `revisions/` (`script/` for a single film).
 extension ScriptWorkspace {
     // MARK: Reading
 
     /// Re-reads production.json and the current revision's baseline.
     func refreshProduction() {
-        let path = ProductionFile.path
+        let path = film.productionPath
         let exists = store.files[.script]?.contains { $0.relativePath == path } == true
         let text = store.documents[path]?.text ?? (exists ? (try? store.readText(at: path)) : nil) ?? ""
         let file = (try? ProductionFile(text: text)) ?? ProductionFile()
         var newBaseline: [(name: String, text: String)]?
-        if let folder = file.currentBaselineFolder {
+        if let folder = file.currentBaselineFolder(in: film.revisionsFolder) {
             newBaseline = (store.files[.script] ?? [])
                 .filter { ($0.relativePath as NSString).deletingLastPathComponent == folder }
                 .sorted { $0.name < $1.name }
@@ -58,7 +58,7 @@ extension ScriptWorkspace {
         var file = production
         change(&file)
         guard file != production else { return }
-        let path = ProductionFile.path
+        let path = film.productionPath
         do {
             if let document = try store.documents[path] ?? (store.files[.script]?.contains { $0.relativePath == path } == true ? store.document(at: path) : nil) {
                 document.text = file.text
@@ -89,7 +89,7 @@ extension ScriptWorkspace {
             }
         case .startRevision: startRevision()
         case .clearRevisions:
-            if confirm("Clear all revisions?", "Revision marks and colours are removed. The baseline copies in script/revisions/ go to the Trash.") {
+            if confirm("Clear all revisions?", "Revision marks and colours are removed. The baseline copies in \(film.revisionsFolder)/ go to the Trash.") {
                 clearRevisions()
             }
         case .report(let report, let csv): exportReport(report, csv: csv)
@@ -120,7 +120,7 @@ extension ScriptWorkspace {
     func startRevision(date: Date = .now) {
         store.saveAll()
         let color = production.nextColor
-        let folder = ProductionFile.baselineFolder(index: production.revisions.count, color: color)
+        let folder = ProductionFile.baselineFolder(index: production.revisions.count, color: color, in: film.revisionsFolder)
         do {
             for file in scriptFiles {
                 let text = try store.documents[file.relativePath]?.text ?? store.readText(at: file.relativePath)
@@ -138,9 +138,9 @@ extension ScriptWorkspace {
     }
 
     func clearRevisions() {
-        if store.files[.script]?.contains(where: { $0.relativePath.hasPrefix(ProductionFile.revisionsFolder + "/") }) == true {
+        if store.files[.script]?.contains(where: { $0.relativePath.hasPrefix(film.revisionsFolder + "/") }) == true {
             do {
-                try store.trashFile(ProductionFile.revisionsFolder)
+                try store.trashFile(film.revisionsFolder)
             } catch {
                 SlateAppModel.showError("Couldn't move the revisions to the Trash", error)
                 return

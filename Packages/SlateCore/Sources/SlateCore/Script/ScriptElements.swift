@@ -81,6 +81,8 @@ public struct ScriptScene: Sendable, Equatable, Identifiable {
     public let durationOverride: TimeInterval?
     /// A colour label from the tag (`color=blue`).
     public var color: SceneColor? = nil
+    /// Tags from the tag (`tags=storm,flashback`), normalised.
+    public var tags: [String] = []
 
     public var id: String { sceneID ?? "line-\(headingLine)" }
 }

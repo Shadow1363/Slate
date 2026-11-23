@@ -86,8 +86,8 @@ public struct ScriptSnapshot: Sendable, Equatable, Identifiable {
         return formatter
     }()
 
-    /// Every snapshot in a project, newest first.
-    public static func all(in root: URL) -> [ScriptSnapshot] {
+    /// Every snapshot in a project (or a film's `.snapshots` folder), newest first.
+    public static func all(in root: URL, folder: String = folder) -> [ScriptSnapshot] {
         let base = root.appending(path: folder, directoryHint: .isDirectory)
         let names = (try? FileManager.default.contentsOfDirectory(atPath: base.path)) ?? []
         return names.filter { !$0.hasPrefix(".") }
@@ -97,7 +97,8 @@ public struct ScriptSnapshot: Sendable, Equatable, Identifiable {
 
     /// Saves the given act files as a new snapshot.
     @discardableResult
-    public static func save(name: String, files: [(name: String, text: String)], in root: URL, date: Date = .now) throws -> ScriptSnapshot {
+    public static func save(name: String, files: [(name: String, text: String)], in root: URL, folder: String = folder,
+                            date: Date = .now) throws -> ScriptSnapshot {
         var title = name.trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
         if title.isEmpty { title = "Snapshot" }

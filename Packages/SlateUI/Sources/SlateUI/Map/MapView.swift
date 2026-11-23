@@ -85,6 +85,9 @@ struct MapPane: View {
 // MARK: - The board
 
 struct MapBoard: View {
+    /// Big enough to fit a map into (the first layout pass can be a few points wide).
+    static func hasRoom(_ size: CGSize) -> Bool { size.width > 200 && size.height > 150 }
+
     let session: ProjectSession
     @Bindable var model: MapModel
     @Environment(\.slateTheme) private var theme
@@ -147,7 +150,8 @@ struct MapBoard: View {
                 model.viewSize = geometry.size
                 events.frame = geometry.frame(in: .global)
                 events.install(model: model)
-                if !model.hasFitted {
+                // The first layout can report a sliver of a size; fit once there's room.
+                if !model.hasFitted, Self.hasRoom(geometry.size) {
                     model.hasFitted = true
                     model.fit()
                 }
@@ -156,6 +160,10 @@ struct MapBoard: View {
             .onChange(of: geometry.size) { _, size in
                 model.viewSize = size
                 events.frame = geometry.frame(in: .global)
+                if !model.hasFitted, Self.hasRoom(size) {
+                    model.hasFitted = true
+                    model.fit()
+                }
             }
             .onChange(of: geometry.frame(in: .global)) { _, frame in events.frame = frame }
             .onChange(of: model.highlighted) { _, id in

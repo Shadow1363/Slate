@@ -209,12 +209,14 @@ struct UniverseSessionTests {
         #expect(session.area == .script)
         #expect(session.script.reveal?.location == 10)
 
-        let items = QuickOpen.rank(session.quickOpenItems, query: "kitchen")
-        #expect(items.first?.kind == .scene)
-        session.open(try #require(items.first))
+        let search = SpotlightModel(session: session, query: "kitchen")
+        let first = try #require(search.flatResults.first)
+        #expect(first.scope == .scene)
+        search.open(first)
         #expect(session.script.selectedRow == "scene:s014")
 
-        session.open(try #require(QuickOpen.rank(session.quickOpenItems, query: "brass").first))
+        search.query = "brass"
+        search.open(try #require(search.flatResults.first))
         #expect(session.universeSelection == "universe/items/the-brass-key.md")
     }
 

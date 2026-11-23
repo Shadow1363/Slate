@@ -12,8 +12,8 @@ public struct ProjectActions {
     public let publish: @MainActor (ExportFormat) -> Void
     public let printScript: @MainActor () -> Void
     public let togglePageView: @MainActor () -> Void
-    public let quickOpen: @MainActor () -> Void
-    public let findInProject: @MainActor () -> Void
+    /// Opens Search (⌘K), optionally with a query typed (`!text `).
+    public let search: @MainActor (String) -> Void
     public let newNote: @MainActor () -> Void
     /// "New Note…", or "Add Word…" in the Dictionary.
     public let newItemTitle: String
@@ -32,6 +32,9 @@ public struct ProjectActions {
     public let script: @MainActor (ScriptCommand) -> Void
     public let focusMode: Bool
     public let typewriter: Bool
+    /// The project's films (one unless it's a saga) and the open one's folder.
+    public let films: [Film]
+    public let currentFilm: String
     /// `project.json` › `theme`, or nil to follow Settings.
     public let projectTheme: String?
     public let setProjectTheme: @MainActor (String?) -> Void
@@ -52,6 +55,15 @@ public struct ProjectWindow: View {
         self.url = url
     }
 
+    /// The window subtitle shows the project's folder, except in the screenshot tour.
+    static var showsFolder: Bool {
+        #if DEBUG
+        ScreenshotTour.folder == nil
+        #else
+        true
+        #endif
+    }
+
     public var body: some View {
         Group {
             if let store {
@@ -68,7 +80,7 @@ public struct ProjectWindow: View {
         }
         .frame(minWidth: 900, minHeight: 560)
         .navigationTitle(store?.manifest.name ?? url?.lastPathComponent ?? "Slate")
-        .navigationSubtitle(store.map { $0.rootURL.deletingLastPathComponent().path(percentEncoded: false) } ?? "")
+        .navigationSubtitle(Self.showsFolder ? store.map { $0.rootURL.deletingLastPathComponent().path(percentEncoded: false) } ?? "" : "")
         .slateThemed(projectOverride: store?.manifest.theme)
         .task(id: url) { open() }
         .onDisappear { store?.close() }
@@ -182,6 +194,20 @@ struct ProjectContent: View {
                 }
             }
         }
+        .overlay(alignment: .top) {
+            if let spotlight = session.spotlight {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.12)
+                        .ignoresSafeArea()
+                        .onTapGesture { session.closeSearch() }
+                    SpotlightPanel(model: spotlight) { opened in session.closeSearch(restoringFocus: !opened) }
+                        .padding(.top, 48)
+                }
+                .transition(.opacity)
+            }
+        }
+        .onChange(of: store.files) { session.spotlight?.reload() }
+        .safeAreaInset(edge: .top, spacing: 0) { UpdateBanner() }
         .safeAreaInset(edge: .top, spacing: 0) {
             if let error = store.manifestError {
                 Banner(systemImage: "exclamationmark.triangle.fill", message: error) {}
@@ -235,8 +261,6 @@ struct ProjectContent: View {
         .sheet(item: $session.sheet) { sheet in
             switch sheet {
             case .jumpToScene: JumpToSceneSheet(workspace: session.script)
-            case .quickOpen: QuickOpenSheet(session: session)
-            case .search: ProjectSearchSheet(session: session)
             case .rename(let path, let proposed): RenameNoteSheet(session: session, path: path, proposed: proposed)
             case .newNote(let type, let name): NewNoteSheet(session: session, type: type, name: name)
             case .addTodo(let sceneID, let quote): TodoSheet(session: session, editing: nil, sceneID: sceneID, quote: quote)
@@ -245,6 +269,7 @@ struct ProjectContent: View {
             case .editNote(let note): MarginNoteSheet(session: session, editing: note, sceneID: nil, quote: nil)
             case .wordEntry(let entry, let word): WordEntrySheet(session: session, editing: entry, word: word)
             case .templates(let selected): TemplatesSheet(session: session, selected: selected)
+            case .sceneTags(let id): SceneTagsSheet(session: session, sceneID: id)
             }
         }
         .focusedSceneValue(\.projectActions, ProjectActions(
@@ -264,8 +289,7 @@ struct ProjectContent: View {
                 session.area = .script
                 session.script.showingPages.toggle()
             },
-            quickOpen: { session.sheet = .quickOpen },
-            findInProject: { session.sheet = .search },
+            search: { session.showSearch($0) },
             newNote: {
                 if session.area == .dictionary {
                     session.sheet = .wordEntry(nil, word: "")
@@ -303,6 +327,8 @@ struct ProjectContent: View {
             },
             focusMode: session.script.focusMode,
             typewriter: session.script.typewriter,
+            films: session.script.films,
+            currentFilm: session.script.film.folder,
             projectTheme: store.manifest.theme,
             setProjectTheme: { name in
                 do {

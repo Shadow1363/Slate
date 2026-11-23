@@ -146,7 +146,8 @@ public enum ScriptParser {
                 lines: start..<end,
                 range: NSRange(location: startLocation, length: endLocation - startLocation),
                 durationOverride: info.duration,
-                color: info.attributes["color"].flatMap(SceneColor.init(rawValue:))
+                color: info.attributes["color"].flatMap(SceneColor.init(rawValue:)),
+                tags: Tags.parseList(info.attributes["tags"] ?? "")
             ))
         }
         return ParsedScript(lines: lines, scenes: scenes)

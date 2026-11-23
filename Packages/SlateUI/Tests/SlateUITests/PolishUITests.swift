@@ -25,8 +25,8 @@ struct PolishUITests {
             let root = try ProjectCreator.create(title: title, template: .showcase, in: folder, sample: showcase)
             #expect(root.lastPathComponent == expected)
             // The snapshot and revision copies come along.
-            #expect(!ScriptSnapshot.all(in: root).isEmpty)
-            #expect(FileManager.default.fileExists(atPath: root.appending(path: "script/revisions/01 blue").path))
+            #expect(!ScriptSnapshot.all(in: root, folder: "script/01 Tidewater/.snapshots").isEmpty)
+            #expect(FileManager.default.fileExists(atPath: root.appending(path: "script/01 Tidewater/revisions/01 blue").path))
         }
     }
 }

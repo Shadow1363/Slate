@@ -173,6 +173,65 @@ struct TemplateTests {
         #expect(!TemplateLibrary.hasBuiltIn("space-ship"))
     }
 
+    @Test func anyTemplateCanBeDeletedAndRestored() throws {
+        let folder = try TempFolder()
+        let project = folder.file("project/templates")
+        let global = folder.file("global")
+        func types() -> [String] { NoteTemplates.load(projectTemplates: project, globalTemplates: global).map(\.type) }
+        let builtIns = NoteTemplates.builtIn
+
+        // Every built-in, from this project.
+        for template in builtIns {
+            try TemplateLibrary.delete(template, from: .project, projectTemplates: project, globalTemplates: global)
+        }
+        #expect(types().isEmpty)
+        #expect(NoteTemplates.removed(projectTemplates: project, globalTemplates: global).map(\.type) == NoteTemplates.builtInOrder)
+        let marker = try String(contentsOf: project.appending(path: "character.md"), encoding: .utf8)
+        #expect(marker.contains("removed: true"))
+        // Another project (no project templates) still has them.
+        #expect(NoteTemplates.load(projectTemplates: nil, globalTemplates: global).count == builtIns.count)
+
+        try TemplateLibrary.restore(type: "faction", projectTemplates: project, globalTemplates: global)
+        #expect(types() == ["faction"])
+
+        // An edited built-in, deleted: the built-in doesn't show through.
+        var location = try #require(builtIns.first { $0.type == "location" })
+        location.label = "Place"
+        try TemplateLibrary.save(location, to: .project, replacing: nil, projectTemplates: project, globalTemplates: global)
+        #expect(types() == ["location", "faction"])
+        let saved = try #require(NoteTemplates.load(projectTemplates: project, globalTemplates: global).first { $0.type == "location" })
+        try TemplateLibrary.delete(saved, from: .project, projectTemplates: project, globalTemplates: global)
+        #expect(types() == ["faction"])
+
+        // A template of your own just goes to the Trash; nothing is left behind.
+        let ship = NoteTemplate(type: "ship", label: "Ship", folder: "ships", fields: [], origin: .project)
+        try TemplateLibrary.save(ship, to: .project, replacing: nil, projectTemplates: project, globalTemplates: global)
+        let loadedShip = try #require(NoteTemplates.load(projectTemplates: project, globalTemplates: global).first { $0.type == "ship" })
+        try TemplateLibrary.delete(loadedShip, from: .project, projectTemplates: project, globalTemplates: global)
+        #expect(!FileManager.default.fileExists(atPath: project.appending(path: "ship.md").path))
+        #expect(!NoteTemplates.removed(projectTemplates: project, globalTemplates: global).contains { $0.type == "ship" })
+
+        // From every project: the marker goes in the global folder.
+        let rule = try #require(builtIns.first { $0.type == "rule" })
+        try TemplateLibrary.restore(type: "rule", projectTemplates: project, globalTemplates: global)
+        try TemplateLibrary.delete(rule, from: .global, projectTemplates: project, globalTemplates: global)
+        #expect(!NoteTemplates.load(projectTemplates: nil, globalTemplates: global).contains { $0.type == "rule" })
+        // Saving that type again brings it back everywhere.
+        try TemplateLibrary.save(rule, to: .project, replacing: nil, projectTemplates: project, globalTemplates: global)
+        #expect(types().contains("rule"))
+        #expect(NoteTemplates.load(projectTemplates: nil, globalTemplates: global).contains { $0.type == "rule" })
+    }
+
+    @Test func anyTextFieldCanNameTheNote() throws {
+        let text = "---\ntype: ship\nnameField: callsign\nfields:\n  callsign: text\n  crew: number\n---\n"
+        let template = try NoteTemplate(text: text, fileName: "ship.md", origin: .project)
+        #expect(template.nameField == "callsign")
+        #expect(template.fields.map(\.key) == ["callsign", "crew"])
+        #expect(template.newNote(name: "Gull", id: "s-0001").contains("callsign: Gull"))
+        let round = try NoteTemplate(text: template.text, fileName: "ship.md", origin: .project)
+        #expect(round.nameField == "callsign")
+    }
+
     private func sampleNote(_ path: String) throws -> Note {
         Note(path: path, text: try String(contentsOf: Fixtures.sampleProject.appending(path: path), encoding: .utf8))
     }

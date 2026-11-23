@@ -32,12 +32,19 @@ struct ScriptCaret: Equatable {
     var selection: String? = nil
 }
 
-/// State for the Script area: the act files, the joined script, the caret
-/// and navigator. Reads and writes go through `ProjectStore`.
+/// State for the Script area: the current film's act files, the joined script,
+/// the caret and navigator. A saga has several films; one is open at a time,
+/// and the others are kept as outlines (scene IDs and headings) so IDs stay
+/// unique and the storyboard knows their boards. Reads and writes go through `ProjectStore`.
 @MainActor
 @Observable
 final class ScriptWorkspace {
     let store: ProjectStore
+
+    /// The film being written: `script`, or `script/02 Slack Water` in a saga.
+    private(set) var filmFolder = ProjectLayout.script
+    /// The other films, parsed, in saga order.
+    private(set) var otherFilms: [FilmOutline] = []
 
     /// The act file shown in the editor.
     var currentFile: String?
@@ -92,21 +99,62 @@ final class ScriptWorkspace {
     /// Told about every edit to an act file, for the link index.
     @ObservationIgnored var textDidChange: ((String, String) -> Void)?
 
-    static let titlePagePath = "script/title-page.md"
-
     init(store: ProjectStore) {
         self.store = store
         margin = MarginModel(store: store)
+        let saved = UserDefaults.standard.string(forKey: filmDefaultsKey)
+        if let saved, films.contains(where: { $0.folder == saved }) { filmFolder = saved } else { filmFolder = films.first?.folder ?? ProjectLayout.script }
         refreshFiles()
         refreshAuxiliary()
     }
 
-    var scriptFiles: [ProjectFile] {
-        ScriptBook.scriptFiles(in: store.files[.script] ?? [])
+    var scriptPaths: [String] { (store.files[.script] ?? []).map(\.relativePath) }
+
+    /// Every film, in saga order (one for an ordinary project).
+    var films: [Film] { Films.films(paths: scriptPaths, projectName: store.manifest.name) }
+
+    var film: Film {
+        let films = films
+        return films.first { $0.folder == filmFolder } ?? films.first ?? Film(folder: ProjectLayout.script, title: store.manifest.name)
     }
 
+    var isSaga: Bool { films.count > 1 }
+
+    var filmDefaultsKey: String { "script.film." + store.rootURL.standardizedFileURL.path }
+
+    var scriptFiles: [ProjectFile] {
+        Films.actFiles(paths: scriptPaths, in: film).map { ProjectFile(relativePath: $0, area: .script) }
+    }
+
+    var titlePagePath: String { film.titlePagePath }
+
     var hasTitlePage: Bool {
-        store.files[.script]?.contains { $0.relativePath == Self.titlePagePath } == true
+        store.files[.script]?.contains { $0.relativePath == titlePagePath } == true
+    }
+
+    /// The name exports and windows use: the film's title in a saga, else the project's.
+    var publishName: String { isSaga ? film.title : store.manifest.name }
+
+    /// Switches the film the area works on; the page layout starts over.
+    func setFilmFolder(_ folder: String) {
+        guard folder != filmFolder else { return }
+        filmFolder = folder
+        UserDefaults.standard.set(folder, forKey: filmDefaultsKey)
+        paginationTask?.cancel()
+        paginated = nil
+        paginatedKey = nil
+        pendingKey = nil
+        paginationVersion += 1
+    }
+
+    func setOtherFilms(_ outlines: [FilmOutline]) { otherFilms = outlines }
+
+    /// Parses a file, reusing the last parse of the same text.
+    func parse(_ text: String, path: String) -> ParsedScript {
+        if let cached = parseCache[path], cached.text == text { return cached.parsed }
+        let parsed = ScriptParser.parse(text)
+        parseCache[path] = (text, parsed)
+        return parsed
     }
 
     /// Opens every act file so the navigator and autocomplete see the whole
@@ -126,6 +174,7 @@ final class ScriptWorkspace {
         if currentFile == nil, !showingTitlePage {
             currentFile = scriptFiles.first?.relativePath
         }
+        refreshOtherFilms()
         repairDuplicateSceneIDs()
         refreshProduction()
     }
@@ -186,8 +235,8 @@ final class ScriptWorkspace {
     /// What Publish reads: title page, act files in order, settings.
     func scriptSource() -> ScriptSource {
         ScriptSource(
-            projectName: store.manifest.name,
-            titlePage: (try? store.readText(at: Self.titlePagePath)) ?? "",
+            projectName: publishName,
+            titlePage: (try? store.readText(at: titlePagePath)) ?? "",
             files: scriptFiles.map { ($0.name, store.documents[$0.relativePath]?.text ?? "") },
             settings: publishSettings,
             production: production.isEmpty ? nil : production,
@@ -227,7 +276,7 @@ final class ScriptWorkspace {
         guard let document = PDFDocument(data: Publisher.pdf(scriptSource())),
               let operation = document.printOperation(for: .shared, scalingMode: .pageScaleNone, autoRotate: false)
         else { return }
-        operation.jobTitle = store.manifest.name
+        operation.jobTitle = publishName
         operation.runModal(for: NSApp.keyWindow ?? NSWindow(), delegate: nil, didRun: nil, contextInfo: nil)
     }
 
@@ -263,10 +312,12 @@ final class ScriptWorkspace {
         dictionary?.spelling(for: .script, characters: characterNames) ?? .none
     }
 
-    /// Scene IDs used in act files other than `path`.
+    /// Scene IDs used in act files other than `path` (in every film).
     func sceneIDs(excluding path: String) -> Set<String> {
-        Set(book.scenes.filter { $0.file != path }.compactMap(\.scene.sceneID))
+        Set(book.scenes.filter { $0.file != path }.compactMap(\.scene.sceneID)).union(otherFilmSceneIDs)
     }
+
+    var otherFilmSceneIDs: Set<String> { Set(otherFilms.flatMap { $0.scenes.map(\.id) }) }
 
     var currentScene: ScriptBook.Scene? {
         guard let caret, let index = caret.sceneIndex else { return nil }
@@ -296,8 +347,8 @@ final class ScriptWorkspace {
     /// The scene ID at the caret, if the caret is in a tagged scene.
     var currentSceneID: String? { currentScene?.scene.sceneID }
 
-    /// Scene IDs in script order, for sorting margin items.
-    var sceneOrder: [String] { book.scenes.compactMap(\.scene.sceneID) }
+    /// Scene IDs in saga order (film by film), for sorting margin items.
+    var sceneOrder: [String] { sagaScenes.map(\.id) }
 
     func scene(withID id: String) -> ScriptBook.Scene? {
         book.scenes.first { $0.scene.sceneID == id }
@@ -305,6 +356,8 @@ final class ScriptWorkspace {
 
     /// Shows a scene and, if given, selects the quoted words in it.
     func reveal(sceneID: String, quote: String?) {
+        // A scene in another film of the saga opens that film first.
+        if scene(withID: sceneID) == nil, let other = film(containingScene: sceneID) { select(film: other) }
         guard let scene = scene(withID: sceneID) else { return }
         let row = Self.row(for: scene)
         lastRevealedRow = row
@@ -359,7 +412,7 @@ final class ScriptWorkspace {
     func appendSceneStub(heading: String) -> String? {
         if scriptFiles.isEmpty { createScriptFile() }
         guard let path = scriptFiles.last?.relativePath, let document = store.documents[path] ?? (try? store.document(at: path)) else { return nil }
-        let id = ScriptBook.nextSceneID(existing: book.sceneIDs)
+        let id = ScriptBook.nextSceneID(existing: book.sceneIDs.union(otherFilmSceneIDs))
         let title = heading.trimmingCharacters(in: .whitespaces).uppercased()
         var text = document.text
         if !text.isEmpty, !text.hasSuffix("\n") { text += "\n" }
@@ -374,7 +427,7 @@ final class ScriptWorkspace {
 
     func createScriptFile() {
         do {
-            let document = try store.createTextFile(at: "script/script.md")
+            let document = try store.createTextFile(at: film.path("script.md"))
             refreshFiles()
             show(file: document.relativePath)
         } catch {

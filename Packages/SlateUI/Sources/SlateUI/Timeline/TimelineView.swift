@@ -41,9 +41,20 @@ struct TimelinePane: View {
         }
         .navigationTitle(Self.title(document.relativePath))
         .toolbar { TimelineToolbar(context: context, showingWarnings: $showingWarnings) }
-        .onAppear { model.file.undoManager = undoManager }
+        .onAppear {
+            model.file.undoManager = undoManager
+            takeSelection()
+        }
+        .onChange(of: session.pendingItemSelection) { takeSelection() }
         .onChange(of: document.text) { model.file.documentChanged() }
         .onDisappear { model.file.flush() }
+    }
+
+    /// Selects the event Search picked.
+    private func takeSelection() {
+        guard let pending = session.pendingItemSelection, pending.path == document.relativePath else { return }
+        session.pendingItemSelection = nil
+        model.selectedEvent = pending.id
     }
 
     /// `universe/timelines/main.timeline.json` → `main`.
@@ -65,13 +76,14 @@ struct TimelineContext {
     init(session: ProjectSession, model: TimelineModel) {
         self.session = session
         self.model = model
-        let book = session.script.book
+        // Story order runs through every film of a saga, one after another.
+        let script = session.script
+        let saga = script.isSaga
         var order: [String: Int] = [:]
         var scenes: [(id: String, heading: String)] = []
-        for scene in book.scenes {
-            guard let id = scene.scene.sceneID, order[id] == nil else { continue }
-            order[id] = scene.number
-            scenes.append((id, scene.scene.heading))
+        for scene in script.sagaScenes where order[scene.id] == nil {
+            order[scene.id] = order.count + 1
+            scenes.append((scene.id, saga ? "\(scene.film.title) · \(scene.heading)" : scene.heading))
         }
         self.scenes = scenes
         analysis = TimelineAnalysis(file: model.timeline, sceneOrder: order)

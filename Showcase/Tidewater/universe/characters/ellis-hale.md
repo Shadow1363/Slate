@@ -7,7 +7,7 @@ born: 1975
 status: "||Alive, in the new timeline||"
 home: "[[The Lighthouse]]"
 habits: [fishing off the market boards, breaking curfew]
-tags: [family]
+tags: [family, good]
 found1: ["[[The Tidewater Clock#What it is|the clock]]", "[[The Drowned Market]]"]
 found2: ["[[Greyline Salvage|Greyline's notebook]]"]
 layout:

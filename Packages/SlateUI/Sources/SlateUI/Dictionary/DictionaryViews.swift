@@ -83,8 +83,7 @@ struct DictionaryNavigator: View {
             .contextMenu {
                 Button("Edit…") { session.sheet = .wordEntry(entry, word: entry.word) }
                 Button("Find Uses in Project") {
-                    session.searchQuery = "\"\(entry.word)\""
-                    session.sheet = .search
+                    session.showSearch("!text \"\(entry.word)\"")
                 }
                 Divider()
                 Button("Delete", role: .destructive) { session.dictionary.delete(entry) }
