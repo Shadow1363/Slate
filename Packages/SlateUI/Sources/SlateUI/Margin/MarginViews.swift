@@ -13,31 +13,25 @@ struct MarginView: View {
             if let path = margin.peek {
                 NotePeek(session: session, path: path) { margin.peek = nil }
             } else {
-                HStack {
-                    Picker("Scope", selection: $margin.scope) {
-                        ForEach(MarginModel.Scope.allCases) { Text($0.title).tag($0) }
+                PanelFilterBar {
+                    PanelMenu(title: margin.scope.title, help: "The caret's scene, or the whole script") {
+                        Picker("Show", selection: $margin.scope) {
+                            ForEach(MarginModel.Scope.allCases) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.inline)
                     }
-                    .labelsHidden()
-                    .fixedSize()
-                    Spacer()
+                } trailing: {
                     if tab == .todos {
-                        Menu {
+                        PanelMenu(title: margin.filter.title, systemImage: "line.3.horizontal.decrease", help: "Filter and order to-dos") {
                             Picker("Show", selection: $margin.filter) {
                                 ForEach(MarginModel.TodoFilter.allCases) { Text($0.title).tag($0) }
                             }
                             Picker("Order", selection: $margin.order) {
                                 ForEach(MarginModel.TodoOrder.allCases) { Text($0.title).tag($0) }
                             }
-                        } label: {
-                            Label(margin.filter.title, systemImage: "line.3.horizontal.decrease.circle")
                         }
-                        .menuStyle(.borderlessButton)
-                        .fixedSize()
-                        .help("Filter and order to-dos")
                     }
                 }
-                .font(.callout)
-                .padding(10)
                 if let error = margin.error {
                     Text(error).font(.caption).foregroundStyle(.orange).padding(.horizontal, 10)
                 }

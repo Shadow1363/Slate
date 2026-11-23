@@ -39,13 +39,12 @@ struct MapPane: View {
                         Button("Done") { model.finishDraft() }.disabled(model.draft.count < (model.tool == .region ? 3 : 2))
                     }
                 }
-                HSplitView {
+                ItemInspectorLayout(showing: model.selection.flatMap { model.map.item($0) } != nil) {
                     MapBoard(session: session, model: model)
-                        .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+                } inspector: {
                     if let id = model.selection, let item = model.map.item(id) {
                         MapInspector(session: session, model: model, item: item)
                             .id(id)
-                            .frame(minWidth: 240, idealWidth: 280, maxWidth: 360, maxHeight: .infinity)
                     }
                 }
             }
@@ -136,14 +135,9 @@ struct MapBoard: View {
             })
             .simultaneousGesture(SpatialTapGesture(coordinateSpace: .named("map")).onEnded { value in tap(at: value.location) })
             .overlay(alignment: .bottomLeading) {
-                Text("\(Int((model.scale * 100).rounded()))%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(.regularMaterial, in: .capsule)
-                    .padding(12)
-                    .onTapGesture { model.fit() }
-                    .help("Zoom: pinch or ⌘-scroll. Click to fit.")
+                ZoomControl(percent: Int((model.scale * 100).rounded()),
+                            zoomOut: { model.zoom(by: 1 / 1.25) }, zoomIn: { model.zoom(by: 1.25) },
+                            fit: { model.fit() }, fitHelp: "Fit the map (⌘0)")
             }
             .background(WindowReader { events.window = $0 })
             .onAppear {
@@ -568,12 +562,6 @@ struct MapToolbar: ToolbarContent {
                 Label(model.map.image == nil ? "Add Image" : "Change Image", systemImage: "photo")
             }
             .help("The map's base image (or drop one from Finder)")
-            Button { model.zoom(by: 1 / 1.25) } label: { Label("Zoom Out", systemImage: "minus.magnifyingglass") }
-                .keyboardShortcut("-", modifiers: .command)
-            Button { model.zoom(by: 1.25) } label: { Label("Zoom In", systemImage: "plus.magnifyingglass") }
-                .keyboardShortcut("=", modifiers: .command)
-            Button { model.fit() } label: { Label("Fit", systemImage: "arrow.up.left.and.arrow.down.right") }
-                .keyboardShortcut("0", modifiers: .command)
         }
     }
 

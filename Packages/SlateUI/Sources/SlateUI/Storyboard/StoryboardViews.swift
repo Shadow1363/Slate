@@ -83,17 +83,15 @@ struct StoryboardDetail: View {
 
     var body: some View {
         let model = session.storyboard
-        HSplitView {
+        // Not an HSplitView: its sizing widens the window past the screen when the sidebar is open.
+        ItemInspectorLayout(showing: model.selected.count > 1 || model.selection.flatMap { model.frame($0) } != nil) {
             StoryboardBoard(session: session)
-                // Small minimums, so opening the Links/Define inspector squeezes the board instead of widening the window.
-                .frame(minWidth: 240, maxWidth: .infinity, maxHeight: .infinity)
+        } inspector: {
             if model.selected.count > 1 {
                 MultiFrameInspector(model: model)
-                    .frame(minWidth: 220, idealWidth: 280, maxWidth: 380, maxHeight: .infinity)
             } else if let ref = model.selection, let frame = model.frame(ref) {
                 FrameInspector(session: session, ref: ref, frame: frame)
                     .id(ref)
-                    .frame(minWidth: 220, idealWidth: 280, maxWidth: 380, maxHeight: .infinity)
             }
         }
         .onAppear { model.undoManager = undoManager }
@@ -106,6 +104,11 @@ struct StoryboardDetail: View {
 
 /// The scene rows.
 struct StoryboardBoard: View {
+    /// Roughly the toolbar's height (52 pt) plus a little air.
+    static let toolbarAllowance: CGFloat = 60
+    /// About one row: heading and a line of frames.
+    static let rowHeight: CGFloat = 200
+    @State private var boardHeight: CGFloat = 800
     let session: ProjectSession
     @Environment(\.slateTheme) private var theme
     @FocusState private var focused: Bool
@@ -124,9 +127,13 @@ struct StoryboardBoard: View {
                     }
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { boardHeight = $0 }
             .onChange(of: model.focusedRow, initial: true) { _, id in
                 guard let id else { return }
-                withAnimation { proxy.scrollTo(id, anchor: .top) }
+                // scrollTo(.top) puts a row under the toolbar (it ignores that inset), so aim
+                // for the point that leaves the row `toolbarAllowance` below the top.
+                let anchor = UnitPoint(x: 0, y: min(0.5, Self.toolbarAllowance / max(1, boardHeight - Self.rowHeight)))
+                withAnimation { proxy.scrollTo(id, anchor: anchor) }
             }
         }
         .background(Color(theme.storyboard.background))

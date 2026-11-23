@@ -448,6 +448,16 @@ Two ways to write by speaking, both in the SlateVoice package.
 - Permissions: microphone (`NSMicrophoneUsageDescription`, plus the `com.apple.security.device.audio-input` entitlement for the hardened runtime) and speech recognition (`NSSpeechRecognitionUsageDescription`). Denials show a message pointing at System Settings.
 - Nothing is sent anywhere unless OpenAI is the chosen engine.
 
+## Window layout and controls
+
+Every area follows the same layout, so there is one way to find things:
+
+- **Toolbar.** On the left: the left sidebar button, the area menu (**Script ▾**) and the right sidebar button. In the centre: the view's mode or tools (Draft/Page, World/Story/Personal order, the map's tools, the canvas's grid and minimap toggles, Watch Animatic). On the right: the area's actions (add, publish or export, settings). Zoom is never in the toolbar.
+- **Right sidebar.** One column with tabs that depend on the area (see the area table above). Each tab's filter row uses the same borderless menus: scope on the left, filter on the right.
+- **Item inspectors.** A selected storyboard frame, timeline event or map pin opens its inspector beside the board. It is always 280 pt wide and shrinks the board, never the window.
+- **Zoom.** The canvas, map and timeline have one pill in the bottom-left corner: − percentage + (and fit). ⌘− / ⌘= / ⌘0 work as before; on the canvas, clicking the percentage (or ⇧⌘0) goes to 100%.
+- **Icons.** `sidebar.leading` / `sidebar.trailing` are only for the two sidebars. The note's infobox toggle uses its own icon.
+
 ## Theme system
 
 Themes are JSON files of named tokens; four ship built in, and every colour, font and spacing value can be overridden in a theme editor with live preview:

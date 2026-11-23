@@ -7,6 +7,16 @@
 - **⌥⌘0** (View › Toggle Sidebar) shows or hides it. **⇧⌘M** (View › Show To-dos) opens it on To-dos, or hides it if To-dos is already showing. Remapped keys carry over.
 - Clicking a link in the script still opens the note in the sidebar, with a close button back to the tabs.
 
+### One look across the app
+
+- **Toolbars follow one layout** in every area: sidebars and the area menu on the left, the view's mode in the centre, actions on the right. The canvas's grid and minimap toggles are now in the centre; Storyboard's **Watch Animatic** is a labelled button there.
+- **Zoom moved out of the toolbar** into a pill in the bottom-left corner of the canvas, map and timeline (− 100% + and fit), with the same shortcuts. The timeline's warnings button is now an icon (orange when there are warnings).
+- **Fixed:** with the sidebar open, Timeline, Map and Storyboard could push the window wider than the screen, cutting off the left sidebar and the right one. Their item inspectors now sit at a fixed 280 pt beside the board.
+- **Fixed:** in Storyboard and Dictionary, the sidebar's Links/Define tabs floated in the middle of the column; they now sit at the top like everywhere else.
+- **Fixed:** jumping to a storyboard row could hide its heading under the toolbar.
+- The sidebar's filter rows (This Scene / This Note, Open / Done / All) use the same borderless menus everywhere.
+- The note's infobox toggle has its own icon, so it no longer looks like the sidebar buttons.
+
 ## A margin for notes' to-dos (2026-11-23)
 
 - **Universe has a margin,** like the script's: **To-dos** for **This Note** or **All Notes**, Open / Done / All, tick boxes, click to jump to the comment, and a field that adds `%% TODO: … %%` to the open note. ⇧⌘M or the toolbar's margin button shows and hides it, and it remembers.

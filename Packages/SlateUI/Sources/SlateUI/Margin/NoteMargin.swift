@@ -93,26 +93,21 @@ struct NoteMarginView: View {
         let canAdd = selected?.hasSuffix(".md") ?? false
         let todos = margin.todos(selected: selected)
         VStack(spacing: 0) {
-            HStack {
-                Picker("Scope", selection: $margin.scope) {
-                    ForEach(NoteMarginModel.Scope.allCases) { Text($0.title).tag($0) }
+            PanelFilterBar {
+                PanelMenu(title: margin.scope.title, help: "This note's to-dos, or every note's") {
+                    Picker("Show", selection: $margin.scope) {
+                        ForEach(NoteMarginModel.Scope.allCases) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.inline)
                 }
-                .labelsHidden()
-                .fixedSize()
-                Spacer()
-                Menu {
+            } trailing: {
+                PanelMenu(title: margin.filter.title, systemImage: "line.3.horizontal.decrease", help: "Show open, done or all to-dos") {
                     Picker("Show", selection: $margin.filter) {
                         ForEach(MarginModel.TodoFilter.allCases) { Text($0.title).tag($0) }
                     }
-                } label: {
-                    Label(margin.filter.title, systemImage: "line.3.horizontal.decrease.circle")
+                    .pickerStyle(.inline)
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .help("Show open, done or all to-dos")
             }
-            .font(.callout)
-            .padding(10)
             if let error = margin.error {
                 Text(error).font(.caption).foregroundStyle(.orange).padding(.horizontal, 10)
             }
@@ -140,7 +135,6 @@ struct NoteMarginView: View {
             }
             .padding(10)
         }
-        .frame(minWidth: 240, idealWidth: 300, maxWidth: 420)
         .background(.background)
     }
 

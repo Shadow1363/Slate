@@ -429,16 +429,21 @@ struct SidebarView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .padding([.horizontal, .top], 10)
-                switch session.sidebarTab {
-                case .todos where area == .universe:
-                    NoteMarginView(session: session, margin: session.noteMargin)
-                case .todos, .notes:
-                    MarginView(session: session, margin: session.script.margin, tab: session.sidebarTab)
-                case .links: LinksInspector(session: session)
-                case .define: DefineInspector(session: session)
+                .padding([.horizontal, .top], 12)
+                .padding(.bottom, 4)
+                Group {
+                    switch session.sidebarTab {
+                    case .todos where area == .universe:
+                        NoteMarginView(session: session, margin: session.noteMargin)
+                    case .todos, .notes:
+                        MarginView(session: session, margin: session.script.margin, tab: session.sidebarTab)
+                    case .links: LinksInspector(session: session)
+                    case .define: DefineInspector(session: session)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 }

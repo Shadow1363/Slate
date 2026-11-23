@@ -105,14 +105,9 @@ struct CanvasBoard: View {
                 }
             }
             .overlay(alignment: .bottomLeading) {
-                Text("\(Int((model.scale * 100).rounded()))%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(.regularMaterial, in: .capsule)
-                    .padding(12)
-                    .onTapGesture { model.zoomToActualSize() }
-                    .help("Zoom: pinch or ⌘-scroll. Click for 100%.")
+                ZoomControl(percent: Int((model.scale * 100).rounded()),
+                            zoomOut: { model.zoom(by: 1 / 1.25) }, zoomIn: { model.zoom(by: 1.25) },
+                            fit: { model.fit() }, actualSize: { model.zoomToActualSize() })
             }
             .background(WindowReader { events.window = $0 })
             .onAppear {
@@ -745,7 +740,16 @@ struct CanvasToolbar: ToolbarContent {
     @State private var linkText = ""
 
     var body: some ToolbarContent {
-        ToolbarItemGroup {
+        // View options in the centre (like the map's tools); actions on the right.
+        ToolbarItem(placement: .principal) {
+            ControlGroup {
+                Toggle(isOn: $snapToGrid) { Label("Snap to Grid", systemImage: "grid") }
+                    .help("Snap cards to a 20-point grid")
+                Toggle(isOn: $showMinimap) { Label("Minimap", systemImage: "map") }
+                    .help("Show the minimap")
+            }
+        }
+        ToolbarItemGroup(placement: .primaryAction) {
             Menu {
                 Button("Text Card") { model.addText() }
                 Button("Group") { model.groupSelection() }
@@ -793,20 +797,6 @@ struct CanvasToolbar: ToolbarContent {
             .disabled(model.selection.count < 2)
             .help("Align or distribute the selected cards")
 
-            Toggle(isOn: $snapToGrid) { Label("Snap to Grid", systemImage: "grid") }
-                .help("Snap cards to a 20-point grid")
-            Toggle(isOn: $showMinimap) { Label("Minimap", systemImage: "map") }
-                .help("Show the minimap")
-
-            Button { model.zoom(by: 1 / 1.25) } label: { Label("Zoom Out", systemImage: "minus.magnifyingglass") }
-                .keyboardShortcut("-")
-            Button { model.zoom(by: 1.25) } label: { Label("Zoom In", systemImage: "plus.magnifyingglass") }
-                .keyboardShortcut("=")
-            Button { model.fit() } label: { Label("Fit", systemImage: "arrow.up.left.and.down.right.magnifyingglass") }
-                .keyboardShortcut("0")
-                .help("Fit everything (⌘0); ⇧⌘0 for 100%")
-            Button { model.zoomToActualSize() } label: { Label("Actual Size", systemImage: "1.magnifyingglass") }
-                .keyboardShortcut("0", modifiers: [.command, .shift])
         }
         ToolbarItem {
             Color.clear.frame(width: 0, height: 0)
