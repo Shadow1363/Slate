@@ -203,7 +203,7 @@ struct SceneChip: View {
             session.area = .script
             session.script.reveal(sceneID: sceneID, quote: quote)
         } label: {
-            Text(scene.map { "Scene \($0.number)" } ?? "Scene removed")
+            Text(scene.map { "Scene \($0.label)" } ?? "Scene removed")
                 .padding(.horizontal, 5)
                 .padding(.vertical, 1)
                 .background(.quaternary, in: .capsule)
@@ -398,7 +398,7 @@ struct TodoSheet: View {
                 LabeledContent("Scene") {
                     if let id = todo.sceneID {
                         HStack {
-                            Text(session.script.scene(withID: id).map { "\($0.number). \($0.scene.heading)" } ?? id).lineLimit(1)
+                            Text(session.script.scene(withID: id).map { "\($0.label). \($0.scene.heading)" } ?? id).lineLimit(1)
                             Button("Remove") { todo.sceneID = nil }.buttonStyle(.borderless)
                         }
                     } else {
@@ -456,7 +456,7 @@ struct MarginNoteSheet: View {
             Text(original == nil ? "New Margin Note" : "Edit Margin Note").font(.headline)
             if let quote { Text("On “\(quote)”").italic().foregroundStyle(.secondary).lineLimit(2) }
             if let sceneID {
-                Text(session.script.scene(withID: sceneID).map { "Scene \($0.number): \($0.scene.heading)" } ?? sceneID)
+                Text(session.script.scene(withID: sceneID).map { "Scene \($0.label): \($0.scene.heading)" } ?? sceneID)
                     .font(.caption).foregroundStyle(.secondary)
             }
             TextEditor(text: $text)

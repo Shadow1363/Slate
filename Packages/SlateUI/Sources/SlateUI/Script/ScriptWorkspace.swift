@@ -62,6 +62,12 @@ final class ScriptWorkspace {
     private(set) var paginated: PaginatedScript?
     /// Bumped whenever `paginated` changes, so Page view knows to redraw.
     private(set) var paginationVersion = 0
+    /// `script/production.json` and the current revision's baseline (refreshed with the files).
+    var production = ProductionFile()
+    @ObservationIgnored var baseline: [(name: String, text: String)]?
+    /// Bumped when production.json or the baseline changes, so layouts redo.
+    var productionVersion = 0
+    var showingSides = false
 
     @ObservationIgnored private var parseCache: [String: (text: String, parsed: ParsedScript)] = [:]
     @ObservationIgnored private var bookCache: (key: [String], exact: Bool, book: ScriptBook)?
@@ -113,6 +119,7 @@ final class ScriptWorkspace {
         if currentFile == nil, !showingTitlePage {
             currentFile = scriptFiles.first?.relativePath
         }
+        refreshProduction()
     }
 
     /// Re-reads character notes.
@@ -131,7 +138,7 @@ final class ScriptWorkspace {
         let files = scriptFiles.map(\.relativePath)
         var texts: [String] = []
         for path in files { texts.append(store.documents[path]?.text ?? "") }
-        let key = zip(files, texts).flatMap { [$0, $1] } + [String(describing: publishSettings)]
+        let key = zip(files, texts).flatMap { [$0, $1] } + [String(describing: publishSettings), "production \(productionVersion)"]
         let exact = paginated != nil && paginatedKey == key
         if let bookCache, bookCache.key == key, bookCache.exact == exact { return bookCache.book }
         let parsed = zip(files, texts).map { path, text -> (String, ParsedScript) in
@@ -140,22 +147,24 @@ final class ScriptWorkspace {
             parseCache[path] = (text, result)
             return (path, result)
         }
-        let book = ScriptBook(parsed: parsed.map { (path: $0.0, parsed: $0.1) }, paginated: exact ? paginated : nil)
+        let labels = SceneNumbering.labels(SceneNumbering.scenes(in: parsed.map(\.1)), locked: production.scenes)
+        let book = ScriptBook(parsed: parsed.map { (path: $0.0, parsed: $0.1) }, paginated: exact ? paginated : nil, labels: labels)
         bookCache = (key, exact, book)
-        if !exact { schedulePagination(key: key, parsed: parsed.map(\.1)) }
+        if !exact { schedulePagination(key: key, parsed: parsed.map(\.1), names: scriptFiles.map(\.name)) }
         return book
     }
 
-    private func schedulePagination(key: [String], parsed: [ParsedScript]) {
+    private func schedulePagination(key: [String], parsed: [ParsedScript], names: [String]) {
         guard pendingKey != key else { return }
         pendingKey = key
         paginationTask?.cancel()
         let settings = publishSettings
+        let layout = productionLayout(parsed, names: names)
         paginationTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(300))
             guard !Task.isCancelled else { return }
             let result = await Task.detached(priority: .userInitiated) {
-                Paginator(settings: settings).paginate(parsed)
+                Paginator(settings: settings, production: layout).paginate(parsed)
             }.value
             guard !Task.isCancelled, let self else { return }
             self.paginatedKey = key
@@ -172,7 +181,9 @@ final class ScriptWorkspace {
             projectName: store.manifest.name,
             titlePage: (try? store.readText(at: Self.titlePagePath)) ?? "",
             files: scriptFiles.map { ($0.name, store.documents[$0.relativePath]?.text ?? "") },
-            settings: publishSettings
+            settings: publishSettings,
+            production: production.isEmpty ? nil : production,
+            baseline: baseline
         )
     }
 

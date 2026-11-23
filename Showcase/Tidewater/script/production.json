@@ -1,0 +1,26 @@
+{
+  "scenes": [
+    {"id": "s001", "number": "1", "heading": "EXT. SALTMARROW HARBOUR - DAWN"},
+    {"id": "s002", "number": "2", "heading": "INT. THE LIGHTHOUSE - KEEPER'S ROOM - MORNING"},
+    {"id": "s003", "number": "3", "heading": "INT. THE LIGHTHOUSE - LAMP ROOM - NIGHT"},
+    {"id": "s004", "number": "4", "heading": "EXT. SALTMARROW HARBOUR - NIGHT"},
+    {"id": "s005", "number": "5", "heading": "INT. HARBOUR OFFICE - CONTINUOUS"},
+    {"id": "s099", "number": "6", "heading": "EXT. FERRY DECK - DAY"},
+    {"id": "s006", "number": "7", "heading": "EXT. THE DROWNED MARKET - NIGHT"},
+    {"id": "s007", "number": "8", "heading": "INT. THE LIGHTHOUSE - LAMP ROOM - NIGHT"},
+    {"id": "s008", "number": "9", "heading": "EXT. SALTMARROW CLIFFS - NIGHT"},
+    {"id": "s009", "number": "10", "heading": "EXT. THE DROWNED MARKET - EARLIER THAT NIGHT"},
+    {"id": "s010", "number": "11", "heading": "INT. THE LIGHTHOUSE - KEEPER'S ROOM - DAY"}
+  ],
+  "pages": [
+    {"page": "1", "at": "s001 heading-1", "text": "EXT. SALTMARROW HARBOUR - DAWN"},
+    {"page": "2", "at": "s003 action-2", "text": "She pries up a loose floorboard. Beneath"},
+    {"page": "3", "at": "s005 character-3", "text": "IDA"},
+    {"page": "4", "at": "s007 character-1", "text": "TOBIAS"},
+    {"page": "5", "at": "s008 heading-1", "text": "EXT. SALTMARROW CLIFFS - NIGHT"},
+    {"page": "6", "at": "s010 character-1", "text": "ELLIS"}
+  ],
+  "revisions": [
+    {"color": "Blue", "date": "2026-11-23"}
+  ]
+}

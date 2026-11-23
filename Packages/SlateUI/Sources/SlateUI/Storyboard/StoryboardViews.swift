@@ -19,7 +19,7 @@ struct StoryboardNavigator: View {
             Section("Scenes") {
                 ForEach(scenes) { row in
                     HStack(spacing: 8) {
-                        Text("\(row.scene?.number ?? 0)")
+                        Text(row.scene?.label ?? "")
                             .font(.caption.monospacedDigit().weight(.semibold))
                             .foregroundStyle(.secondary)
                             .frame(minWidth: 18, alignment: .trailing)
@@ -82,14 +82,16 @@ struct StoryboardDetail: View {
         let model = session.storyboard
         HSplitView {
             StoryboardBoard(session: session)
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+                // Small minimums, so opening the Links/Define inspector squeezes the board instead of widening the window.
+                .frame(minWidth: 240, maxWidth: .infinity, maxHeight: .infinity)
             if let ref = model.selection, let frame = model.frame(ref) {
                 FrameInspector(session: session, ref: ref, frame: frame)
                     .id(ref)
-                    .frame(minWidth: 260, idealWidth: 300, maxWidth: 380, maxHeight: .infinity)
+                    .frame(minWidth: 220, idealWidth: 280, maxWidth: 380, maxHeight: .infinity)
             }
         }
         .onAppear { model.undoManager = undoManager }
+        .toolbar { StoryboardToolbar(session: session) }
         .sheet(item: Binding(get: { model.sketchTarget }, set: { model.sketchTarget = $0 })) { target in
             SketchPadSheet(model: model, target: target)
         }
@@ -201,7 +203,7 @@ private struct SceneBoardRow: View {
         HStack(spacing: 10) {
             switch row.kind {
             case .scene:
-                Text("\(row.scene?.number ?? 0)")
+                Text(row.scene?.label ?? "")
                     .font(.callout.monospacedDigit().weight(.bold))
                     .padding(.horizontal, 7).padding(.vertical, 2)
                     .background(Color.primary.opacity(0.08), in: .capsule)
@@ -217,6 +219,9 @@ private struct SceneBoardRow: View {
                 Label("Orphan: \(row.title)", systemImage: "tray").font(.headline).foregroundStyle(.secondary)
             }
             Spacer()
+            if row.kind == .scene, let audio = model.scratchAudio(row) {
+                ScratchAudioBadge(model: model, row: row, file: audio)
+            }
             Text(row.frames.count == 1 ? "1 frame" : "\(row.frames.count) frames").font(.caption).foregroundStyle(.secondary)
             if row.kind != .scene, let folder = row.folder {
                 ReattachMenu(model: model, folder: folder)
@@ -225,6 +230,11 @@ private struct SceneBoardRow: View {
                         .help("Moves the folder to storyboard/orphans/")
                 }
             } else if let id = row.sceneID {
+                Button {
+                    session.watch(.scene(id))
+                } label: { Image(systemName: "play.circle") }
+                    .buttonStyle(.borderless)
+                    .help("Watch this scene")
                 Button {
                     session.area = .script
                     session.open(sceneID: id)
@@ -242,6 +252,15 @@ private struct SceneBoardRow: View {
             Button("New Sketch") { model.sketchTarget = .init(sceneID: row.id, file: nil) }
             Button("Paste") { _ = model.paste(toRow: row.id) }
                 .disabled(!NSPasteboard.general.canReadItem(withDataConformingToTypes: [UTType.image.identifier, UTType.fileURL.identifier]))
+            Divider()
+            Button(model.scratchAudio(row) == nil ? "Add Scratch Audio…" : "Replace Scratch Audio…") {
+                if let url = StoryboardAudio.choose(title: "Choose Scratch Audio") { model.setScratchAudio(url, row: row.id) }
+            }
+            if model.scratchAudio(row) != nil {
+                Button("Remove Scratch Audio") { model.removeScratchAudio(row: row.id) }
+            }
+            Divider()
+            Button("Watch Scene") { session.watch(.scene(row.id)) }
         } label: {
             Image(systemName: "plus")
                 .font(.title2)
@@ -269,7 +288,7 @@ private struct ReattachMenu: View {
         Menu("Reattach") {
             if free.isEmpty { Text("Every scene already has a board") }
             ForEach(free) { row in
-                Button("\(row.scene?.number ?? 0). \(row.title)") { model.reattach(folder, toScene: row.id) }
+                Button("\(row.scene?.label ?? ""). \(row.title)") { model.reattach(folder, toScene: row.id) }
             }
         }
         .fixedSize()
@@ -391,6 +410,9 @@ private struct FrameMenu: View {
         }
         Button("Show in Script") { StoryboardActions.showInScript(ref, session: session) }
             .disabled(model.scene(forFolder: ref.folder) == nil)
+        if let scene = model.scene(forFolder: ref.folder)?.scene.sceneID {
+            Button("Play From Here") { session.watch(.fromFrame(scene: scene, file: ref.file)) }
+        }
         Button("Show in Finder") {
             if let url = model.url(ref) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
         }
@@ -480,7 +502,7 @@ private struct FrameInspector: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 preview
-                Text(ref.file + (scene.map { " · Scene \($0.number)" } ?? "")).font(.caption).foregroundStyle(.secondary)
+                Text(ref.file + (scene.map { " · Scene \($0.label)" } ?? "")).font(.caption).foregroundStyle(.secondary)
 
                 Picker("Shot", selection: Binding(get: { frame.shot ?? "" }, set: { value in change("Change Shot") { $0.shot = value } })) {
                     Text("None").tag("")

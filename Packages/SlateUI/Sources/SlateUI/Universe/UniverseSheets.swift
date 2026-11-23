@@ -41,7 +41,7 @@ struct LinksInspector: View {
                             }
                             ForEach(appearances.entries) { entry in
                                 HStack {
-                                    Text("\(entry.scene.number)").monospacedDigit().foregroundStyle(.secondary).frame(minWidth: 20, alignment: .trailing)
+                                    Text(entry.scene.label).monospacedDigit().foregroundStyle(.secondary).frame(minWidth: 20, alignment: .trailing)
                                     Text(entry.scene.scene.heading).lineLimit(1)
                                     Spacer()
                                     if entry.speeches > 0 { Text("\(entry.speeches)").foregroundStyle(.secondary).help("Speeches in this scene") }
@@ -401,7 +401,8 @@ struct ProjectSearchSheet: View {
             try? await Task.sleep(for: .milliseconds(120))
             guard !Task.isCancelled else { return }
             let root = session.store.rootURL
-            let paths = session.allPaths
+            // Revision baselines are old copies of the script: not search results.
+            let paths = session.allPaths.filter { !$0.hasPrefix(ProductionFile.revisionsFolder + "/") }
             let overrides = Dictionary(uniqueKeysWithValues: session.store.documents.values.filter(\.isDirty).map { ($0.relativePath, $0.text) })
             let found = await Task.detached(priority: .userInitiated) {
                 ProjectSearch.search(query, root: root, paths: paths, overrides: overrides)

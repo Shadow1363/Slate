@@ -22,7 +22,7 @@ struct ShowcaseTests {
     }
 
     static func book(_ store: ProjectStore) throws -> ScriptBook {
-        let acts = paths(store).filter { $0.hasPrefix("script/") && $0.split(separator: "/").count == 2 && $0 != "script/title-page.md" }
+        let acts = paths(store).filter { $0.hasPrefix("script/") && $0.split(separator: "/").count == 2 && $0 != "script/title-page.md" && $0.hasSuffix(".md") }
         return ScriptBook(texts: try acts.map { (path: $0, text: try store.readText(at: $0)) })
     }
 
@@ -33,7 +33,8 @@ struct ShowcaseTests {
         let book = try Self.book(store)
         #expect(book.files.map(\.name) == ["01-act-one.md", "02-act-two.md", "03-act-three.md"])
         let ids = book.scenes.compactMap(\.scene.sceneID)
-        #expect(ids == (1...10).map { String(format: "s%03d", $0) })
+        // s011 was added after the script was locked (Milestone 11), so it sits between s004 and s005.
+        #expect(ids == ["s001", "s002", "s003", "s004", "s011", "s005", "s006", "s007", "s008", "s009", "s010"])
         // Every script element is used at least once.
         let kinds = Set(book.files.flatMap { $0.parsed.lines.map(\.kind) })
         for kind in [ScriptElementKind.sceneHeading, .action, .character, .parenthetical, .dialogue, .transition,
@@ -124,8 +125,8 @@ struct ShowcaseTests {
         #expect(plan.renames.isEmpty, "\(plan.renames)")
         #expect(plan.missing.isEmpty)
         #expect(plan.orphans.map(\.name) == ["s099 ext-ferry-deck-day"])
-        // s008 is left empty on purpose, to show the placeholder card.
-        #expect(plan.unboarded == ["s008"])
+        // s008 is left empty on purpose, to show the placeholder card; s011 is new since the lock.
+        #expect(plan.unboarded == ["s011", "s008"]) // script order
         var shots: Set<String> = [], moves: Set<String> = []
         var clips = 0, sketches = 0
         for (id, folder) in plan.boarded {
@@ -153,5 +154,99 @@ struct ShowcaseTests {
         #expect(moves.count >= 6)
         #expect(clips == 1 && sketches == 1)
         #expect(StoryboardCover.firstImage(in: store.rootURL)?.lastPathComponent == "01.png")
+    }
+
+    @Test func animatic() throws {
+        let folder = try TempFolder()
+        let store = try Self.open(folder)
+        let all = Self.paths(store)
+        let book = try Self.book(store)
+        let settings = try StoryboardSettings(text: store.readText(at: StoryboardFolders.settings))
+        #expect(settings.score == "score.m4a")
+        #expect(settings.pushIn)
+        #expect(settings.guide == .scope)
+
+        let plan = StoryboardFolders.plan(scenes: book.scenes.map { ($0.scene.sceneID!, $0.scene.heading) },
+                                          folders: StoryboardFolders.folders(in: all))
+        var boards: [String: (folder: String, frames: FramesFile)] = [:]
+        for (id, board) in plan.boarded {
+            boards[id] = (board.path, try FramesFile(text: store.readText(at: board.framesPath)))
+        }
+        let film = AnimaticTimeline.build(scenes: AnimaticScene.all(in: book, boards: boards), settings: settings)
+
+        // Every image, clip and sound it plays is in the project.
+        for path in film.mediaPaths { #expect(all.contains(path), "Missing \(path)") }
+        #expect(film.audio.filter { $0.kind == .scratch }.count == 2)
+        #expect(film.audio.filter { $0.kind == .score }.count == 1)
+        // A scene runs its estimated time, unless every frame sets its own duration (s010 does: 4 s + 5 s).
+        for scene in book.scenes {
+            let id = scene.scene.sceneID!
+            let length = film.segments.filter { $0.sceneID == id }.reduce(0) { $0 + $1.duration }
+            let frames = boards[id]?.frames.frames ?? []
+            if !frames.isEmpty, frames.allSatisfy({ $0.duration != nil }) {
+                #expect(length == frames.compactMap(\.duration).reduce(0, +))
+            } else {
+                #expect(length >= scene.duration - 0.2, "\(id) runs \(length) s of \(scene.duration) s")
+            }
+        }
+        #expect(boards["s010"]?.frames.frames.allSatisfy { $0.duration != nil } == true)
+        let s008 = film.segments.filter { $0.sceneID == "s008" }
+        #expect(s008.count == 1)
+        if case .placeholder(let text)? = s008.first?.content { #expect(!text.isEmpty) } else { Issue.record("s008 isn't a placeholder") }
+        // Push-in from the setting, pull-out from a frame's move.
+        let motions = Set(film.segments.map(\.motion))
+        #expect(motions == [.none, .pushIn, .pullOut])
+        // Every scene with dialogue has subtitles inside its own time.
+        let starts = film.sceneStarts
+        for (index, scene) in book.scenes.enumerated() {
+            let parsed = try #require(book.files.first { $0.path == scene.file }).parsed
+            guard AnimaticTimeline.speeches(in: scene.scene, of: parsed).isEmpty == false else { continue }
+            let start = starts[index].start, end = index + 1 < starts.count ? starts[index + 1].start : film.duration
+            #expect(film.subtitles.contains { $0.start >= start - 0.01 && $0.end <= end + 0.01 }, "No subtitles in \(scene.scene.sceneID!)")
+        }
+    }
+
+    @Test func production() throws {
+        let folder = try TempFolder()
+        let store = try Self.open(folder)
+        let all = Self.paths(store)
+        let file = try ProductionFile(text: store.readText(at: ProductionFile.path))
+        let acts = all.filter { $0.hasPrefix("script/") && $0.split(separator: "/").count == 2 && $0.hasSuffix(".md") && $0 != "script/title-page.md" }
+        let names = acts.map { ($0 as NSString).lastPathComponent }
+        let parsed = try acts.map { ScriptParser.parse(try store.readText(at: $0)) }
+
+        // Locked numbers: s011 is new (4A); the cut ferry scene s099 prints as 6 OMITTED.
+        let revision = try #require(file.currentRevision)
+        #expect(revision.color == .blue)
+        let baselineFolder = try #require(file.currentBaselineFolder)
+        let baseline = try names.map { (name: $0, text: try store.readText(at: baselineFolder + "/" + $0)) }
+        let layout = ProductionLayout.make(files: zip(names, parsed).map { (name: $0, parsed: $1) }, production: file, baseline: baseline)
+        #expect(layout.sceneLabels == ["1", "2", "3", "4", "4A", "5", "7", "8", "9", "10", "11"])
+        #expect(layout.omitted.map(\.number) == ["6"])
+
+        // Every locked page start is still found; the new scene pushes page 2 onto an A-page.
+        for anchor in try #require(file.pages) {
+            #expect(PageAnchors.resolve(anchor, files: parsed) != nil, "Page \(anchor.page) start not found")
+        }
+        let pages = Paginator(production: layout).paginate(parsed).pages
+        #expect(pages.map(\.label).contains("2A"))
+        #expect(!pages.contains { $0.omitted })
+        let printed = pages.flatMap(\.rows).compactMap(\.line.sceneNumber)
+        #expect(printed.contains("6") && printed.contains("4A"))
+
+        // Revision marks: the new scene and two changed lines, on Blue pages.
+        let marked = pages.flatMap(\.rows).filter(\.line.revised).map(\.line.text)
+        #expect(marked.contains("INT. HARBOUR TICKET HUT - NIGHT"))
+        #expect(marked.contains { $0.contains("The hard way.") })
+        #expect(marked.contains { $0.contains("The bell goes") })
+        #expect(pages.contains { $0.revision?.color == .blue })
+        #expect(pages.contains { $0.revision == nil })
+
+        // Reports cover every scene.
+        let paginated = Paginator(production: layout).paginate(parsed)
+        let rows = ProductionReport.scenes.rows(files: parsed, paginated: paginated, labels: layout.sceneLabels!, omitted: layout.omitted)
+        #expect(rows.count == 12)
+        #expect(rows[6] == ["6", "", "OMITTED", "", "", "", ""])
+        #expect(ProductionReport.characters.rows(files: parsed, paginated: paginated, labels: layout.sceneLabels!).first?.first == "JUNO")
     }
 }

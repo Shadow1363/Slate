@@ -76,6 +76,41 @@ He doesn't hear. He's gone into the dark toward [[The Drowned Market]].
 
 /* Cut for length: Juno tries to buy a ticket with 2024 money and the harbour master laughs at her. Maybe bring it back in act two. */
 
+INT. HARBOUR TICKET HUT - NIGHT {#s011}
+
+A shed the size of a wardrobe. A paraffin heater ticks. Timetables pinned three deep, the newest already curling.
+
+The HARBOUR MASTER (60s), moustache like a yard brush, counts coins into a cash tin and doesn't look up.
+
+Juno slaps a note on the counter. Bright plastic. A hologram winks in the lamplight.
+
+HARBOUR MASTER
+What's that, then?
+
+JUNO
+Money. For the late boat. The market boat.
+
+He holds it up to the lamp. Turns it over. The hologram winks at him too.
+
+HARBOUR MASTER
+(laughing)
+Queen's looking well for her age.
+
+JUNO
+Please. My brother's out there.
+
+HARBOUR MASTER
+Everybody's brother's out there, love. No boats tonight. Not in this.
+
+The heater ticks. Rain finds a gap in the roof and taps the counter between them.
+
+Juno takes the note back. Folds it small. Puts it in her pocket beside the clock.
+
+JUNO
+Then I'll walk.
+
+She's gone before he can tell her there's no path. He looks at the empty doorway a long moment, then at the coins in the tin, as if one of them might be lying too.
+
 INT. HARBOUR OFFICE - CONTINUOUS {#s005}
 
 A cramped room of ledgers. CAPTAIN IDA MARSH (40s), Greyline Salvage badge on her coat, signs a manifest without reading it.
@@ -87,7 +122,7 @@ HARBOUR MASTER (O.S.)
 He never listens, Captain.
 
 IDA
-Then he'll learn the way the rest of us did.
+Then he'll learn the way the rest of us did. The hard way.
 
 She blots the ink. Through the window, a figure in an oilskin coat watches her. Juno.
 

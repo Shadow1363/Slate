@@ -146,8 +146,10 @@ public enum FountainExporter {
     /// - Parameters:
     ///   - titlePage: Contents of `title-page.md`.
     ///   - files: Act files in order: (file name, text).
-    public static func export(titlePage: String, files: [(name: String, text: String)]) -> String {
+    /// - Parameter sceneLabels: Locked scene numbers, written as Fountain's `#14A#`.
+    public static func export(titlePage: String, files: [(name: String, text: String)], sceneLabels: [String]? = nil) -> String {
         var output: [String] = []
+        var sceneIndex = 0
         let title = TitlePage.parse(titlePage)
         if !title.isEmpty {
             output.append(title.text.trimmingCharacters(in: .newlines))
@@ -162,7 +164,16 @@ public enum FountainExporter {
                 output.append("")
             }
             for line in parsed.lines {
-                output.append(fountainLine(line))
+                var text = fountainLine(line)
+                if line.kind == .sceneHeading {
+                    if let labels = sceneLabels, labels.indices.contains(sceneIndex) {
+                        let range = NSRange(location: 0, length: (text as NSString).length)
+                        text = SceneHeading.numberPattern.stringByReplacingMatches(in: text, range: range, withTemplate: "")
+                        text += " #\(labels[sceneIndex])#"
+                    }
+                    sceneIndex += 1
+                }
+                output.append(text)
             }
             while output.last == "" { output.removeLast() }
         }

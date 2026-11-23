@@ -1,5 +1,7 @@
 {
   "scene": "s006",
+  "audio": "scratch.m4a",
+  "audioVolume": 0.9,
   "frames": [
     {
       "file": "01.png",

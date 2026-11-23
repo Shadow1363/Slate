@@ -85,7 +85,7 @@ struct PDFTests {
         let second = Publisher.destination(for: .pdf, projectName: "Film", projectRoot: root, date: date)
         #expect(first.deletingLastPathComponent().lastPathComponent == "exports")
         #expect(second.lastPathComponent.hasSuffix(" 2.pdf"))
-        for format in ExportFormat.allCases where format.isAvailable {
+        for format in ExportFormat.allCases where format.isScript {
             let url = try Publisher.export(format, source, projectRoot: root)
             #expect(FileManager.default.fileExists(atPath: url.path))
             #expect(url.pathExtension == format.fileExtension)

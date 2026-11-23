@@ -16,7 +16,7 @@ ELLIS
 Never after the bell.
 
 JUNO
-Good boy. The bell's in ten minutes.
+Good boy. The bell goes in ten minutes.
 
 He looks at her a long time.
 

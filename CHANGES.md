@@ -1,5 +1,128 @@
 # Changes
 
+## Milestone 11 — Production features (2026-11-23)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 377 pass: 267 in SlateCore, 86 in SlateUI and 24 in SlateExport.
+**Dependencies:** none added.
+
+### What works
+- **The Production menu**, in the Script toolbar and at Script › Production, holds every production command below. The Script sidebar's footer shows the state, e.g. "Scenes and pages locked · Blue Rev. 2026-11-23".
+- **Lock Scene Numbers:**
+  - New scenes get letters: 14A, 14B, or A1 before scene 1.
+  - Cut scenes print as `6  OMITTED` in their old place.
+  - Locked numbers show everywhere: the navigator, storyboard, animatic, margin, canvas, and Fountain and Final Draft exports. Fountain numbers on headings (`#14A#`) are now honoured even when not locked.
+- **Lock Pages:**
+  - Each page keeps starting where it did. Overflow goes onto A-pages (12A, 12B…), and a page whose start was cut prints as OMITTED.
+  - Locking with nothing changed gives exactly the same pages, even where a page breaks mid-paragraph or mid-speech.
+- **Revisions:**
+  - Start Blue Revision copies the script to `script/revisions/01 blue/`. From then on, changed lines get a `*` in the right margin and their pages read "Blue Rev. (11/23/26)".
+  - The next revision is Pink, then Yellow, and so on in the standard order.
+  - Clear Revisions puts the copies in the Trash. Unlock and Clear ask first.
+- **Reports**, as PDF or CSV:
+  - **Scene list:** number, INT/EXT, location, time, eighths, first page and cast, with OMITTED rows.
+  - **Character report:** scenes, speeches, words and first page.
+  - **Location report.**
+- **Sides…:** pick scenes and get just their pages, with everything else crossed out.
+- **Files:** `script/production.json` (readable, order kept, unknown keys kept) and `script/revisions/`. Editing either outside Slate updates the pages. Find in Project ignores the revision copies.
+
+### Showcase and fixtures
+- **Tidewater** is now a locked Blue-revision script:
+  - the ticket-hut scene from act one's boneyard note was brought back as **4A**;
+  - the ferry-deck scene (whose board is the orphan) is **6 OMITTED**;
+  - page 2 overflows to **2A**;
+  - three changes are marked.
+
+  `SHOWCASE.md` has a Milestone 11 checklist. Scenes are now eleven: s011 sits between s004 and s005, and has no board yet.
+- **`ShowcaseTests`** check:
+  - the labels, the omitted scene and that every page anchor still resolves;
+  - the 2A page and the marked lines (on Blue pages, with unmarked pages left plain);
+  - the scene list with its OMITTED row.
+- **Checked by eye:** I rendered the showcase's page 2, its sides for 4A and the scene list.
+
+### Stubbed or not yet
+- **Not checked by hand:** the Production menu, the confirmation alerts and the Sides sheet need clicking through.
+- **Only the current revision is marked.** Earlier colours' marks aren't kept, and pages aren't tinted.
+- **Dual dialogue:** a mark on the right column's lines is placed on the whole row.
+- **Location names** keep everything before the last " - " (`THE LIGHTHOUSE - LAMP ROOM`); there's no grouping of sub-locations.
+- **No undo** for lock, unlock or revision commands; `production.json` is a plain file, so git or Time Machine can roll it back.
+- **A flaky test:** `autosaveWritesAfterIdle` failed once under load and passed on every rerun. It's an existing timing test.
+
+### Please try
+1. Make a fresh Showcase project. Look at the Script sidebar numbers (4A), then Page view: 6 OMITTED, page 2A, `*` marks and the Blue header.
+2. Production › Start Pink Revision, change any line, and watch only that line get a `*`.
+3. Add a scene after scene 1: it becomes 1A. Production › Reports › Scene List (CSV) and open it in Numbers.
+4. Production › Sides…, pick 4A, and export.
+5. Unlock Pages, then Lock Pages again: the A-pages renumber.
+
+## Milestone 10 — Animatic (2026-11-22)
+
+**Build:** `xcodebuild … build` succeeds with no compiler warnings.
+**Tests:** 359 pass: 256 in SlateCore, 82 in SlateUI and 21 in SlateExport.
+**Dependencies:** none added (AVFoundation, AVKit, Core Image and Core Graphics are Apple's).
+
+### What works
+- **Watch** (⌥⌘↩, the Storyboard toolbar, or the new Storyboard menu) opens the animatic in its own window. It can go full screen.
+  - **Ranges:** the whole film; one scene (a row's ▶ or + menu › Watch Scene); scenes from–to (the range menu); or from a frame to the end (right-click › Play From Here).
+  - **Transport:** play/pause (Space), frame steps (←/→), scene steps (⌥←/⌥→) and a scrubber. Clicking the frame name selects that frame on the board.
+  - **Live updates:** editing the board or the script while it's open rebuilds it within half a second, at the same place.
+- **Timing:**
+  - Frames without a duration share their scene's estimated time.
+  - Clips play from In to Out. A clip given a longer duration holds its last frame.
+  - Empty scenes play their placeholder card.
+  - Frames fill the storyboard's guide (2.39:1 is letterboxed).
+- **Push-in:** "Slow push-in on stills" in Storyboard Settings, or a frame's own "push in" / "pull out" move.
+- **Overlays:** scene number and heading, caption, and subtitles. Each can be turned off, and the choice is remembered.
+  - **Subtitles:** a line shows during the frame whose Covers includes it, and lines sharing a frame split its time by word count.
+  - Lines no frame covers are placed where they fall in the scene.
+- **Scratch audio:** a row's + menu › Add Scratch Audio… copies a recording into the scene's folder.
+  - `frames.json` gets `"audio": "scratch.m4a"`.
+  - A speaker badge on the row sets the volume.
+- **Temp score:** Storyboard Settings › Temp Score copies a file into `storyboard/` and names it in `storyboard.json`, with a volume. It stays in step with film time in every range.
+- **Export:**
+  - **Animatic (.mov):** H.264, 1080p, overlays burned in.
+  - **Boards PDF:** 2, 4 or 6 frames per page, with scene, shot, move, duration and caption.
+
+  Both go to `exports/`, with a progress bar and Cancel at the foot of the window, then show in Finder. They're also in Script › Publish.
+- **Storyboard Settings** (toolbar sliders): the temp score, push-in, and the sketch guide (now also the shape frames are shown in).
+
+### Showcase and fixtures
+- **Tidewater:**
+  - spoken scratch reads on s003 and s006 (s006 at 90%);
+  - a 60-second drone as the temp score (50%);
+  - push-in on;
+  - s010's photograph set to pull out.
+
+  The existing Covers ranges show both subtitle cases: s006 covered, s003 placed. `SHOWCASE.md` has a Milestone 10 checklist.
+- **`ShowcaseTests`** also build the whole-film animatic and check:
+  - every image, clip and sound exists;
+  - there are two scratch tracks and a score;
+  - each scene runs its estimated time (s010 runs its frames' own 9 s);
+  - s008 is a placeholder, and both moves appear;
+  - every scene with dialogue has subtitles inside its own time.
+- **Exported for real:** the full showcase (5½ minutes) exports in under 2 minutes with nothing missing. I checked frames from the `.mov` and a page of the boards PDF by eye.
+- **The sample fixture** is unchanged. Export tests make their own image, clip and tone.
+
+### Also changed
+- New Sketch (⇧⌘K) moved from the Script menu to the Storyboard menu.
+- **Fixed:** with the Links/Define inspector open, switching to Storyboard could widen the window past the screen. The board now needs 240 pt (was 420) and the frame inspector 220 pt (was 260), and the Links/Define inspector has a set width range (200–400 pt, 260 by default).
+- The `ExportFormat.isAvailable` flag is gone. `isScript` tells script formats from storyboard exports.
+
+### Stubbed or not yet
+- **Not checked by hand:** I can build, test, export and launch the app, but I can't watch playback or press keys in the player here. Smooth playback, full screen, keyboard transport and live rebuilds especially need trying.
+- **Short subtitles:** when a scene's frames set their own short durations (s010 runs 9 s of a 30 s estimate), lines placed by position can flash by. Giving those frames a Covers range fixes it.
+- **Score length:** the temp score plays once from the start; it doesn't loop.
+- **Mixing:** no fades between scenes, and a scratch track that runs longer than its scene is cut at the scene's end.
+- **Export speed:** about 3× real time on this Mac. Cancel works, but the progress bar only moves during encoding, not while the composition is built.
+
+### Please try
+1. Make a fresh Showcase project. Press ⌥⌘↩ and watch from the start: the score, the scenes, the push-ins and the subtitles.
+2. In the player, use Space, ←/→ and ⌥←/⌥→, then ⌃⌘F for full screen. Choose scenes 3–6 in the range menu.
+3. Leave it open, change a frame's duration on the board, and see it rebuild at the same place.
+4. Click s006's speaker badge and change the volume. Add scratch audio to s008 from its + menu.
+5. Right-click a frame › Play From Here.
+6. Export › Animatic (.mov) and open it in QuickTime. Export › Boards PDF at 2, 4 and 6 per page.
+
 ## Showcase in New Project (2026-11-22, after Milestone 9)
 
 - **New Project › Template › Showcase (sample film)** makes a fresh copy of *Tidewater* under your title (it suggests "Tidewater"), with its own project ID. It isn't linked to the repo's copy.

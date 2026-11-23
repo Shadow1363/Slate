@@ -157,12 +157,31 @@ public struct FramesFile: TextBackedFile {
     }
 
     public func index(of file: String) -> Int? { frames.firstIndex { $0.file == file } }
+
+    /// The scene's scratch audio (temp music, a recorded read), in its folder:
+    /// `"audio": "scratch.m4a"`.
+    public var scratchAudio: String? {
+        get { root.text("audio") }
+        set { root.setText("audio", newValue) }
+    }
+
+    /// 0–1; nil plays at full volume.
+    public var scratchVolume: Double? {
+        get { root["audioVolume"]?.double }
+        set { root["audioVolume"] = newValue.map { .number(($0 * 100).rounded() / 100) } }
+    }
 }
 
 /// Which files can be frames.
 public enum StoryboardMedia {
     public static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "heic", "tiff", "tif", "webp", "bmp"]
     public static let clipExtensions: Set<String> = ["mov", "mp4", "m4v"]
+    /// Scratch audio and temp score. Never frames.
+    public static let audioExtensions: Set<String> = ["m4a", "mp3", "wav", "aif", "aiff", "caf"]
+
+    public static func isAudio(_ path: String) -> Bool {
+        audioExtensions.contains((path as NSString).pathExtension.lowercased())
+    }
 
     public static func isClip(_ path: String) -> Bool {
         clipExtensions.contains((path as NSString).pathExtension.lowercased())

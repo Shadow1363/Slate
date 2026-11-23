@@ -43,7 +43,7 @@ struct ScriptWorkspaceTests {
 
     @Test func exportsEveryFormatIntoTheProject() throws {
         let (workspace, root) = try makeWorkspace("INT. KITCHEN - NIGHT {#s001}\n\nRain.\n\nMARA\nHi.\n")
-        for format in ExportFormat.allCases where format.isAvailable {
+        for format in ExportFormat.allCases where format.isScript {
             let url = try workspace.export(format)
             #expect(url.deletingLastPathComponent().standardizedFileURL == root.appending(path: "exports").standardizedFileURL)
         }

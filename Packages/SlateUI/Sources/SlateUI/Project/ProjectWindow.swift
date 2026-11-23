@@ -24,6 +24,11 @@ public struct ProjectActions {
     public let showAllTodos: @MainActor () -> Void
     public let defineSelection: @MainActor () -> Void
     public let newSketch: @MainActor () -> Void
+    public let watchAnimatic: @MainActor () -> Void
+    public let exportBoards: @MainActor (BoardsPDF.Layout) -> Void
+    public let production: @MainActor (ProductionCommand) -> Void
+    /// For the Production menu's titles.
+    public let productionFile: ProductionFile
 }
 
 extension FocusedValues {
@@ -155,6 +160,7 @@ struct ProjectContent: View {
                     case .define: DefineInspector(session: session)
                     }
                 }
+                .inspectorColumnWidth(min: 200, ideal: 260, max: 400)
             }
             .toolbar {
                 ToolbarItem(placement: .automatic) {
@@ -178,7 +184,11 @@ struct ProjectContent: View {
             // Renames board folders to match headings, and moves boards whose scene is gone to orphans/.
             session.storyboard.tidyFolders(moveMissing: true)
         }
+        .overlay(alignment: .bottom) {
+            if let job = session.exportJob { ExportJobBar(job: job) }
+        }
         .onDisappear {
+            session.closeAnimatic()
             session.storyboard.tidyFolders(moveMissing: true)
             model.unregister(session)
         }
@@ -219,7 +229,7 @@ struct ProjectContent: View {
                 guard session.area == .script else { return }
                 session.script.moveCurrentScene(by: delta)
             },
-            publish: { session.script.publish($0) },
+            publish: { session.publish($0) },
             printScript: { session.script.printScript() },
             togglePageView: {
                 session.area = .script
@@ -250,7 +260,14 @@ struct ProjectContent: View {
                 session.script.margin.scope = .all
             },
             defineSelection: { session.defineSelection() },
-            newSketch: { session.newSketch() }
+            newSketch: { session.newSketch() },
+            watchAnimatic: { session.watch(.film) },
+            exportBoards: { session.exportBoards($0) },
+            production: { command in
+                if case .sides = command { session.area = .script }
+                session.script.perform(command)
+            },
+            productionFile: session.script.production
         ))
     }
 }
@@ -270,7 +287,7 @@ extension ProjectArea {
         switch self {
         case .universe: "Canvas, timeline and map arrive in Milestones 7–8."
         case .script: "The screenplay editor arrives in Milestone 2."
-        case .storyboard: "The animatic player arrives in Milestone 10."
+        case .storyboard: "Boards and the animatic player live here."
         case .dictionary: "Pick a word to see its page."
         }
     }

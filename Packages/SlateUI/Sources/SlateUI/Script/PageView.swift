@@ -91,7 +91,7 @@ struct ScriptToolbar: ToolbarContent {
             }
             .help("Show or hide the margin: to-dos and notes (⇧⌘M)")
             Menu {
-                ForEach(ExportFormat.allCases.filter(\.isAvailable)) { format in
+                ForEach(ExportFormat.allCases.filter(\.isScript)) { format in
                     Button(format.title) { workspace.publish(format) }
                 }
                 Divider()
@@ -100,6 +100,7 @@ struct ScriptToolbar: ToolbarContent {
                 Label("Publish", systemImage: "square.and.arrow.up")
             }
             .help("Publish to the exports folder")
+            ProductionMenu(workspace: workspace)
             Button {
                 showingSettings = true
             } label: {

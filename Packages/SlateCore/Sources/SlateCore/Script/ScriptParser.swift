@@ -329,7 +329,7 @@ public struct SceneHeading: Sendable, Equatable {
     }
 
     /// Fountain's scene number at the end of a heading: ` #14#`, ` #1A#`.
-    static let numberPattern = try! NSRegularExpression(pattern: #"\s*#([A-Za-z0-9.-]+)#\s*$"#)
+    public static let numberPattern = try! NSRegularExpression(pattern: #"\s*#([A-Za-z0-9.-]+)#\s*$"#)
 
     /// ` {#s014}` or ` {#s014 dur=2:30}` at the end of the line.
     static let tagPattern = try! NSRegularExpression(

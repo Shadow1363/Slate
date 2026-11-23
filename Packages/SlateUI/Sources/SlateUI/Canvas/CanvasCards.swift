@@ -268,7 +268,7 @@ private struct SceneCard: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "film").foregroundStyle(.secondary)
-                Text(scene.map { "Scene \($0.number)" } ?? "Scene").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text(scene.map { "Scene \($0.label)" } ?? "Scene").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
                 if let scene { Text(eighths(scene.eighths)).font(.caption).foregroundStyle(.secondary) }
             }

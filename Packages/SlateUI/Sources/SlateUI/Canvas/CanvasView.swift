@@ -729,7 +729,7 @@ struct CanvasToolbar: ToolbarContent {
                 Menu("Scene") {
                     ForEach(session.script.book.scenes) { scene in
                         if let id = scene.scene.sceneID {
-                            Button("\(scene.number). \(scene.scene.heading)") {
+                            Button("\(scene.label). \(scene.scene.heading)") {
                                 model.add(CanvasEditing.fileCard(scene.file, subpath: "#" + id, at: model.newCardRect(width: 300, height: 120), in: model.canvas), "Add Scene Card")
                             }
                         }

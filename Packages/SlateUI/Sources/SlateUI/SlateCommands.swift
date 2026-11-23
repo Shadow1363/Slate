@@ -70,8 +70,17 @@ public struct SlateCommands: Commands {
             Menu("Publish") {
                 Button("PDF") { actions?.publish(.pdf) }
                     .keyboardShortcut("e", modifiers: [.command, .shift])
-                ForEach(ExportFormat.allCases.filter { $0.isAvailable && $0 != .pdf }) { format in
+                ForEach(ExportFormat.allCases.filter { $0.isScript && $0 != .pdf }) { format in
                     Button(format.title) { actions?.publish(format) }
+                }
+                Divider()
+                Button(ExportFormat.animatic.title) { actions?.publish(.animatic) }
+                Button(ExportFormat.boards.title) { actions?.publish(.boards) }
+            }
+            .disabled(actions == nil)
+            Menu("Production") {
+                if let actions {
+                    ProductionMenuItems(production: actions.productionFile) { command in actions.production(command) }
                 }
             }
             .disabled(actions == nil)
@@ -87,9 +96,6 @@ public struct SlateCommands: Commands {
             Button("Toggle Margin") { actions?.toggleMargin() }
                 .keyboardShortcut("m", modifiers: [.command, .shift])
                 .disabled(actions == nil)
-            Button("New Sketch…") { actions?.newSketch() }
-                .keyboardShortcut("k", modifiers: [.command, .shift])
-                .disabled(actions == nil)
             Divider()
             Button("Jump to Scene…") { actions?.jumpToScene() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
@@ -101,6 +107,23 @@ public struct SlateCommands: Commands {
             Button("Move Scene Down") { actions?.moveScene(1) }
                 .keyboardShortcut(.downArrow, modifiers: [.command, .control])
                 .disabled(actions == nil)
+        }
+        CommandMenu("Storyboard") {
+            Button("Watch Animatic") { actions?.watchAnimatic() }
+                .keyboardShortcut(.return, modifiers: [.command, .option])
+                .disabled(actions == nil)
+            Button("New Sketch…") { actions?.newSketch() }
+                .keyboardShortcut("k", modifiers: [.command, .shift])
+                .disabled(actions == nil)
+            Divider()
+            Button("Export Animatic (.mov)") { actions?.publish(.animatic) }
+                .disabled(actions == nil)
+            Menu("Export Boards PDF") {
+                ForEach(BoardsPDF.Layout.allCases) { layout in
+                    Button(layout.title) { actions?.exportBoards(layout) }
+                }
+            }
+            .disabled(actions == nil)
         }
         CommandGroup(after: .textEditing) {
             Divider()

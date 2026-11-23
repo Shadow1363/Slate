@@ -54,7 +54,7 @@ final class StoryboardModel {
     /// Set to open the sketch pad.
     var sketchTarget: SketchTarget?
     /// Bumped when frames change, for views that cache.
-    private(set) var version = 0
+    var version = 0
     private(set) var framesByFolder: [String: FramesFile] = [:]
 
     @ObservationIgnored weak var undoManager: UndoManager?
@@ -75,7 +75,7 @@ final class StoryboardModel {
 
     // MARK: - Reading
 
-    private var paths: [String] { (store.files[.storyboard] ?? []).map(\.relativePath) }
+    var paths: [String] { (store.files[.storyboard] ?? []).map(\.relativePath) }
 
     /// Scenes with IDs, in script order.
     var scenes: [ScriptBook.Scene] { script.book.scenes.filter { $0.scene.sceneID != nil } }
@@ -213,7 +213,7 @@ final class StoryboardModel {
         }
     }
 
-    private func save(_ file: FramesFile, folder: String) {
+    func save(_ file: FramesFile, folder: String) {
         let path = folder + "/" + FramesFile.name
         do {
             if let document = try store.documents[path] ?? (paths.contains(path) ? store.document(at: path) : nil) {
@@ -245,7 +245,7 @@ final class StoryboardModel {
         return StoryboardFolders.scenes + "/" + StoryboardFolders.folderName(sceneID: sceneID, heading: scene.scene.heading)
     }
 
-    private func names(in folder: String) -> Set<String> {
+    func names(in folder: String) -> Set<String> {
         Set(paths.filter { ($0 as NSString).deletingLastPathComponent == folder }.map { ($0 as NSString).lastPathComponent })
     }
 
@@ -454,12 +454,7 @@ final class StoryboardModel {
     }
 
     /// The sketch guide new sketches start with (`storyboard.json` › settings › guide).
-    var defaultGuide: SketchGuide {
-        guard let text = try? store.readText(at: StoryboardFolders.settings),
-              case .object(let root)? = try? OrderedJSON.parse(text),
-              let guide = root["settings"]?.object?["guide"]?.string.flatMap(SketchGuide.init(rawValue:)) else { return .wide }
-        return guide
-    }
+    var defaultGuide: SketchGuide { settings.guide }
 }
 
 extension NSImage {

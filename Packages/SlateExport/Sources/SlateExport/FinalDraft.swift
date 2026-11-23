@@ -7,7 +7,8 @@ import SlateCore
 /// so a round trip through Slate keeps them. Boneyard and synopsis lines
 /// aren't exported.
 public enum FDXExporter {
-    public static func export(titlePage: String, files: [(name: String, text: String)]) -> String {
+    /// - Parameter sceneLabels: Scene numbers to write (locked numbers); by position otherwise.
+    public static func export(titlePage: String, files: [(name: String, text: String)], sceneLabels: [String]? = nil) -> String {
         let root = XMLElement(name: "FinalDraft")
         root.addAttribute(attribute("DocumentType", "Script"))
         root.addAttribute(attribute("Template", "No"))
@@ -26,7 +27,8 @@ public enum FDXExporter {
                 case .sceneHeading:
                     sceneNumber += 1
                     let paragraph = self.paragraph("Scene Heading", text)
-                    paragraph.addAttribute(attribute("Number", "\(sceneNumber)"))
+                    let label = sceneLabels.flatMap { $0.indices.contains(sceneNumber - 1) ? $0[sceneNumber - 1] : nil }
+                    paragraph.addAttribute(attribute("Number", label ?? "\(sceneNumber)"))
                     if let id = parsed.scenes.first(where: { $0.headingLine == i })?.sceneID {
                         paragraph.addAttribute(attribute("SlateSceneID", id))
                     }

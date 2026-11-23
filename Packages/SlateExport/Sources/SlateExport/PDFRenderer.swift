@@ -59,12 +59,25 @@ public struct PDFRenderer {
     public var titlePage: TitlePage
     public var documentTitle: String
     public var emphasis: Bool
+    /// Sides: only pages with these scenes (0-based, script order), the rest of each page crossed out.
+    public var sides: Set<Int>?
+    /// For sides: a line at the top of each page (`SIDES · Scenes 3, 5`).
+    public var sidesHeader: String = ""
 
-    public init(paginated: PaginatedScript, titlePage: TitlePage = TitlePage(), documentTitle: String, emphasis: Bool = true) {
+    public init(paginated: PaginatedScript, titlePage: TitlePage = TitlePage(), documentTitle: String, emphasis: Bool = true,
+                sides: Set<Int>? = nil, sidesHeader: String = "") {
         self.paginated = paginated
         self.titlePage = titlePage
         self.documentTitle = documentTitle
         self.emphasis = emphasis
+        self.sides = sides
+        self.sidesHeader = sidesHeader
+    }
+
+    /// The pages printed: all of them, or for sides those showing a chosen scene.
+    public var printedPages: [PrintedPage] {
+        guard let sides else { return paginated.pages }
+        return paginated.pages.filter { page in page.rows.contains { $0.line.scene.map(sides.contains) ?? false } }
     }
 
     private var format: ScreenplayFormat { paginated.format }
@@ -81,12 +94,12 @@ public struct PDFRenderer {
         ]
         guard let context = CGContext(consumer: consumer, mediaBox: &box, info as CFDictionary) else { return Data() }
 
-        if !titlePage.isEmpty {
+        if !titlePage.isEmpty, sides == nil {
             context.beginPDFPage(nil)
             drawTitlePage(in: context)
             context.endPDFPage()
         }
-        for page in paginated.pages {
+        for page in printedPages {
             context.beginPDFPage(nil)
             draw(page, in: context)
             context.endPDFPage()
@@ -102,10 +115,19 @@ public struct PDFRenderer {
     // MARK: - Pages
 
     private func draw(_ page: PrintedPage, in context: CGContext) {
-        if page.number > 1 {
-            drawText([PrintedRun("\(page.number).")], x: format.pageNumberRightEdge, alignment: .right,
-                     top: format.pageNumberTop * 72, in: context)
+        let headerTop = format.pageNumberTop * 72
+        if page.number > 1 || page.label != "1" {
+            drawText([PrintedRun("\(page.label).")], x: format.pageNumberRightEdge, alignment: .right, top: headerTop, in: context)
         }
+        // Revised pages: the colour and date, left of the page number.
+        if let revision = page.revision {
+            drawText([PrintedRun("\(revision.color.rawValue) Rev. (\(Self.shortDate(revision.date)))")],
+                     x: format.pageNumberRightEdge - 0.9, alignment: .right, top: headerTop, in: context)
+        }
+        if sides != nil, !sidesHeader.isEmpty {
+            drawText([PrintedRun(sidesHeader)], x: format.action.x, alignment: .left, top: headerTop, in: context)
+        }
+        var marked: Set<Int> = []
         for row in page.rows {
             let top = CGFloat(format.topMargin * 72) + CGFloat(row.row) * lineHeight
             drawText(row.line.runs, x: row.line.x, alignment: row.line.alignment, top: top, in: context)
@@ -113,7 +135,47 @@ public struct PDFRenderer {
                 drawText([PrintedRun(number)], x: format.sceneNumberLeft, alignment: .left, top: top, in: context)
                 drawText([PrintedRun(number)], x: format.sceneNumberRight, alignment: .left, top: top, in: context)
             }
+            if row.line.revised, marked.insert(row.row).inserted {
+                drawText([PrintedRun("*")], x: format.pageWidth - 0.6, alignment: .left, top: top, in: context)
+            }
         }
+        if let sides { crossOut(page, keeping: sides, in: context) }
+    }
+
+    /// Sides: an X over each stretch of the page that belongs to other scenes.
+    private func crossOut(_ page: PrintedPage, keeping scenes: Set<Int>, in context: CGContext) {
+        let rows = page.rows.sorted { $0.row < $1.row }
+        var runs: [(from: Int, to: Int)] = []
+        for row in rows {
+            let keep = row.line.scene.map(scenes.contains) ?? false
+            if keep { continue }
+            if let last = runs.last, row.row - last.to <= 2 {
+                runs[runs.count - 1].to = row.row
+            } else {
+                runs.append((row.row, row.row))
+            }
+        }
+        context.saveGState()
+        context.setStrokeColor(CGColor(gray: 0, alpha: 0.6))
+        context.setLineWidth(1)
+        for run in runs {
+            let top = pageHeight - CGFloat(format.topMargin * 72) - CGFloat(run.from) * lineHeight
+            let bottom = pageHeight - CGFloat(format.topMargin * 72) - CGFloat(run.to + 1) * lineHeight
+            let left = CGFloat(format.action.x * 72), right = CGFloat((format.pageWidth - 1) * 72)
+            context.move(to: CGPoint(x: left, y: top))
+            context.addLine(to: CGPoint(x: right, y: bottom))
+            context.move(to: CGPoint(x: left, y: bottom))
+            context.addLine(to: CGPoint(x: right, y: top))
+        }
+        context.strokePath()
+        context.restoreGState()
+    }
+
+    /// `2026-11-23` → `11/23/26`.
+    static func shortDate(_ iso: String) -> String {
+        let parts = iso.split(separator: "-")
+        guard parts.count == 3 else { return iso }
+        return "\(parts[1])/\(parts[2])/\(parts[0].suffix(2))"
     }
 
     /// Title, credit, authors, source and draft date centred about a third of

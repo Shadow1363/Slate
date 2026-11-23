@@ -1,8 +1,9 @@
 {
-  "scenes" : [
-
-  ],
-  "settings" : {
-    "guide" : "2.39:1"
+  "scenes": [],
+  "settings": {
+    "guide": "2.39:1",
+    "score": "score.m4a",
+    "scoreVolume": 0.5,
+    "pushIn": true
   }
 }

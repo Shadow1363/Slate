@@ -80,6 +80,10 @@ final class ProjectSession {
     /// Search text, kept between openings of Find in Project.
     var searchQuery = ""
 
+    /// An animatic or boards export in progress.
+    var exportJob: ExportJob?
+    @ObservationIgnored var animaticWindow: AnimaticWindowController?
+
     @ObservationIgnored private var indexTasks: [String: Task<Void, Never>] = [:]
 
     static var globalTemplatesFolder: URL {
@@ -137,6 +141,7 @@ final class ProjectSession {
 
     /// Call when files may have changed on disk without the file list changing.
     func contentsChanged() {
+        script.refreshProduction()
         links.refresh()
         storyboard.refresh()
     }
@@ -313,7 +318,7 @@ final class ProjectSession {
         }
         for scene in script.book.scenes {
             items.append(QuickOpen.Item(kind: .scene, title: scene.scene.heading.isEmpty ? "Untitled scene" : scene.scene.heading,
-                                        subtitle: "Scene \(scene.number)", path: scene.file, sceneRow: ScriptWorkspace.row(for: scene)))
+                                        subtitle: "Scene \(scene.label)", path: scene.file, sceneRow: ScriptWorkspace.row(for: scene)))
         }
         let notePaths = Set(graph.notes.map(\.path))
         for path in allPaths.sorted() where !notePaths.contains(path) && !path.hasPrefix(ProjectLayout.exports + "/") {

@@ -18,6 +18,8 @@ public struct ScriptBook: Sendable, Equatable {
         public let eighths: Int
         /// `dur=` override, or one minute per page.
         public let duration: TimeInterval
+        /// The printed scene number: `14`, or `14A` in a locked script.
+        public let label: String
 
         public var id: String { "\(file)#\(scene.headingLine)" }
     }
@@ -48,11 +50,13 @@ public struct ScriptBook: Sendable, Equatable {
 
     public init(texts: [(path: String, text: String)], paginator: Paginator? = nil) {
         let parsed = texts.map { (path: $0.path, parsed: ScriptParser.parse($0.text)) }
-        self.init(parsed: parsed, paginated: paginator?.paginate(parsed.map(\.parsed)))
+        self.init(parsed: parsed, paginated: paginator?.paginate(parsed.map(\.parsed)), labels: paginator?.production?.sceneLabels)
     }
 
     /// - Parameter paginated: The layout of these same files, for exact eighths.
-    public init(parsed: [(path: String, parsed: ParsedScript)], paginated: PaginatedScript? = nil) {
+    /// - Parameter labels: Printed scene numbers (locked); by default Fountain numbers or positions.
+    public init(parsed: [(path: String, parsed: ParsedScript)], paginated: PaginatedScript? = nil, labels: [String]? = nil) {
+        let labels = labels ?? SceneNumbering.labels(SceneNumbering.scenes(in: parsed.map(\.parsed)), locked: nil)
         files = parsed.map { File(path: $0.path, parsed: $0.parsed) }
         var scenes: [Scene] = []
         var characterCounts: [String: Int] = [:]
@@ -83,7 +87,8 @@ public struct ScriptBook: Sendable, Equatable {
                     scene: scene,
                     number: scenes.count + 1,
                     eighths: eighths,
-                    duration: scene.durationOverride ?? Double(eighths) / 8 * 60
+                    duration: scene.durationOverride ?? Double(eighths) / 8 * 60,
+                    label: labels.indices.contains(index) ? labels[index] : String(index + 1)
                 ))
             }
         }

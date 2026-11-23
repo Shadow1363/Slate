@@ -12,6 +12,7 @@
       "file": "02.png",
       "duration": 5,
       "shot": "INSERT",
+      "move": "pull out",
       "caption": "No daughter in the photograph",
       "scriptRange": "action-4"
     }

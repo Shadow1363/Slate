@@ -53,7 +53,19 @@ struct ScriptNavigator: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            ScriptTotals(book: book)
+            VStack(spacing: 0) {
+                if let status = workspace.productionStatus {
+                    Label(status, systemImage: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 6)
+                        .background(.bar)
+                        .help("Script › Production")
+                }
+                ScriptTotals(book: book)
+            }
         }
         .onChange(of: workspace.selectedRow) { _, row in
             guard let row, row != workspace.lastRevealedRow else { return }
@@ -77,7 +89,7 @@ struct SceneRow: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("\(scene.number)")
+            Text(scene.label)
                 .font(.caption.monospacedDigit().weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 22, alignment: .trailing)
@@ -91,7 +103,7 @@ struct SceneRow: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Scene \(scene.number), \(scene.scene.heading)")
+        .accessibilityLabel("Scene \(scene.label), \(scene.scene.heading)")
     }
 }
 
@@ -130,10 +142,12 @@ struct ScriptDetail: View {
         } else if workspace.showingPages {
             PageView(workspace: workspace)
                 .toolbar { ScriptToolbar(workspace: workspace) }
+                .sheet(isPresented: $workspace.showingSides) { SidesSheet(workspace: workspace) }
         } else if let path = workspace.currentFile, let document = workspace.store.documents[path] {
             ScriptEditorPane(workspace: workspace, document: document)
                 .id(path)
                 .toolbar { ScriptToolbar(workspace: workspace) }
+                .sheet(isPresented: $workspace.showingSides) { SidesSheet(workspace: workspace) }
         } else if let error = workspace.openError {
             ContentUnavailableView("Can't Open Script", systemImage: "exclamationmark.triangle", description: Text(error))
         } else {
@@ -205,7 +219,7 @@ struct JumpToSceneSheet: View {
     private var matches: [ScriptBook.Scene] {
         let scenes = workspace.book.scenes
         guard !query.isEmpty else { return scenes }
-        return scenes.filter { "\($0.number) \($0.scene.heading)".localizedCaseInsensitiveContains(query) }
+        return scenes.filter { "\($0.label) \($0.scene.heading)".localizedCaseInsensitiveContains(query) }
     }
 
     var body: some View {

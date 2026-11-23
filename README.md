@@ -94,7 +94,7 @@ Scene IDs such as `{#s014}` are added when you finish typing a heading. They sho
 ## Publishing
 
 - **Page view** (⇧⌘\\ or the Draft/Page switch) shows the script exactly as it will print. You edit in Draft view, and the pages catch up a moment after you stop typing.
-- **Script › Publish** writes PDF (⇧⌘E), Final Draft (.fdx), Fountain or Markdown into the project's `exports/` folder.
+- **Script › Publish** writes PDF (⇧⌘E), Final Draft (.fdx), Fountain or Markdown into the project's `exports/` folder, and also offers the animatic and boards PDF (see Animatic).
 - **Print Script…** (⌥⌘P) uses the same renderer. ⌘P is kept for Quick Open.
 - **Publish settings** (the sliders button in the Script toolbar): page size, scene numbers, automatic (CONT'D), and bold/italic/underline. They're saved in `project.json`.
 - **Import Screenplay…** (⇧⌘I, or Import on the home screen) makes a new project from a `.fountain`, `.fdx`, `.txt` or `.md` file. Fountain `# Sections` become act files.
@@ -156,6 +156,25 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **Sketch pad (⇧⌘K):** pen with pressure, eraser, four greys, three sizes, 16:9 / 2.39:1 / 1.85:1 guides. Saved as a PNG with its strokes; double-click to edit.
 - **Missing scenes:** a board whose scene was deleted is marked, with Reattach and Move to Orphans; on close it moves to `storyboard/orphans/`.
 
+## Production
+
+The Production menu (Script toolbar, or Script › Production) turns a draft into a shooting script. Everything it records is in `script/production.json` and `script/revisions/`.
+
+- **Lock Scene Numbers:** numbers stop changing. A scene added later takes a letter from the one before it (`14A`, `14B`; `A1` before scene 1); a locked scene that's cut prints as `14  OMITTED`. Locked numbers also go into Fountain (`#14A#`) and Final Draft exports, the storyboard and the animatic.
+- **Lock Pages:** each page keeps starting where it did. Text that no longer fits goes onto A-pages (`23A`); a page whose content was all cut prints as OMITTED.
+- **Start Revision:** copies the script as it is now into `script/revisions/NN colour/`. Every change after that gets a `*` in the right margin, and changed pages carry the colour and date in their header (`Blue Rev. (11/23/26)`). Colours go White, Blue, Pink, Yellow, Green, Goldenrod, Buff, Salmon, Cherry.
+- **Reports:** scene list (number, INT/EXT, location, time, length in eighths, page, cast), character report and location report, each as PDF or CSV.
+- **Sides…:** choose scenes; you get just the pages they're on, with everything else crossed out.
+
+## Animatic
+
+- **Watch** (⌥⌘↩, the toolbar's Watch, or Storyboard › Watch Animatic) opens the player in its own window. Play the whole film, one scene (a row's ▶ button or + menu › Watch Scene), a range of scenes (the range menu), or from a frame to the end (right-click a frame › Play From Here).
+- **Keys:** Space plays and pauses; ← / → step frames; ⌥← / ⌥→ step scenes; ⌃⌘F or a double-click goes full screen.
+- **Timing:** frames without a duration share their scene's estimated time; clips play from In to Out; stills can slowly push in (Storyboard Settings) or follow a frame's "push in" / "pull out" move.
+- **Overlays** (the player's Overlays menu): scene number and heading, caption, and subtitles. A line of dialogue shows during the frame whose Covers includes it; other lines are placed where they fall in the scene.
+- **Sound:** a row's + menu › Add Scratch Audio… copies a recording into the scene's folder (named in `frames.json` as `"audio"`). Storyboard Settings › Temp Score adds a project-wide track in `storyboard/` (named in `storyboard.json`). Each has a volume.
+- **Export** (toolbar Export menu, Storyboard menu, or Script › Publish): the animatic as an H.264 `.mov` with the overlays burned in, or a boards PDF with 2, 4 or 6 frames per page. Both go to `exports/`.
+
 ## Dictionary
 
 - **One book:** `dictionary/words.md` is the film's own dictionary, filed A–Z under `## Letter` headings:
@@ -182,7 +201,7 @@ App/                    App entry point (SlateApp.swift)
 Packages/
   SlateCore/            Models, file I/O, watcher, themes. No UI. Unit-tested.
   SlateUI/              SwiftUI and AppKit views
-  SlateExport/          PDF renderer, Fountain/FDX/Markdown import and export, Courier Prime
+  SlateExport/          PDF renderer, Fountain/FDX/Markdown import and export, animatic (AVFoundation) and boards PDF, Courier Prime
 Fixtures/SampleProject  Sample project used by tests
 Fixtures/Fountain       Reference scripts and PDFs from fountain.io
 Fixtures/Snapshots      Golden page layouts
@@ -203,6 +222,8 @@ Fixtures/Snapshots      Golden page layouts
 | ⌘= / ⌘− | Canvas and map: zoom in / out. Timeline: wider / narrower |
 | ⌘0 | Map: fit |
 | ⇧⌘K | New sketch (storyboard) |
+| ⌥⌘↩ | Watch the animatic |
+| Space, ← / →, ⌥← / ⌥→ | Player: play/pause, previous/next frame, previous/next scene |
 | ⇧⌘T | Add to-do at the caret |
 | ⌥⌘T | Add margin note at the caret |
 | ⇧⌘M | Show / hide the margin |
