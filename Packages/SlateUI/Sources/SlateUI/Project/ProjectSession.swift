@@ -273,6 +273,11 @@ final class ProjectSession {
 
     /// ⇧⌘T / ⌥⌘T: anchored to the caret's scene and the selected words.
     func addTodoAtCaret() {
+        // In a note (or the draft), a to-do is a `%% TODO: %%` comment where you're writing.
+        if area != .script, let textView = NSApp.keyWindow?.firstResponder as? SlateTextView, textView.isEditable {
+            CommentTodoEditing.insertNew(in: textView)
+            return
+        }
         area = .script
         sheet = .addTodo(sceneID: script.currentSceneID, quote: script.caret?.selection)
     }

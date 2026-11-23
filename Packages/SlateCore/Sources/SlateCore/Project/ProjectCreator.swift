@@ -96,7 +96,7 @@ public enum ProjectCreator {
 public struct ProjectSummary: Sendable, Equatable {
     public var name: String
     public var lastEdited: Date?
-    /// Open to-dos in `script/margin/todos.md`.
+    /// Open to-dos: `script/margin/todos.md` plus `TODO:` comments.
     public var openTodos = 0
     /// The first storyboard image, in script order, for the Home card.
     public var cover: URL?
@@ -132,7 +132,7 @@ public struct ProjectSummary: Sendable, Equatable {
                 if newest == nil || date > newest! { newest = date }
             }
         }
-        let open = Reminders.todos(in: root).filter { !$0.done }.count
+        let open = Reminders.todos(in: root).filter { !$0.done }.count + CommentTodos.inProject(root: root).filter { !$0.done }.count
         var summary = ProjectSummary(name: manifest.name, lastEdited: newest, openTodos: open, cover: StoryboardCover.firstImage(in: root))
         // The script, laid out as it prints: every film of a saga, added up.
         let films = Films.onDisk(root: root, projectName: manifest.name)

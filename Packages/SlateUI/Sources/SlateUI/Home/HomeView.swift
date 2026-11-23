@@ -6,6 +6,7 @@ enum HomeSection: Hashable {
     case all
     case recent
     case pinned
+    case pending
     case watched(URL)
 }
 
@@ -27,6 +28,7 @@ public struct HomeView: View {
                     Label("All Projects", systemImage: "square.grid.2x2").tag(HomeSection.all)
                     Label("Recent", systemImage: "clock").tag(HomeSection.recent)
                     Label("Pinned", systemImage: "pin").tag(HomeSection.pinned)
+                    PendingSidebarRow().tag(HomeSection.pending)
                 }
                 Section {
                     ForEach(model.library.watchedFolders, id: \.self) { folder in
@@ -42,9 +44,8 @@ public struct HomeView: View {
                             }
                     }
                 } header: {
-                    HStack {
+                    HStack(spacing: 6) {
                         Text("Watched Folders")
-                        Spacer()
                         Button {
                             LibraryActions.chooseWatchedFolder(model: model)
                         } label: {
@@ -53,15 +54,20 @@ public struct HomeView: View {
                         .buttonStyle(.borderless)
                         .help("Watch another folder for projects")
                         .accessibilityLabel("Add Watched Folder")
+                        Spacer()
                     }
                 }
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         } detail: {
-            ProjectGrid(entries: visibleEntries, emptyMessage: emptyMessage, listView: listView, open: open)
+            if section == .pending {
+                PendingView(search: search)
+            } else {
+                ProjectGrid(entries: visibleEntries, emptyMessage: emptyMessage, listView: listView, open: open)
+            }
         }
         .navigationTitle(title)
-        .searchable(text: $search, placement: .toolbar, prompt: "Search projects")
+        .searchable(text: $search, placement: .toolbar, prompt: section == .pending ? "Search to-dos" : "Search projects")
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Picker("View", selection: $listView) {
@@ -96,9 +102,6 @@ public struct HomeView: View {
             NewProjectSheet { url in openWindow(id: SlateWindowID.project, value: url) }
         }
         .safeAreaInset(edge: .top, spacing: 0) { UpdateBanner() }
-        .sheet(isPresented: $model.showingLaunchReminders) {
-            LaunchRemindersSheet()
-        }
         .task {
             #if DEBUG
             if ScreenshotTour.folder != nil {
@@ -113,7 +116,8 @@ public struct HomeView: View {
             }
             model.library.scanWatchedFolders()
             model.library.refreshStatuses()
-            model.checkLaunchReminders()
+            model.startReminders()
+            model.refreshPending()
             model.updater.checkAtLaunch()
         }
         .onChange(of: model.pendingOpen) { _, root in
@@ -124,6 +128,7 @@ public struct HomeView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             model.library.refreshStatuses()
+            model.refreshPending()
         }
         .frame(minWidth: 720, minHeight: 440)
         .slateThemed()
@@ -134,6 +139,7 @@ public struct HomeView: View {
         case .all: "All Projects"
         case .recent: "Recent"
         case .pinned: "Pinned"
+        case .pending: "Pending"
         case .watched(let folder): folder.lastPathComponent
         }
     }
@@ -143,6 +149,7 @@ public struct HomeView: View {
         case .all: model.library.entries.sorted { $0.folderName.localizedStandardCompare($1.folderName) == .orderedAscending }
         case .recent: model.library.recent
         case .pinned: model.library.pinned
+        case .pending: []
         case .watched(let folder): model.library.entries(inWatchedFolder: folder)
         }
         guard !search.isEmpty else { return entries }
@@ -154,6 +161,7 @@ public struct HomeView: View {
         case .all: "No projects yet. Create one with New Project, or open an existing folder."
         case .recent: "Projects you open show up here."
         case .pinned: "Right-click a project and choose Pin to keep it here."
+        case .pending: ""
         case .watched(let folder): "No projects in \(folder.path) yet."
         }
     }
@@ -194,5 +202,18 @@ struct ProjectGrid: View {
                 .padding(24)
             }
         }
+    }
+}
+
+/// Library › Pending, with the number of open to-dos (red when some are overdue).
+private struct PendingSidebarRow: View {
+    @Environment(SlateAppModel.self) private var model
+
+    var body: some View {
+        let all = model.pending.flatMap(\.todos)
+        let overdue = all.contains { $0.todo.isOverdue() }
+        Label("Pending", systemImage: "checklist")
+            .badge(all.isEmpty ? nil : Text("\(all.count)").foregroundStyle(overdue ? .red : .secondary))
+            .help(overdue ? "Open to-dos, some overdue" : "Open to-dos in every project")
     }
 }

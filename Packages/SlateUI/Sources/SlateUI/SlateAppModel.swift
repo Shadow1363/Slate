@@ -20,10 +20,11 @@ public final class SlateAppModel {
 
     // MARK: Reminders state
 
-    /// Open to-dos per project, for the sheet shown at launch.
-    var launchReminders: [ProjectTodos] = []
-    var showingLaunchReminders = false
-    @ObservationIgnored private var checkedLaunchReminders = false
+    /// Open to-dos per project, for Home › Pending.
+    private(set) var pending: [ProjectTodos] = []
+    private(set) var pendingLoaded = false
+    @ObservationIgnored private var pendingTask: Task<Void, Never>?
+    @ObservationIgnored private var startedReminders = false
     /// "Go to scene" requests for project windows, by project path.
     private(set) var jumpRequests: [String: JumpRequest] = [:]
     @ObservationIgnored private var sessions: [String: WeakSession] = [:]
@@ -33,6 +34,9 @@ public final class SlateAppModel {
     struct JumpRequest: Equatable {
         let sceneID: String?
         let quote: String?
+        /// A file and range to show instead (a `TODO:` comment in a note).
+        var path: String? = nil
+        var range: NSRange? = nil
         let token = UUID()
     }
 
@@ -61,7 +65,13 @@ public final class SlateAppModel {
         // The notification centre needs an app bundle; tests run without one.
         if Bundle.main.bundleURL.pathExtension == "app" {
             let scheduler = ReminderScheduler()
-            scheduler.onOpen = { [weak self] root, scene in self?.requestJump(to: root, sceneID: scene, quote: nil) }
+            scheduler.onOpen = { [weak self] root, scene, path, location in
+                if let path, let location {
+                    self?.requestJump(to: root, path: path, range: NSRange(location: location, length: 0))
+                } else {
+                    self?.requestJump(to: root, sceneID: scene, quote: nil)
+                }
+            }
             self.scheduler = scheduler
         }
         // ggml's Metal backend aborts at exit if a Whisper model is still loaded.
@@ -179,6 +189,27 @@ public final class SlateAppModel {
         pendingOpen = root
     }
 
+    /// Asks the project's window to show a range of a file (a note's `TODO:` comment).
+    func requestJump(to root: URL, path: String, range: NSRange) {
+        jumpRequests[Self.key(root)] = JumpRequest(sceneID: nil, quote: nil, path: path, range: range)
+        pendingOpen = root
+    }
+
+    /// Opens a pending to-do where it was written: its scene, or the note at the comment.
+    func requestJump(to root: URL, for item: PendingTodo) {
+        switch item.kind {
+        case .margin(let todo):
+            requestJump(to: root, sceneID: todo.sceneID, quote: todo.quote)
+        case .comment(let todo):
+            if todo.path.hasPrefix(ProjectLayout.script + "/"), let scene = todo.sceneID {
+                requestJump(to: root, sceneID: scene, quote: nil)
+                jumpRequests[Self.key(root)] = JumpRequest(sceneID: scene, quote: nil, path: todo.path, range: todo.range)
+            } else {
+                requestJump(to: root, path: todo.path, range: todo.range)
+            }
+        }
+    }
+
     /// A project the next active window should open (from a notification).
     var pendingOpen: URL?
 
@@ -204,43 +235,66 @@ public final class SlateAppModel {
         }
     }
 
-    /// Once per launch: collect open to-dos for the sheet, per the setting.
-    func checkLaunchReminders() {
-        guard !checkedLaunchReminders else { return }
-        checkedLaunchReminders = true
-        let scope = LaunchReminderScope(rawValue: UserDefaults.standard.string(forKey: ReminderPreferences.launchScope) ?? "") ?? .lastProject
-        let projects: [(name: String, root: URL)]
-        switch scope {
-        case .off: projects = []
-        case .lastProject: projects = Array(reachableProjects().prefix(1))
-        case .allProjects: projects = reachableProjects()
-        }
-        launchReminders = Reminders.launchList(projects: projects)
-        showingLaunchReminders = !launchReminders.isEmpty
+    /// Once per launch: schedule due-date notifications for every project.
+    func startReminders() {
+        guard !startedReminders else { return }
+        startedReminders = true
         rescheduleAll()
     }
 
-    /// Ticks a to-do from the launch sheet: through the open window's
-    /// document if the project is open, else straight to the file.
-    func complete(_ todo: MarginTodo, in root: URL) {
-        if let session = openSession(for: root) {
-            session.script.margin.toggle(todo)
-        } else {
-            let url = root.appending(path: MarginTodos.path)
-            do {
-                let text = try CoordinatedFileIO.readText(url)
-                guard let updated = MarginTodos.toggling(todo, in: text) else { return }
-                try CoordinatedFileIO.writeText(updated, to: url)
-            } catch {
-                Self.showError("Couldn't update the to-do", error)
+    /// Re-reads every project's open to-dos for Home › Pending, off the main thread.
+    func refreshPending() {
+        pendingTask?.cancel()
+        let projects = reachableProjects()
+        pendingTask = Task { [weak self] in
+            let list = await Task.detached(priority: .utility) { Reminders.pending(projects: projects) }.value
+            guard !Task.isCancelled, let self else { return }
+            self.pending = list
+            self.pendingLoaded = true
+        }
+    }
+
+    /// Ticks a pending to-do: through the open window's documents if the
+    /// project is open, else straight to the file.
+    func complete(_ item: PendingTodo, in root: URL) {
+        switch item.kind {
+        case .margin(let todo):
+            if let session = openSession(for: root) {
+                session.script.margin.toggle(todo)
+            } else {
+                edit(root.appending(path: MarginTodos.path)) { MarginTodos.toggling(todo, in: $0) }
+            }
+        case .comment(let todo):
+            if let session = openSession(for: root), let document = try? session.store.document(at: todo.path) {
+                if let updated = CommentTodos.toggling(todo, in: document.text) {
+                    document.text = updated
+                } else {
+                    Self.showError("Couldn't update the to-do", CocoaError(.fileWriteUnknown, userInfo: [
+                        NSLocalizedDescriptionKey: "The comment changed since the list was made. The list has been refreshed."]))
+                }
+            } else {
+                edit(root.appending(path: todo.path)) { CommentTodos.toggling(todo, in: $0) }
             }
         }
-        launchReminders = launchReminders.compactMap { project in
+        pending = pending.compactMap { project in
             guard project.root == root else { return project }
-            let rest = project.todos.filter { $0.id != todo.id }
+            let rest = project.todos.filter { $0.id != item.id }
             return rest.isEmpty ? nil : ProjectTodos(name: project.name, root: project.root, todos: rest)
         }
         reschedule(root: root)
+    }
+
+    private func edit(_ url: URL, _ change: (String) -> String?) {
+        do {
+            let text = try CoordinatedFileIO.readText(url)
+            guard let updated = change(text) else {
+                refreshPending()
+                return
+            }
+            try CoordinatedFileIO.writeText(updated, to: url)
+        } catch {
+            Self.showError("Couldn't update the to-do", error)
+        }
     }
 
     // MARK: - Notifications
@@ -250,16 +304,21 @@ public final class SlateAppModel {
     }
 
     /// Re-plans one project's due-date notifications (debounced).
-    func reschedule(root: URL, todos: [MarginTodo]? = nil) {
+    func reschedule(root: URL) {
         guard let scheduler else { return }
         let key = Self.key(root)
         rescheduleTasks[key]?.cancel()
         let enabled = notificationsEnabled
         rescheduleTasks[key] = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(500))
+            // Long enough for autosave to have written what was typed.
+            try? await Task.sleep(for: .seconds(3))
             guard !Task.isCancelled else { return }
-            let list = todos ?? Reminders.todos(in: root)
-            let plan = enabled ? Reminders.plan(projectName: Self.projectName(at: root), projectRoot: root, todos: list) : []
+            let name = Self.projectName(at: root)
+            let plan = enabled
+                ? await Task.detached(priority: .utility) {
+                    Reminders.plan(projectName: name, projectRoot: root, pending: Reminders.pending(in: root))
+                }.value
+                : []
             await scheduler.schedule(plan, for: root)
             self?.rescheduleTasks[key] = nil
         }
@@ -276,7 +335,6 @@ public final class SlateAppModel {
 }
 
 public enum ReminderPreferences {
-    public static let launchScope = "launchReminderScope"
     public static let notifications = "dueDateNotifications"
 }
 

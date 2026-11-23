@@ -54,6 +54,17 @@ enum ScreenshotTour {
         Step(name: "dictionary") { session in
             session.area = .dictionary
         },
+        Step(name: "todo-comment") { session in
+            session.closeSearch()
+            let juno = "universe/characters/juno-hale.md"
+            if let document = try? session.store.document(at: juno), !document.text.contains("TODO:") {
+                document.text = document.text.replacingOccurrences(
+                    of: "To stop living in 1987.",
+                    with: "To stop living in 1987. %% TODO: does she ever say it out loud? due:2026-12-01 %%")
+            }
+            session.area = .universe
+            session.universeSelection = juno
+        },
         Step(name: "search") { session in
             session.area = .universe
             session.universeSelection = "universe/characters/juno-hale.md"

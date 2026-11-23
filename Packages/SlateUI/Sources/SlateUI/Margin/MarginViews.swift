@@ -107,16 +107,25 @@ private struct TodoList: View {
     var body: some View {
         let script = session.script
         let todos = margin.visibleTodos(currentScene: script.currentSceneID, sceneOrder: script.sceneOrder)
+        let comments = margin.visibleCommentTodos(files: script.scriptFiles.map(\.relativePath), currentScene: script.currentSceneID)
         VStack(spacing: 0) {
             List {
                 ForEach(todos) { todo in
                     TodoRow(session: session, todo: todo)
                 }
+                if !comments.isEmpty {
+                    Section("TODO comments") {
+                        ForEach(comments) { todo in
+                            CommentTodoRow(session: session, margin: margin, todo: todo)
+                        }
+                    }
+                }
             }
             .listStyle(.plain)
             .overlay {
-                if todos.isEmpty {
-                    ContentUnavailableView(emptyTitle, systemImage: "checklist", description: Text("Add one below, or press ⇧⌘T in the script."))
+                if todos.isEmpty && comments.isEmpty {
+                    ContentUnavailableView(emptyTitle, systemImage: "checklist",
+                                           description: Text("Add one below, press ⇧⌘T in the script, or write /* TODO: … */."))
                 }
             }
             Divider()
@@ -139,6 +148,47 @@ private struct TodoList: View {
         guard !text.isEmpty else { return }
         margin.add(MarginTodo(text: text, sceneID: margin.scope == .scene ? session.script.currentSceneID : nil))
         draft = ""
+    }
+}
+
+/// A `/* TODO: … */` comment in the script: tick it (TODO → DONE), or click to select it.
+private struct CommentTodoRow: View {
+    let session: ProjectSession
+    let margin: MarginModel
+    let todo: CommentTodo
+    @Environment(\.slateTheme) private var theme
+
+    var body: some View {
+        let item = todo.asMarginTodo
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Button {
+                margin.toggle(todo)
+            } label: {
+                Image(systemName: todo.done ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(Color(todo.done ? theme.margin.done : theme.margin.todo))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(todo.done ? "Mark not done" : "Mark done")
+            VStack(alignment: .leading, spacing: 2) {
+                Text(todo.text.isEmpty ? "To-do" : todo.text)
+                    .strikethrough(todo.done)
+                    .foregroundStyle(Color(todo.done ? theme.margin.done : theme.margin.todo))
+                HStack(spacing: 6) {
+                    Label("Comment", systemImage: "text.bubble").labelStyle(.iconOnly)
+                    if margin.scope == .all { Text(todo.place).lineLimit(1) }
+                    if let due = todo.due {
+                        Text(item.isOverdue() ? "Overdue · \(DueText.format(due))" : "Due \(DueText.format(due))")
+                            .foregroundStyle(item.isOverdue() ? Color(theme.margin.overdue) : .secondary)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(.rect)
+        .onTapGesture { session.open(todo.path, location: todo.range.location) }
+        .help("Click to show the comment in the script")
     }
 }
 

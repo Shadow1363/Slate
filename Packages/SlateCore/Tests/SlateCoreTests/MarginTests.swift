@@ -149,9 +149,11 @@ struct ReminderTests {
         let folder = try TempFolder()
         let sample = try Fixtures.copySampleProject(into: folder)
         try folder.write("- [x] all done\n", to: "Other/script/margin/todos.md")
-        let list = Reminders.launchList(projects: [("Sample", sample), ("Other", folder.file("Other"))])
+        let list = Reminders.pending(projects: [("Sample", sample), ("Other", folder.file("Other"))])
         #expect(list.map(\.name) == ["Sample"])
         #expect(list[0].todos.count == 3)
-        #expect(list[0].todos.first?.due == "2026-12-01")
+        #expect(list[0].todos.first?.todo.due == "2026-12-01")
+        // Margin to-dos name their scene.
+        #expect(list[0].todos.first { $0.todo.sceneID == "s014" }?.place == "INT. KITCHEN - NIGHT")
     }
 }
