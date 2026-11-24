@@ -192,9 +192,9 @@ final class ScriptEditorController: NSObject, NSTextViewDelegate {
         textView.setSelectedRange(selection)
         programmatic = false
         caretMoved()
-        textView.scrollRangeToVisible(selection)
-        if selection.length > 0 { textView.showFindIndicator(for: selection) }
-        if reveal.focus { textView.window?.makeFirstResponder(textView) }
+        programmatic = true
+        textView.reveal(range: selection, focus: reveal.focus)
+        programmatic = false
     }
 
     // MARK: - Theme and layout

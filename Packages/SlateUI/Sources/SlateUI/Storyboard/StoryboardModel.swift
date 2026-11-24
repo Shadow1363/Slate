@@ -54,6 +54,8 @@ final class StoryboardModel {
     var selected: Set<FrameRef> = []
     /// A row to scroll to.
     var focusedRow: String?
+    /// Edit › Find (⌘F): shows only scenes whose heading or a frame caption contains this.
+    var sceneFilter = ""
     /// Set to open the sketch pad.
     var sketchTarget: SketchTarget?
     /// Bumped when frames change, for views that cache.
@@ -540,5 +542,16 @@ extension NSImage {
     var pngData: Data? {
         guard let tiff = tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
         return bitmap.representation(using: .png, properties: [:])
+    }
+}
+
+extension StoryboardModel {
+    /// Whether a row passes the scene filter (heading, scene number or frame captions).
+    func matchesFilter(_ row: Row) -> Bool {
+        let query = sceneFilter.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return true }
+        if row.title.localizedCaseInsensitiveContains(query) { return true }
+        if let label = row.scene?.label, label.localizedCaseInsensitiveCompare(query) == .orderedSame { return true }
+        return row.frames.contains { $0.caption?.localizedCaseInsensitiveContains(query) == true }
     }
 }

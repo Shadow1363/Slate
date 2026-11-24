@@ -373,11 +373,11 @@ final class ScriptWorkspace {
     }
 
     /// Shows an act file with the caret at a UTF-16 location.
-    func reveal(file path: String, location: Int, focus: Bool = true) {
+    func reveal(file path: String, location: Int, length: Int = 0, focus: Bool = true) {
         showingTitlePage = false
         showingPages = false
         currentFile = path
-        reveal = RevealRequest(file: path, location: location, focus: focus)
+        reveal = RevealRequest(file: path, location: location, focus: focus, length: length)
     }
 
     static func row(for scene: ScriptBook.Scene) -> String {

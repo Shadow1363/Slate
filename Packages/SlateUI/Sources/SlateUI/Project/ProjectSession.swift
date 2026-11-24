@@ -42,9 +42,17 @@ final class ProjectSession {
         }
     }
 
+    /// What Edit › Find searches in the current view.
+    enum FindTarget {
+        /// The open text file, with the native find bar.
+        case editor
+        /// A filter field (scenes, words, cards).
+        case filter
+    }
+
     /// The tabs of the right-hand sidebar. Which ones show depends on the area.
     enum SidebarTab: String, CaseIterable, Identifiable {
-        case todos, notes, links, define
+        case todos, notes, links, define, spelling
         var id: String { rawValue }
         var title: String {
             switch self {
@@ -52,14 +60,16 @@ final class ProjectSession {
             case .notes: "Notes"
             case .links: "Links"
             case .define: "Define"
+            case .spelling: "Spelling"
             }
         }
 
         static func tabs(for area: ProjectArea?) -> [SidebarTab] {
             switch area ?? .script {
-            case .script: [.todos, .notes, .define]
-            case .universe: [.todos, .links, .define]
-            default: [.links, .define]
+            case .script: [.todos, .notes, .define, .spelling]
+            case .universe: [.todos, .links, .define, .spelling]
+            case .dictionary: [.links, .define, .spelling]
+            case .storyboard: [.links, .define]
             }
         }
     }
@@ -76,6 +86,9 @@ final class ProjectSession {
     /// The word showing in the Dictionary area.
     var dictionarySelection: DictionarySelection?
     var dictionaryQuery = ""
+    /// Bumped by ⌘F where there's no text to search; the view's filter
+    /// field (Storyboard scenes, Dictionary words, canvas cards) takes the keyboard.
+    var filterFocusRequest = 0
     /// The Dictionary area shows `words.md` as text instead of the book.
     var showingWordBookSource = false
     /// The last tab picked in each area's sidebar.
@@ -111,6 +124,8 @@ final class ProjectSession {
     /// An animatic or boards export in progress.
     /// The Universe area's margin (TODO comments in notes).
     let noteMargin: NoteMarginModel
+    /// The sidebar's Spelling tab (misspelled words in the open file).
+    let spelling = SpellingPanelModel()
     var exportJob: ExportJob?
     /// Import Voice Note…, while it transcribes.
     var voiceImport: VoiceImportJob?
@@ -247,20 +262,26 @@ final class ProjectSession {
 
     /// Opens any project file in the right area, optionally at a location.
     func open(_ path: String, location: Int? = nil) {
+        open(path, range: location.map { NSRange(location: $0, length: 0) })
+    }
+
+    /// Opens a file and, given a range, selects it, scrolls it to the middle
+    /// and flashes it (Search matches, backlinks, to-dos, spelling).
+    func open(_ path: String, range: NSRange?) {
         let area = path.split(separator: "/").first.map(String.init)
         switch area {
         case ProjectLayout.universe:
             self.area = .universe
             universeSelection = path
-            if let location { noteReveal = RevealRequest(file: path, location: location, focus: true) }
+            if let range { noteReveal = RevealRequest(file: path, location: range.location, focus: true, length: range.length) }
         case ProjectLayout.script where Films.isActFile(path):
             self.area = .script
             if let film = Films.film(containing: path, in: script.films) { script.select(film: film) }
-            script.reveal(file: path, location: location ?? 0)
+            script.reveal(file: path, location: range?.location ?? 0, length: range?.length ?? 0)
         case ProjectLayout.dictionary where path == WordBook.path:
             self.area = .dictionary
             showingWordBookSource = true
-            if let location { noteReveal = RevealRequest(file: path, location: location, focus: true) }
+            if let range { noteReveal = RevealRequest(file: path, location: range.location, focus: true, length: range.length) }
         case ProjectLayout.script where (path as NSString).lastPathComponent == "title-page.md"
             && Films.film(containing: path, in: script.films)?.titlePagePath == path:
             self.area = .script
@@ -362,7 +383,7 @@ final class ProjectSession {
                 return
             }
             spotlight.reload()
-            spotlight.query = query
+            spotlight.replaceQuery(with: query)
             return
         }
         // Take the keyboard from the editor so the search field can have it,
@@ -423,6 +444,33 @@ final class ProjectSession {
         } catch {
             SlateAppModel.showError("Couldn't rename “\(plan.oldName)”", error)
         }
+    }
+
+
+    // MARK: - Find (⌘F)
+
+    /// What Edit › Find works on in the current view: the open text file, a
+    /// filter field, or nothing (timeline, map, page view, no file open).
+    var findTarget: FindTarget? {
+        switch area ?? .script {
+        case .script:
+            return script.showingPages ? nil : .editor
+        case .storyboard:
+            return .filter
+        case .dictionary:
+            return showingWordBookSource ? .editor : .filter
+        case .universe:
+            guard let path = universeSelection?.lowercased() else { return nil }
+            if path.hasSuffix(".canvas") { return .filter }
+            if path.hasSuffix(TimelineFile.suffix) || path.hasSuffix(MapFile.suffix) { return nil }
+            return .editor
+        }
+    }
+
+    /// ⌘F where the view has no text to search: puts the keyboard in its filter.
+    func focusFilter() {
+        guard findTarget == .filter else { return }
+        filterFocusRequest += 1
     }
 
 }

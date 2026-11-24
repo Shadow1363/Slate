@@ -24,6 +24,10 @@ final class DictionaryModel {
     private(set) var matcher: TermMatcher = .empty
     private(set) var settings = SpellingPreferences.current
     var error: String?
+    /// One spell-document tag for the project's editors and the Spelling tab.
+    @ObservationIgnored let spellTag = NSSpellChecker.uniqueSpellDocumentTag()
+    /// Words ignored for this session (Spelling tab › Ignore). Not saved.
+    private(set) var ignoredThisSession: Set<String> = []
 
     @ObservationIgnored private var lastProjectText: String?
     @ObservationIgnored private var lastGlobalText: String?
@@ -96,6 +100,20 @@ final class DictionaryModel {
 
     func ignoredWords(characters: [String]) -> [String] {
         SpellService.ignoredWords(books: [entries, globalEntries], characters: characters)
+            + ignoredThisSession.sorted()
+    }
+
+    /// Stops flagging a word until the project closes.
+    func ignore(_ word: String) {
+        let word = word.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !word.isEmpty else { return }
+        ignoredThisSession.insert(word)
+        NSSpellChecker.shared.ignoreWord(word, inSpellDocumentWithTag: spellTag)
+    }
+
+    /// When the project window closes.
+    func closeSpellDocument() {
+        NSSpellChecker.shared.closeSpellDocument(withTag: spellTag)
     }
 
     func spelling(for area: EditorSpelling.Area, characters: [String]) -> EditorSpelling {
@@ -106,7 +124,8 @@ final class DictionaryModel {
             grammar: settings.grammar[area] ?? false,
             autocorrect: settings.autocorrect,
             language: settings.language,
-            checking: settings.check[area] ?? true
+            checking: settings.check[area] ?? true,
+            documentTag: spellTag
         )
     }
 

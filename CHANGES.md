@@ -1,5 +1,33 @@
 # Changes
 
+## Find, jumps you can see, and a Spelling tab (2026-11-24)
+
+1. **Storyboard toolbar.** The sidebar toggle no longer shares a glass capsule with **Watch Animatic**. It sits beside the area title in every area, and Watch Animatic is its own centred button. The other toolbars (Script, Universe, canvas, timeline, map, Dictionary) were checked against the same layout.
+   *Check:* open Storyboard. The ⊟ toggle sits right after "Storyboard ▾", and Watch Animatic is a separate control in the centre. Switch areas: the toggle stays in the same spot.
+2. **Storyboard padding.** The board has space above and below its rows, and rows use the same insets as the rest of the app (new shared `Spacing` constants). Empty scenes keep their stand-in card (the animatic still plays it). The rest of the row shows a dashed **Drop images or clips here** zone, which lights up while you drag over it.
+   *Check:* scroll to a scene with no frames (4A in the showcase) and drag an image over it.
+3. **⌘F finds in the open file.** **Edit › Find** has **Find… ⌘F**, **Find and Replace… ⌥⌘F**, **Find Next ⌘G / Previous ⇧⌘G** and **Use Selection for Find ⌘E**. They open the native find bar in the script, notes, the draft, the word book's text and plain files. Matches highlight as you type, and Esc closes the bar. Where there's no text, ⌘F focuses a filter instead:
+   - **Storyboard:** a new **Filter scenes** field (headings, scene numbers and frame captions).
+   - **Dictionary:** its word search.
+   - **Canvas:** a small field that dims cards whose title doesn't match. Esc hides it.
+
+   Find is disabled where there's nothing to search (timeline, map, Page view). ⇧⌘F (Search Text) is unchanged. Settings › Shortcuts now refuses these keys and lists them as built in.
+   *Check:* ⌘F in the script, type a word, then Esc. ⌘F in Storyboard and on a canvas. ⇧⌘F still opens Search with `!text `.
+4. **⇧⌘F keeps its `!text` prefix.** The field no longer opens with the prefix selected, so your first key adds to it instead of replacing it. Completing a bang with Tab and picking a recent search also leave the caret at the end.
+   *Check:* press ⇧⌘F and type `harbour`. The field reads `!text harbour`.
+5. **Jumps show where they land.** Search results (⌘K and text matches), backlinks, to-dos (in notes and the script) and the Dictionary's "Used In" all open the file and select the match. The view scrolls it to the middle (a quarter-second scroll, instant with Reduce Motion) and flashes it. One shared `NSTextView.reveal(range:focus:)` does this in every editor, including plain text files. Before, notes only got a caret, and search matches lost their length.
+   *Check:* ⇧⌘F, search a word deep in a note, press Return. The match is centred and flashes.
+6. **Spelling tab.** It appears in the sidebar in Script, Universe and Dictionary, and checks the open file:
+   - One row per word, with how many times it appears and a line of context. Clicking a row shows the word in the editor; click again for the next place it appears.
+   - Each row's menu (or right-click) has the suggestions (click: replace this one; ⌥-click: replace them all in the file), **Learn for This Project**, **Learn Everywhere**, **Ignore** and **Add as Term…**.
+   - The list refreshes half a second after you stop typing, and at once when you switch files or the dictionary changes. The tab shows a count ("Spelling 3"), or **No Spelling Issues**.
+   - It skips what the editor skips: dictionary words (project `dictionary/words.md` and the global book), character names and aliases, screenplay terms (V.O., O.S., CONT'D), scene IDs, `[[links]]`, code, and note frontmatter. This works because the project's editors and the tab now share one spell-check document, so **Ignore** in either place applies to both.
+   - It checks the open file only. A whole-project scope would mean spell-checking every file on the main thread each time the list refreshes, so the To-dos scope menu wasn't reused.
+
+   *Check:* type `qwzxv` twice in a note, open Spelling, click the row twice, then ⌥-click a suggestion.
+
+Tests: a new `SpellingUITests` suite (scanning, skipping, learn, ignore, replace one or all, refusing stale text, reveal ranges and centring, find targets, reserved keys, scene filter, search prefix), and the sidebar tab list is updated.
+
 ## One sidebar on the right (2026-11-23)
 
 - **The margin and the inspector are now one sidebar,** with one toolbar button (beside the area title) instead of two look-alike ones, and one column instead of two side by side. Its tabs follow the area: **Script** To-dos · Notes · Define, **Universe** To-dos · Links · Define, **Storyboard / Dictionary** Links · Define. Links is gone from the script, where it only ever said "Only notes have backlinks".

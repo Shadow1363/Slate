@@ -11,6 +11,14 @@ extension NSAttributedString.Key {
 /// pointing hand over them while ⌘ is held. Hovering shows a preview, and
 /// the context menu adds the dictionary's spelling items.
 final class SlateTextView: NSTextView {
+    /// The project's spell-document tag (see `EditorSpelling.documentTag`),
+    /// so words ignored here are ignored in the Spelling tab and vice versa.
+    var sharedSpellTag: Int?
+
+    override var spellCheckerDocumentTag: Int {
+        sharedSpellTag ?? super.spellCheckerDocumentTag
+    }
+
     /// Called with a link's target on ⌘-click. Return true if handled.
     var followLink: ((String) -> Bool)?
     /// ⌘K: insert a link.

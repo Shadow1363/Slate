@@ -37,13 +37,15 @@ struct DocumentEditor: View {
     let store: ProjectStore
     @Bindable var document: TextDocument
     let close: () -> Void
+    /// A jump into this file (Search, backlinks, to-dos).
+    var reveal: RevealRequest?
 
     @Environment(\.slateTheme) private var theme
 
     var body: some View {
         VStack(spacing: 0) {
             DiskStateBanners(store: store, document: document, close: close)
-            PlainTextEditor(text: $document.text, theme: theme)
+            PlainTextEditor(text: $document.text, theme: theme, reveal: reveal, path: document.relativePath)
             Divider()
             HStack {
                 Text(document.relativePath)

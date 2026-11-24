@@ -7,9 +7,9 @@ import Testing
 @MainActor
 struct SidebarUITests {
     @Test func tabsFollowTheArea() {
-        #expect(ProjectSession.SidebarTab.tabs(for: .script) == [.todos, .notes, .define])
-        #expect(ProjectSession.SidebarTab.tabs(for: .universe) == [.todos, .links, .define])
-        #expect(ProjectSession.SidebarTab.tabs(for: .dictionary) == [.links, .define])
+        #expect(ProjectSession.SidebarTab.tabs(for: .script) == [.todos, .notes, .define, .spelling])
+        #expect(ProjectSession.SidebarTab.tabs(for: .universe) == [.todos, .links, .define, .spelling])
+        #expect(ProjectSession.SidebarTab.tabs(for: .dictionary) == [.links, .define, .spelling])
         #expect(ProjectSession.SidebarTab.tabs(for: .storyboard) == [.links, .define])
     }
 

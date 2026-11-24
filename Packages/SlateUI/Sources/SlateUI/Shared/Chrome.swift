@@ -4,7 +4,10 @@ import SwiftUI
 //
 // - Toolbar: [left sidebar] Area ▾ [right sidebar] · the view's mode
 //   picker in the centre · the area's actions (add, publish, settings).
+//   The right-sidebar toggle (`SidebarToggleToolbar`) never shares a glass
+//   background with the centre item on macOS 26.
 //   Zoom never lives in the toolbar.
+// - Spacing: `Spacing` holds the shared padding values.
 // - Item inspectors (a selected frame, event, pin): 280 pt beside the board.
 // - Zoom: one pill at the bottom-left of every zoomable view (canvas,
 //   map, timeline): − 100% + and fit.
@@ -128,7 +131,28 @@ struct PanelFilterBar<Leading: View, Trailing: View>: View {
             trailing()
         }
         .font(.callout)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Spacing.panel)
         .padding(.vertical, 8)
+    }
+}
+
+/// The right-sidebar toggle, beside the area title in every area (macOS 26
+/// draws the two in one capsule). A fixed spacer after it keeps it apart
+/// from the view's centre item, such as Storyboard's Watch Animatic.
+struct SidebarToggleToolbar: ToolbarContent {
+    let session: ProjectSession
+
+    var body: some ToolbarContent {
+        ToolbarItem(placement: .navigation) {
+            Button {
+                session.showingSidebar.toggle()
+            } label: {
+                Label("Sidebar", systemImage: "sidebar.trailing")
+            }
+            .help("Show or hide the sidebar: to-dos, notes, links and definitions (⌥⌘0)")
+        }
+        if #available(macOS 26, *) {
+            ToolbarSpacer(.fixed, placement: .navigation)
+        }
     }
 }

@@ -109,6 +109,12 @@ struct CanvasBoard: View {
                             zoomOut: { model.zoom(by: 1 / 1.25) }, zoomIn: { model.zoom(by: 1.25) },
                             fit: { model.fit() }, actualSize: { model.zoomToActualSize() })
             }
+            .overlay(alignment: .topLeading) {
+                if model.filter != nil {
+                    CanvasFilterField(model: model, request: session.filterFocusRequest)
+                }
+            }
+            .onChange(of: session.filterFocusRequest) { if model.filter == nil { model.filter = "" } }
             .background(WindowReader { events.window = $0 })
             .onAppear {
                 model.viewSize = geometry.size
@@ -229,6 +235,7 @@ struct CanvasBoard: View {
             .scaleEffect(model.scale, anchor: .topLeading)
             .frame(width: frame.width, height: frame.height, alignment: .topLeading)
             .contentShape(Rectangle())
+            .opacity(model.matchesFilter(node) ? 1 : 0.25)
             .overlay {
                 if selected {
                     RoundedRectangle(cornerRadius: 8 * model.scale + 2)
@@ -902,5 +909,44 @@ struct WindowReader: NSViewRepresentable {
 
     func updateNSView(_ view: NSView, context: Context) {
         DispatchQueue.main.async { [weak view] in found(view?.window) }
+    }
+}
+
+/// ⌘F on a canvas: a small field at the top-left that dims cards whose
+/// title doesn't match. Esc (or the ×) clears and hides it.
+private struct CanvasFilterField: View {
+    @Bindable var model: CanvasModel
+    /// Bumped by each ⌘F, to take the keyboard again.
+    let request: Int
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "line.3.horizontal.decrease").foregroundStyle(.secondary)
+            TextField("Filter cards", text: Binding(get: { model.filter ?? "" }, set: { model.filter = $0 }))
+                .textFieldStyle(.plain)
+                .frame(width: 180)
+                .focused($focused)
+                .onKeyPress(.escape) {
+                    model.filter = nil
+                    return .handled
+                }
+            Button {
+                model.filter = nil
+            } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+            }
+            .buttonStyle(.plain)
+            .help("Stop filtering (Esc)")
+            .accessibilityLabel("Stop filtering")
+        }
+        .font(.callout)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(.regularMaterial, in: .capsule)
+        .overlay(Capsule().strokeBorder(.quaternary))
+        .padding(12)
+        .onAppear { focused = true }
+        .onChange(of: request) { focused = true }
     }
 }

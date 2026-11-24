@@ -1,3 +1,4 @@
+import AppKit
 import SlateCore
 import SwiftUI
 
@@ -128,6 +129,7 @@ struct SpotlightPanel: View {
         .defaultFocus($focused, true)
         .onAppear { focusField() }
         .onChange(of: focused) { _, isFocused in if !isFocused { focusField() } }
+        .onChange(of: model.queryReplaced) { caretToEnd() }
         .onKeyPress(.downArrow) {
             model.highlighted = min(model.highlighted + 1, max(rows.count - 1, 0))
             return .handled
@@ -161,7 +163,22 @@ struct SpotlightPanel: View {
     private func focusField() {
         DispatchQueue.main.async {
             focused = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { if !focused { focused = true } }
+            caretToEnd()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                if !focused { focused = true }
+                caretToEnd()
+            }
+        }
+    }
+
+    /// A text field selects everything when it takes the keyboard, so the
+    /// first key would replace a query Slate put there (`!text `). Put the
+    /// caret after it instead.
+    private func caretToEnd() {
+        DispatchQueue.main.async {
+            guard let editor = NSApp.keyWindow?.firstResponder as? NSTextView, editor.isFieldEditor else { return }
+            let end = NSRange(location: (editor.string as NSString).length, length: 0)
+            if editor.selectedRange() != end { editor.setSelectedRange(end) }
         }
     }
 
@@ -178,7 +195,7 @@ struct SpotlightPanel: View {
         switch rows[index] {
         case .bang(let bang): model.complete(with: "!" + bang.name)
         case .tag(let tag, _): model.complete(with: "#" + tag)
-        case .recent(let text): model.query = text
+        case .recent(let text): model.replaceQuery(with: text)
         case .item(let item):
             if model.open(item), !keepOpen { close(true) }
         case .match(_, let match):

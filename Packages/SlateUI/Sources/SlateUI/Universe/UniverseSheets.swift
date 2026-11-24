@@ -84,12 +84,12 @@ struct LinksInspector: View {
     private func open(_ source: LinkSource) {
         if source.kind == .scene, let id = source.sceneID {
             session.open(sceneID: id)
-            session.script.reveal(file: source.path, location: source.link.range.location)
+            session.script.reveal(file: source.path, location: source.link.range.location, length: source.link.range.length)
         } else if source.kind == .dictionary,
                   let entry = session.dictionary.entries.first(where: { $0.lines.contains(source.line) }) {
             session.showInDictionary(entry)
         } else {
-            session.open(source.path, location: source.link.range.location)
+            session.open(source.path, range: source.link.range)
         }
     }
 }

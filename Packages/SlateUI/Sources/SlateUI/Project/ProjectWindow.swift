@@ -40,6 +40,10 @@ public struct ProjectActions {
     /// `project.json` › `theme`, or nil to follow Settings.
     public let projectTheme: String?
     public let setProjectTheme: @MainActor (String?) -> Void
+    /// Edit › Find: the open file's find bar (`.editor`), a filter field, or nil (nothing to search).
+    let findTarget: ProjectSession.FindTarget?
+    /// ⌘F where there's no text editor: focuses the view's filter field.
+    let focusFilter: @MainActor () -> Void
 }
 
 extension FocusedValues {
@@ -168,14 +172,7 @@ struct ProjectContent: View {
             ToolbarItem(placement: .navigation) {
                 AreaSwitcher(area: $session.area)
             }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    session.showingSidebar.toggle()
-                } label: {
-                    Label("Sidebar", systemImage: "sidebar.trailing")
-                }
-                .help("Show or hide the sidebar: to-dos, notes, links and definitions (⌥⌘0)")
-            }
+            SidebarToggleToolbar(session: session)
         }
         .onChange(of: store.files) { session.spotlight?.reload() }
         .safeAreaInset(edge: .top, spacing: 0) { UpdateBanner() }
@@ -214,6 +211,7 @@ struct ProjectContent: View {
         }
         .onDisappear {
             session.closeAnimatic()
+            session.dictionary.closeSpellDocument()
             session.storyboard.tidyFolders(moveMissing: true)
             model.unregister(session)
         }
@@ -221,10 +219,7 @@ struct ProjectContent: View {
             guard request != nil, let jump = model.takeJump(for: store.rootURL) else { return }
             if let path = jump.path, let range = jump.range {
                 // A TODO: comment: open its file with the comment selected.
-                session.open(path, location: range.location)
-                if path.hasPrefix(ProjectLayout.universe + "/") {
-                    session.noteReveal = RevealRequest(file: path, location: range.location, focus: true, length: range.length)
-                }
+                session.open(path, range: range)
             } else {
                 session.area = .script
                 if let id = jump.sceneID { session.script.reveal(sceneID: id, quote: jump.quote) }
@@ -311,7 +306,9 @@ struct ProjectContent: View {
                 } catch {
                     SlateAppModel.showError("Couldn't save the project's theme", error)
                 }
-            }
+            },
+            findTarget: session.findTarget,
+            focusFilter: { session.focusFilter() }
         ))
     }
 }
@@ -425,7 +422,10 @@ struct SidebarView: View {
                 MarginView(session: session, margin: session.script.margin, tab: .notes)
             } else {
                 Picker("Sidebar", selection: $session.sidebarTab) {
-                    ForEach(ProjectSession.SidebarTab.tabs(for: area)) { Text($0.title).tag($0) }
+                    ForEach(ProjectSession.SidebarTab.tabs(for: area)) { tab in
+                        Text(tab == .spelling && session.spelling.count > 0 ? "\(tab.title) \(session.spelling.count)" : tab.title)
+                            .tag(tab)
+                    }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -439,11 +439,13 @@ struct SidebarView: View {
                         MarginView(session: session, margin: session.script.margin, tab: session.sidebarTab)
                     case .links: LinksInspector(session: session)
                     case .define: DefineInspector(session: session)
+                    case .spelling: SpellingPanel(session: session)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .modifier(SpellingScanner(session: session))
     }
 }
