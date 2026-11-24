@@ -23,7 +23,7 @@ enum ScreenshotTour {
         Step(name: "script") { session in
             session.area = .script
             session.script.showingPages = false
-            session.script.showingMargin = true
+            session.showSidebar(.todos)
             if let scene = session.script.scene(withID: "s001") { session.open(scene: scene) }
         },
         Step(name: "script-pages") { session in

@@ -203,7 +203,7 @@ private struct NoteHeader: View {
             Button {
                 withAnimation(.snappy) { infoboxShown.toggle() }
             } label: {
-                Image(systemName: "sidebar.right")
+                Image(systemName: "list.bullet.rectangle")
             }
             .buttonStyle(.borderless)
             .help(infoboxShown ? "Hide the infobox" : "Show the infobox")

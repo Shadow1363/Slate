@@ -150,12 +150,13 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 
 ## Margin: to-dos and notes
 
-- **The margin** is the column beside the script (⇧⌘M or the toolbar button). It has two tabs, To-dos and Notes, each showing **This Scene** (the caret's scene) or **All**.
+- **The sidebar** on the right (⌥⌘0 or its toolbar button, beside the area title) holds the margin. In the script its tabs are **To-dos**, **Notes** and **Define**; in Universe, **To-dos**, **Links** and **Define**; elsewhere, Links and Define. ⇧⌘M jumps to To-dos. The script's To-dos and Notes each show **This Scene** (the caret's scene) or **All**.
 - **⇧⌘T** adds a to-do at the caret and **⌥⌘T** adds a note. Each is anchored to the scene, and to the selected words if you selected some. Anchored words get a soft highlight in the script, and clicking the quote in the margin selects them.
 - **Files:** to-dos are a Markdown task list in `script/margin/todos.md`, e.g. `- [ ] "I haven't opened it yet" — make it land @s014 due:2026-12-01`. Notes are list items under `## @s014` headings in `script/margin/notes.md`. Both read fine in any editor, and outside edits reload.
 - **All to-dos:** set the To-dos tab to All, then filter (Open / Done / All) and order (By Scene / By Due Date) from its menu. Script › Show All To-dos jumps straight there.
 - **Links:** hovering a `[[link]]` in the script or a note shows a preview. ⌘-click in the script, or a click in the margin, opens the note in the margin, so you never leave the scene.
 - **TODO comments:** write a to-do where the work is, as a comment starting with `TODO:`. In the script: `/* TODO: tighten this exchange due:2026-12-01 */` (never printed). In a note or the draft: `%% TODO: check the 1987 dates %%` or `<!-- TODO: … -->`; ⇧⌘T in a note writes one at the caret. Right-click one › Mark To-do Done (or tick it in the margin or Pending) and it becomes `DONE:`. The margin lists the script's TODO comments too.
+- **Notes have to-dos as well** (the sidebar's To-dos tab in Universe): their TODO comments for **This Note** or **All Notes**, with tick boxes, and a field that adds a new one to the open note.
 
   ![A TODO comment in a note](docs/screenshots/todo-comment.png)
 
@@ -173,7 +174,7 @@ Publish always uses Courier Prime 12 pt and the industry layout, whatever the ed
 - **The wiki page:** a note opens with its body on the left and an infobox on the right. **Edit** turns the infobox into a form with these field types: text, long text, number, date, choice, yes/no, list, link, links and image. Each change rewrites only that field's lines, so comments and key order in the file stay as you wrote them.
 - **Obsidian infobox notes** work as they are: `infobox: Character` picks the template, `title:` is the name, `subtitle:` sits under it, and a `layout:` list adds section headers (`type: header`, `above: key`) and columns (`type: columns`, `keys: [...]`). `||text||` is a spoiler, hidden until clicked.
 - **Links:** typing `[[` suggests notes by name or alias, and ⌥⌘K inserts a link. ⌘-click a link to open it; clicking an unresolved link (red, dashed) offers to create the note. Links work in the script too.
-- **Links inspector** (⌥⌘0) lists backlinks from notes, scenes, margin notes and the rough draft. For a character it also lists the scenes they speak in.
+- **Links** (the sidebar's Links tab, ⌥⌘0) lists backlinks from notes, scenes, margin notes and the rough draft. For a character it also lists the scenes they speak in.
 - **Renaming** a note (press Return in its name, or right-click › Rename…) offers to update every link to it, and renames the file. Its `id` stays the same.
 - **Contents (heading index):** under a note's infobox, on the fields side, **Contents** lists the note's headings as a nested tree: H2 › H3 › H4…. Click a heading to jump to it; a triangle folds its children (⌥-click: every level); right-click › Expand All / Collapse All. The sidebar lists notes only. The draft keeps its outline in the sidebar.
 - **Rough draft:** `universe/draft.md` shows its headings in the sidebar. Right-click a heading › Turn into Scene to append it to the script. It's optional: right-click Draft › Move to Trash, and + › New Rough Draft makes a fresh one.
@@ -272,7 +273,7 @@ The Production menu (Script toolbar, or Script › Production) turns a draft int
 - **The Dictionary area** reads it like a book. Search words, forms and meanings; jump with the A–Z strip; open a word to see its page and every place it's used in the script and notes. ⌘N or + adds a word. The toolbar's document button shows `words.md` as text.
 - **Everywhere you write,** defined words get a faint dotted underline. Hovering one shows its meaning (or the linked note's preview), and ⌘-click opens it.
 - **Spell check** accepts every word and form in the book, plus character names. Right-click a misspelling for **Add to Project Dictionary**, **Add to Every Project** (`~/Library/Application Support/Slate/words.md`) or **Define in Dictionary…**.
-- **Define** (⌃⌥⌘D, or the inspector's Define tab) shows the selected word's project meaning, then the Mac's dictionary definition. Force-click still opens Look Up.
+- **Define** (⌃⌥⌘D, or the sidebar's Define tab) shows the selected word's project meaning, then the Mac's dictionary definition. Force-click still opens Look Up.
 - **Settings › Spelling** sets the language, grammar checking for the script and for notes, and auto-correct (off by default).
 - Projects from before Milestone 6 are converted once: `words.txt` becomes entries, and any `dictionary/terms/*.md` file moves to `universe/notes/` with an entry linking to it. The originals are backed up in `.slate/backups/`.
 
@@ -318,7 +319,7 @@ Every menu shortcut can be changed in **Settings › Shortcuts**: click one, pre
 | ⇧⌘D | Dictate at the cursor |
 | ⇧⌘F | Search all text |
 | ⌥⌘K | Insert link |
-| ⌥⌘0 | Inspector (Links and Define) |
+| ⌥⌘0 | Show / hide the sidebar (to-dos, notes, links, define) |
 | ⌃⌥⌘D | Define the selected word |
 | ⌘0 / ⇧⌘0 | Canvas: fit everything / 100% |
 | ⌘= / ⌘− | Canvas and map: zoom in / out. Timeline: wider / narrower |
@@ -331,7 +332,7 @@ Every menu shortcut can be changed in **Settings › Shortcuts**: click one, pre
 | Space, ← / →, ⌥← / ⌥→ | Player: play/pause, previous/next frame, previous/next scene |
 | ⇧⌘T | Add to-do at the caret (script: margin to-do; note: `%% TODO:  %%` comment) |
 | ⌥⌘T | Add margin note at the caret |
-| ⇧⌘M | Show / hide the margin |
+| ⇧⌘M | Sidebar on To-dos (again to hide it) |
 | ⌘O | Open a project folder |
 | ⇧⌘L | Project Library |
 | ⌘S | Save |

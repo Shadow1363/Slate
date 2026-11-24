@@ -60,3 +60,37 @@ struct CommentTodoUITests {
         #expect(h.session.noteReveal?.location == 42)
     }
 }
+
+@Suite("Note margin")
+@MainActor
+struct NoteMarginUITests {
+    @Test func listsThisNoteOrAllNotesAndAddsAndTicks() throws {
+        let h = try SessionHarness()
+        let margin = h.session.noteMargin
+        let notes = h.session.links.graph.notes.filter { $0.path.hasPrefix("universe/characters/") }.map(\.path)
+        let first = try #require(notes.first), second = try #require(notes.dropFirst().first)
+
+        #expect(margin.todos(selected: first).isEmpty)
+        let at = try #require(margin.add("check the 1987 dates", to: first))
+        margin.add("ask about the boat", to: second)
+        let document = try h.store.document(at: first)
+        #expect(document.text.hasSuffix("%% TODO: check the 1987 dates %%\n"))
+        #expect((document.text as NSString).substring(from: at).hasPrefix("%% TODO:"))
+
+        margin.scope = .note
+        #expect(margin.todos(selected: first).map(\.text) == ["check the 1987 dates"])
+        #expect(margin.todos(selected: "universe/canvases/story-web.canvas").isEmpty)
+        margin.scope = .all
+        #expect(Set(margin.todos(selected: first).map(\.text)) == ["check the 1987 dates", "ask about the boat"])
+
+        margin.scope = .note
+        margin.toggle(try #require(margin.todos(selected: first).first))
+        #expect(document.text.contains("%% DONE: check the 1987 dates %%"))
+        #expect(margin.todos(selected: first).isEmpty)
+        margin.filter = .done
+        #expect(margin.todos(selected: first).map(\.done) == [true])
+        // Nothing is added without words or to something that isn't a note.
+        #expect(margin.add("  ", to: first) == nil)
+        #expect(margin.add("x", to: "universe/canvases/story-web.canvas") == nil)
+    }
+}

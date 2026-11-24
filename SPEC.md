@@ -170,7 +170,7 @@ The home screen is a library of project folders that can live anywhere on disk; 
 | A folder of Markdown (e.g. an Obsidian vault) | Copied into `universe/`; `[[links]]` kept, `.canvas` files kept     |
 | Plain `.txt` / `.md` screenplay               | Parsed with the Fountain rules                                      |
 
-Inside a project, the window has four areas (Universe, Script, Storyboard, Dictionary). There is no column listing them: the window's title is the current area's name with a ▾, and clicking it opens a menu of the four areas, each with its icon, the current one ticked. ⌘1–⌘4 (View menu, remappable) switch too. Below the title: the area's own sidebar (notes, scenes, boards or words), the main editor, and an optional inspector on the right. The project's folder path is not shown (Show in Finder and the library card have it).
+Inside a project, the window has four areas (Universe, Script, Storyboard, Dictionary). There is no column listing them: the window's title is the current area's name with a ▾, and clicking it opens a menu of the four areas, each with its icon, the current one ticked. ⌘1–⌘4 (View menu, remappable) switch too. Below the title: the area's own sidebar (notes, scenes, boards or words), the main editor, and an optional **sidebar** on the right. There is one right-hand sidebar, with one toolbar button (beside the area title) and ⌥⌘0. Its tabs depend on the area: Script has To-dos · Notes · Define; Universe has To-dos · Links · Define; Storyboard and Dictionary have Links · Define. Each area remembers its last tab, and whether the sidebar is shown is remembered across launches. ⇧⌘M opens it on To-dos (or hides it if To-dos is already showing). Focus mode hides it and puts it back after. The project's folder path is not shown (Show in Finder and the library card have it).
 
 **Shortcuts** — every menu command's shortcut is listed in Settings › Shortcuts, grouped by menu, with a filter. Click one and press new keys to remap it; a shortcut already used by another command or by macOS is refused with a note naming it. Each can be reset, set to none, or all reset at once. Changes apply to the menu bar immediately and are stored in `UserDefaults` (`shortcuts.overrides`, JSON of command → keys; Search keeps `search.shortcut`). Editor keys (Tab cycling, ⌘B/⌘I, zoom in canvas/map/timeline) are listed as built in. Defaults include ⌘K search, ⇧⌘F search text, ⌥⌘K insert link, ⇧⌘O jump to scene, ⇧⌘D dictate, ⌘1–⌘4 areas.
 
@@ -189,7 +189,7 @@ Universe is where the film is thought through before and while it is written: a 
 - Each note opens as a wiki page: the Markdown body, with an infobox card beside it (title, subtitle, picture, fields, section headers and columns). Edit turns the infobox into a form. Editing either side rewrites the same file.
 - Under the infobox, on the same side as the fields, a **Contents** index lists the note's headings as a nested tree (a level-1 heading equal to the note's name is left out). Click a heading to jump to it; chevrons fold its children (⌥-click: every level); headings can be dragged onto a canvas. The Universe sidebar lists notes only, without their headings; the rough draft keeps its heading outline in the sidebar (with Turn into Scene).
 - Notes in the wiki-infobox format are read as they are: `infobox: Character` names the template, `title:` the name, `subtitle:` the line under it, and a `layout:` list (`header` with `above:`, `columns` with `keys:`) arranges the infobox. `||text||` is a spoiler, hidden until clicked.
-- Inspector shows backlinks (every note, scene and margin note that links here) and, for characters, scenes appeared in and line count, pulled from the script.
+- The sidebar's Links tab shows backlinks (every note, scene and margin note that links here) and, for characters, scenes appeared in and line count, pulled from the script.
 - Renaming a note offers to update every `[[link]]` to it across the project.
 
 **Canvas** — an infinite board for connecting ideas, saved in the open [JSON Canvas](https://jsoncanvas.org) format so it also opens in Obsidian.
@@ -300,7 +300,7 @@ CUT TO:
 - Optional override per scene, e.g. `{#s014 dur=2:30}`, for montages or action sequences that run long on few pages.
 - The storyboard uses these durations as the default length of each scene in the player.
 
-**Margin** — a collapsible column to the right of the page with two tabs.
+**Margin** — the script's to-dos and notes, as the To-dos and Notes tabs of the right-hand sidebar.
 
 _To-dos_
 
@@ -315,6 +315,7 @@ _To-dos_
 
 - **TODO comments:** a comment whose words start with `TODO:` is a to-do, written where the work is. In the script only Fountain's `/* TODO: … */` counts (it never prints); in notes and the draft, `%% TODO: … %%` (Obsidian) or `<!-- TODO: … -->`. They can span lines and take `due:YYYY-MM-DD`. A script comment belongs to the scene it sits in. Ticking one (margin, Pending, or right-click › Mark To-do Done in the editor) changes `TODO:` to `DONE:` in place. Notes dim their comments and pick out the `TODO`/`DONE` word. ⇧⌘T in a note writes `%% TODO:  %%` at the caret; in the script it still adds a margin to-do. Comments in revisions, the title page and the margin files aren't read.
 - The margin's To-dos tab lists the script's TODO comments under their own heading, following the same scope and filter.
+- **Universe has to-dos too** (the sidebar's To-dos tab there, ⇧⌘M): **To-dos** for **This Note** or **All Notes**, filtered Open / Done / All. Each row ticks (TODO → DONE) or, clicked, opens the note with the comment selected; All Notes shows which note each is in. Its field adds `%% TODO: … %%` at the end of the open note.
 - Every open to-do is listed in Home › Pending (see Home). There is no launch sheet.
 - Optional macOS notification for to-dos (margin or comment) with a due date; clicking it opens the scene, or the note at the comment.
 - A project-wide to-do list view with filters (open, done, by scene, by due date).
@@ -417,7 +418,7 @@ The Dictionary area is the film's own glossary, and every word in it (plus every
 **Built-in dictionary**
 
 - System Look Up (force-click or Ctrl-Cmd-D) on any word, provided free by NSTextView.
-- A Define panel in the inspector using Dictionary Services for the selected word.
+- A Define tab in the sidebar using Dictionary Services for the selected word.
 
 **Spell check**
 
@@ -446,6 +447,16 @@ Two ways to write by speaking, both in the SlateVoice package.
 - Transcripts are tidied: Whisper's non-speech markers (`[BLANK_AUDIO]`, `(music)`) are removed and spacing collapsed.
 - Permissions: microphone (`NSMicrophoneUsageDescription`, plus the `com.apple.security.device.audio-input` entitlement for the hardened runtime) and speech recognition (`NSSpeechRecognitionUsageDescription`). Denials show a message pointing at System Settings.
 - Nothing is sent anywhere unless OpenAI is the chosen engine.
+
+## Window layout and controls
+
+Every area follows the same layout, so there is one way to find things:
+
+- **Toolbar.** On the left: the left sidebar button, the area menu (**Script ▾**) and the right sidebar button. In the centre: the view's mode or tools (Draft/Page, World/Story/Personal order, the map's tools, the canvas's grid and minimap toggles, Watch Animatic). On the right: the area's actions (add, publish or export, settings). Zoom is never in the toolbar.
+- **Right sidebar.** One column with tabs that depend on the area (see the area table above). Each tab's filter row uses the same borderless menus: scope on the left, filter on the right.
+- **Item inspectors.** A selected storyboard frame, timeline event or map pin opens its inspector beside the board. It is always 280 pt wide and shrinks the board, never the window.
+- **Zoom.** The canvas, map and timeline have one pill in the bottom-left corner: − percentage + (and fit). ⌘− / ⌘= / ⌘0 work as before; on the canvas, clicking the percentage (or ⇧⌘0) goes to 100%.
+- **Icons.** `sidebar.leading` / `sidebar.trailing` are only for the two sidebars. The note's infobox toggle uses its own icon.
 
 ## Theme system
 

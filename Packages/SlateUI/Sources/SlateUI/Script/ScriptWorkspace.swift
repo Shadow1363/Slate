@@ -63,7 +63,6 @@ final class ScriptWorkspace {
     private(set) var openError: String?
     /// Draft view (editable) or Page view (the printed pages).
     var showingPages = false
-    var showingMargin = true
     let margin: MarginModel
     /// The latest exact page layout, made 300 ms after typing stops.
     private(set) var paginated: PaginatedScript?

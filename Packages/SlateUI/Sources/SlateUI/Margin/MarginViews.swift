@@ -2,60 +2,47 @@ import AppKit
 import SlateCore
 import SwiftUI
 
-/// The collapsible column beside the script: To-dos and Notes, or a peek
-/// at a linked note.
+/// The script's to-dos or margin notes, in the sidebar (or a linked note it peeks at).
 struct MarginView: View {
     let session: ProjectSession
     @Bindable var margin: MarginModel
+    let tab: ProjectSession.SidebarTab
 
     var body: some View {
         VStack(spacing: 0) {
             if let path = margin.peek {
                 NotePeek(session: session, path: path) { margin.peek = nil }
             } else {
-                Picker("Margin", selection: $margin.tab) {
-                    ForEach(MarginModel.Tab.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .padding(10)
-                HStack {
-                    Picker("Scope", selection: $margin.scope) {
-                        ForEach(MarginModel.Scope.allCases) { Text($0.title).tag($0) }
+                PanelFilterBar {
+                    PanelMenu(title: margin.scope.title, help: "The caret's scene, or the whole script") {
+                        Picker("Show", selection: $margin.scope) {
+                            ForEach(MarginModel.Scope.allCases) { Text($0.title).tag($0) }
+                        }
+                        .pickerStyle(.inline)
                     }
-                    .labelsHidden()
-                    .fixedSize()
-                    Spacer()
-                    if margin.tab == .todos {
-                        Menu {
+                } trailing: {
+                    if tab == .todos {
+                        PanelMenu(title: margin.filter.title, systemImage: "line.3.horizontal.decrease", help: "Filter and order to-dos") {
                             Picker("Show", selection: $margin.filter) {
                                 ForEach(MarginModel.TodoFilter.allCases) { Text($0.title).tag($0) }
                             }
                             Picker("Order", selection: $margin.order) {
                                 ForEach(MarginModel.TodoOrder.allCases) { Text($0.title).tag($0) }
                             }
-                        } label: {
-                            Label(margin.filter.title, systemImage: "line.3.horizontal.decrease.circle")
                         }
-                        .menuStyle(.borderlessButton)
-                        .fixedSize()
-                        .help("Filter and order to-dos")
                     }
                 }
-                .font(.callout)
-                .padding(.horizontal, 10)
-                .padding(.bottom, 6)
                 if let error = margin.error {
                     Text(error).font(.caption).foregroundStyle(.orange).padding(.horizontal, 10)
                 }
                 Divider()
-                switch margin.tab {
-                case .todos: TodoList(session: session, margin: margin)
-                case .notes: NoteList(session: session, margin: margin)
+                if tab == .notes {
+                    NoteList(session: session, margin: margin)
+                } else {
+                    TodoList(session: session, margin: margin)
                 }
             }
         }
-        .frame(minWidth: 240, idealWidth: 300, maxWidth: 420)
         .background(.background)
         .environment(\.openURL, OpenURLAction { url in
             guard url.scheme == LinkURL.scheme, let target = LinkURL.target(from: url) else { return .systemAction }
@@ -116,7 +103,7 @@ private struct TodoList: View {
                 if !comments.isEmpty {
                     Section("TODO comments") {
                         ForEach(comments) { todo in
-                            CommentTodoRow(session: session, margin: margin, todo: todo)
+                            CommentTodoRow(session: session, todo: todo, showsPlace: margin.scope == .all) { margin.toggle(todo) }
                         }
                     }
                 }
@@ -148,47 +135,6 @@ private struct TodoList: View {
         guard !text.isEmpty else { return }
         margin.add(MarginTodo(text: text, sceneID: margin.scope == .scene ? session.script.currentSceneID : nil))
         draft = ""
-    }
-}
-
-/// A `/* TODO: … */` comment in the script: tick it (TODO → DONE), or click to select it.
-private struct CommentTodoRow: View {
-    let session: ProjectSession
-    let margin: MarginModel
-    let todo: CommentTodo
-    @Environment(\.slateTheme) private var theme
-
-    var body: some View {
-        let item = todo.asMarginTodo
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Button {
-                margin.toggle(todo)
-            } label: {
-                Image(systemName: todo.done ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(Color(todo.done ? theme.margin.done : theme.margin.todo))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(todo.done ? "Mark not done" : "Mark done")
-            VStack(alignment: .leading, spacing: 2) {
-                Text(todo.text.isEmpty ? "To-do" : todo.text)
-                    .strikethrough(todo.done)
-                    .foregroundStyle(Color(todo.done ? theme.margin.done : theme.margin.todo))
-                HStack(spacing: 6) {
-                    Label("Comment", systemImage: "text.bubble").labelStyle(.iconOnly)
-                    if margin.scope == .all { Text(todo.place).lineLimit(1) }
-                    if let due = todo.due {
-                        Text(item.isOverdue() ? "Overdue · \(DueText.format(due))" : "Due \(DueText.format(due))")
-                            .foregroundStyle(item.isOverdue() ? Color(theme.margin.overdue) : .secondary)
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .contentShape(.rect)
-        .onTapGesture { session.open(todo.path, location: todo.range.location) }
-        .help("Click to show the comment in the script")
     }
 }
 
@@ -478,8 +424,7 @@ struct TodoSheet: View {
         result.due = hasDue ? dueDate.formatted(.iso8601.year().month().day()) : nil
         let margin = session.script.margin
         if let original { margin.update(original, to: result) } else { margin.add(result) }
-        session.script.showingMargin = true
-        margin.tab = .todos
+        session.showSidebar(.todos)
         dismiss()
     }
 }
@@ -532,8 +477,7 @@ struct MarginNoteSheet: View {
         } else {
             margin.addNote(text, quote: quote, sceneID: sceneID)
         }
-        session.script.showingMargin = true
-        margin.tab = .notes
+        session.showSidebar(.notes)
         dismiss()
     }
 }

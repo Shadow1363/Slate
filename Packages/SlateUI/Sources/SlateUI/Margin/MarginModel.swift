@@ -9,12 +9,6 @@ import SlateCore
 @MainActor
 @Observable
 final class MarginModel {
-    enum Tab: String, CaseIterable, Identifiable {
-        case todos, notes
-        var id: String { rawValue }
-        var title: String { self == .todos ? "To-dos" : "Notes" }
-    }
-
     enum Scope: String, CaseIterable, Identifiable {
         case scene, all
         var id: String { rawValue }
@@ -34,7 +28,6 @@ final class MarginModel {
     }
 
     let store: ProjectStore
-    var tab: Tab = .todos
     var scope: Scope = .scene
     var filter: TodoFilter = .open
     var order: TodoOrder = .scene

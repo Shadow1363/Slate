@@ -29,12 +29,16 @@ struct TimelinePane: View {
                         Button("Cancel") { model.pendingJump = nil }
                     }
                 }
-                HSplitView {
+                ItemInspectorLayout(showing: model.selectedEvent != nil || model.selectedLane != nil || model.selectedBranch != nil) {
                     TimelineGrid(context: context)
-                        .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+                        .overlay(alignment: .bottomLeading) {
+                            ZoomControl(percent: Int((model.columnWidth / 150 * 100).rounded()),
+                                        zoomOut: { model.zoom(by: 1 / 1.25) }, zoomIn: { model.zoom(by: 1.25) },
+                                        outTitle: "Narrower", inTitle: "Wider")
+                        }
+                } inspector: {
                     if model.selectedEvent != nil || model.selectedLane != nil || model.selectedBranch != nil {
                         TimelineInspector(context: context)
-                            .frame(minWidth: 250, idealWidth: 290, maxWidth: 380, maxHeight: .infinity)
                     }
                 }
             }
@@ -563,16 +567,13 @@ struct TimelineToolbar: ToolbarContent {
                 Label("Time Units", systemImage: "calendar")
             }
             .help("Dates, relative days, or a custom calendar")
-            Button { model.zoom(by: 1 / 1.25) } label: { Label("Narrower", systemImage: "minus.magnifyingglass") }
-                .keyboardShortcut("-", modifiers: .command)
-            Button { model.zoom(by: 1.25) } label: { Label("Wider", systemImage: "plus.magnifyingglass") }
-                .keyboardShortcut("=", modifiers: .command)
             Button { showingWarnings.toggle() } label: {
                 Label(context.warnings.isEmpty ? "No Warnings" : "\(context.warnings.count) Warnings",
                       systemImage: context.warnings.isEmpty ? "checkmark.seal" : "exclamationmark.triangle")
             }
-            .labelStyle(.titleAndIcon)
-            .help("Continuity checks")
+            .labelStyle(.iconOnly)
+            .foregroundStyle(context.warnings.isEmpty ? Color.secondary : Color.orange)
+            .help(context.warnings.isEmpty ? "Continuity checks: no warnings" : "Continuity checks: \(context.warnings.count) warnings")
             .popover(isPresented: $showingWarnings, arrowEdge: .bottom) {
                 WarningsList(context: context)
             }

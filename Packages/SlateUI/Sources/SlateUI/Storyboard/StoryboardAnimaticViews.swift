@@ -10,13 +10,17 @@ struct StoryboardToolbar: ToolbarContent {
     @State private var showingSettings = false
 
     var body: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
+        // The centre item, like Draft/Page in the script: the actions then sit on the right.
+        ToolbarItem(placement: .principal) {
             Button {
                 session.watch(.film)
             } label: {
-                Label("Watch", systemImage: "play.rectangle")
+                Label("Watch Animatic", systemImage: "play.fill")
+                    .labelStyle(.titleAndIcon)
             }
             .help("Watch the animatic, whole film (⌥⌘↩)")
+        }
+        ToolbarItemGroup(placement: .primaryAction) {
             Menu {
                 Button("Animatic (.mov)") { session.exportAnimatic() }
                 Section("Boards PDF") {
