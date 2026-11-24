@@ -16,6 +16,8 @@ final class CanvasModel {
     var selectedEdge: String?
     /// The text card being typed in.
     var editingText: String?
+    /// Edit › Find (⌘F): cards whose title doesn't contain this are dimmed. Nil hides the field.
+    var filter: String?
 
     /// View point = world point × scale + offset.
     var scale: Double = 1
@@ -234,5 +236,15 @@ final class CanvasModel {
         let p = world(point)
         let hit = CanvasRect(x: p.x, y: p.y, width: 0.001, height: 0.001)
         return canvas.nodes.last { (includingGroups || $0.kind != .group) && $0.rect.intersects(hit) }
+    }
+}
+
+extension CanvasModel {
+    /// Whether a card passes the filter: its label, text, file name or link.
+    func matchesFilter(_ node: CanvasNode) -> Bool {
+        let query = (filter ?? "").trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return true }
+        let title = [node.label, node.text, node.file.map { ($0 as NSString).lastPathComponent }, node.url]
+        return title.contains { $0?.localizedCaseInsensitiveContains(query) == true }
     }
 }

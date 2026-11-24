@@ -73,12 +73,15 @@ struct EditorSpelling: Equatable {
     var language: String
     /// Check spelling as you type.
     var checking = true
+    /// The project's spell-document tag, shared by its script and Markdown
+    /// editors and the sidebar's Spelling tab. Nil: the text view's own.
+    var documentTag: Int?
 
     static let none = EditorSpelling(ignoredWords: [], matcher: .empty, matcherVersion: -1, grammar: false, autocorrect: false, language: "")
 
     static func == (a: EditorSpelling, b: EditorSpelling) -> Bool {
         a.matcherVersion == b.matcherVersion && a.grammar == b.grammar && a.autocorrect == b.autocorrect && a.checking == b.checking
-            && a.language == b.language && a.ignoredWords == b.ignoredWords
+            && a.language == b.language && a.ignoredWords == b.ignoredWords && a.documentTag == b.documentTag
     }
 }
 
@@ -106,6 +109,10 @@ final class TermDecorator {
         guard let textView else { return }
         let old = self.spelling
         self.spelling = spelling
+        if let slate = textView as? SlateTextView, slate.sharedSpellTag != spelling.documentTag {
+            slate.sharedSpellTag = spelling.documentTag
+            appliedWords = nil
+        }
         if appliedWords != spelling.ignoredWords {
             appliedWords = spelling.ignoredWords
             NSSpellChecker.shared.setIgnoredWords(spelling.ignoredWords, inSpellDocumentWithTag: textView.spellCheckerDocumentTag)

@@ -7,6 +7,7 @@ import SwiftUI
 /// word in the project book (and the global one, underneath).
 struct DictionaryNavigator: View {
     @Bindable var session: ProjectSession
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         let dictionary = session.dictionary
@@ -57,6 +58,8 @@ struct DictionaryNavigator: View {
             }
         }
         .searchable(text: $session.dictionaryQuery, placement: .sidebar, prompt: "Search words and meanings")
+        .searchFocused($searchFocused)
+        .onChange(of: session.filterFocusRequest) { searchFocused = true }
         .navigationTitle("Dictionary")
         .toolbar {
             ToolbarItemGroup {
@@ -284,7 +287,7 @@ private struct WordPage: View {
                             Text(title(for: file.path)).font(.subheadline.weight(.semibold))
                             ForEach(file.matches) { match in
                                 Button {
-                                    session.open(match.path, location: match.range.location)
+                                    session.open(match.path, range: match.range)
                                 } label: {
                                     Text(highlighted(match))
                                         .lineLimit(2)

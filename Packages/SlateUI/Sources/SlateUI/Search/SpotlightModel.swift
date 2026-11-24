@@ -42,6 +42,10 @@ final class SpotlightModel {
     /// Tags matching the `#…` being typed.
     private(set) var tagSuggestions: [(tag: String, count: Int)] = []
     var highlighted = 0
+    /// Bumped whenever Slate (not typing) puts text in the field: opening with
+    /// `!text `, completing a bang or tag, picking a recent search. The field
+    /// then moves the caret to the end so the next key adds to the query.
+    private(set) var queryReplaced = 0
 
     @ObservationIgnored private var items: [SearchItem] = []
     @ObservationIgnored private(set) var bangs: [Bang] = []
@@ -55,6 +59,12 @@ final class SpotlightModel {
         reload()
         self.query = query
         update()
+    }
+
+    /// Puts `text` in the field as if typed, with the caret after it.
+    func replaceQuery(with text: String) {
+        query = text
+        queryReplaced += 1
     }
 
     /// Rebuilds the items from the project (on open, and after files change).
@@ -140,7 +150,7 @@ final class SpotlightModel {
         } else {
             words.append(text)
         }
-        query = words.joined(separator: " ") + " "
+        replaceQuery(with: words.joined(separator: " ") + " ")
     }
 
     // MARK: Opening
@@ -167,7 +177,7 @@ final class SpotlightModel {
 
     func open(_ match: ProjectSearch.Match) {
         remember()
-        session.open(match.path, location: match.range.location)
+        session.open(match.path, range: match.range)
     }
 }
 

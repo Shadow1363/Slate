@@ -167,11 +167,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
         if let reveal = config.reveal, reveal.token != lastRevealToken, reveal.file == config.document.relativePath {
             lastRevealToken = reveal.token
             let offset = config.hidesFrontmatter ? Frontmatter.split(config.document.text).bodyOffset : 0
-            let length = (textView.string as NSString).length
-            let location = max(0, min(reveal.location - offset, length))
-            textView.setSelectedRange(NSRange(location: location, length: 0))
-            textView.scrollRangeToVisible(NSRange(location: location, length: 0))
-            if reveal.focus { textView.window?.makeFirstResponder(textView) }
+            textView.reveal(range: NSRange(location: max(0, reveal.location - offset), length: reveal.length), focus: reveal.focus)
         }
     }
 
@@ -254,14 +250,7 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
             }
         }
         styled = signatures
-        protectedRanges = zip(scanned, ranges).flatMap { line, range in
-            (line.kind == .code || line.kind == .fence) ? [range] : line.spans.compactMap { span -> NSRange? in
-                switch span.kind {
-                case .code, .link: NSRange(location: range.location + span.range.location, length: span.range.length)
-                default: nil
-                }
-            }
-        }
+        protectedRanges = Self.protectedRanges(lines: scanned, ranges: ranges)
         guard start < newEnd else { return }
 
         storage.beginEditing()
@@ -455,5 +444,40 @@ final class MarkdownEditorController: NSObject, NSTextViewDelegate {
         results.filter { result in
             result.resultType != .spelling || !protectedRanges.contains { NSIntersectionRange($0, result.range).length > 0 }
         }
+    }
+}
+
+extension MarkdownEditorController {
+    /// Ranges spell check skips: code blocks, fences, code spans and links.
+    static func protectedRanges(lines: [MarkdownSyntax.Line], ranges: [NSRange]) -> [NSRange] {
+        zip(lines, ranges).flatMap { line, range in
+            (line.kind == .code || line.kind == .fence) ? [range] : line.spans.compactMap { span -> NSRange? in
+                switch span.kind {
+                case .code, .link: NSRange(location: range.location + span.range.location, length: span.range.length)
+                default: nil
+                }
+            }
+        }
+    }
+
+    /// The same, for a whole text (the Spelling tab).
+    static func protectedRanges(in text: String) -> [NSRange] {
+        let ns = text as NSString
+        var lines: [MarkdownSyntax.Line] = []
+        var ranges: [NSRange] = []
+        var location = 0
+        var inFence = false
+        while location <= ns.length {
+            let end = ns.range(of: "\n", range: NSRange(location: location, length: ns.length - location)).location
+            let lineEnd = end == NSNotFound ? ns.length : end
+            let range = NSRange(location: location, length: lineEnd - location)
+            let result = MarkdownSyntax.scan(line: ns.substring(with: range), inFence: inFence)
+            lines.append(result.line)
+            ranges.append(range)
+            inFence = result.inFence
+            if end == NSNotFound { break }
+            location = lineEnd + 1
+        }
+        return protectedRanges(lines: lines, ranges: ranges)
     }
 }

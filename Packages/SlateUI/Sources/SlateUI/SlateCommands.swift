@@ -164,6 +164,7 @@ public struct SlateCommands: Commands {
         }
         CommandGroup(after: .textEditing) {
             Divider()
+            FindMenu(target: actions?.findTarget, focusFilter: { actions?.focusFilter() })
             Button("Search…") { actions?.search("") }
                 .keyboardShortcut(key(Shortcuts.search) ?? KeyboardShortcut("k"))
                 .disabled(actions == nil)
@@ -217,6 +218,34 @@ public struct SlateCommands: Commands {
             }
             .disabled(actions == nil)
             Divider()
+        }
+    }
+}
+
+/// Edit › Find: the native find bar in the open text file. Where a view has
+/// no text (storyboard, dictionary, canvas), Find… focuses its filter instead.
+private struct FindMenu: View {
+    let target: ProjectSession.FindTarget?
+    let focusFilter: @MainActor () -> Void
+
+    var body: some View {
+        Menu("Find") {
+            Button("Find…") {
+                if !(target == .editor && TextFinderRouter.perform(.showFindInterface)) { focusFilter() }
+            }
+            .keyboardShortcut("f", modifiers: .command)
+            .disabled(target == nil)
+            Group {
+                Button("Find and Replace…") { TextFinderRouter.perform(.showReplaceInterface) }
+                    .keyboardShortcut("f", modifiers: [.command, .option])
+                Button("Find Next") { TextFinderRouter.perform(.nextMatch) }
+                    .keyboardShortcut("g", modifiers: .command)
+                Button("Find Previous") { TextFinderRouter.perform(.previousMatch) }
+                    .keyboardShortcut("g", modifiers: [.command, .shift])
+                Button("Use Selection for Find") { TextFinderRouter.perform(.setSearchString) }
+                    .keyboardShortcut("e", modifiers: .command)
+            }
+            .disabled(target != .editor)
         }
     }
 }

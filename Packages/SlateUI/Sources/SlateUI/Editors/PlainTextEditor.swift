@@ -7,6 +7,10 @@ import SwiftUI
 struct PlainTextEditor: NSViewRepresentable {
     @Binding var text: String
     var theme: ResolvedTheme
+    /// A jump into this file (Search, backlinks, to-dos): selected, centred and flashed.
+    var reveal: RevealRequest?
+    /// The file shown, so a reveal for another file is ignored.
+    var path: String?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -44,12 +48,18 @@ struct PlainTextEditor: NSViewRepresentable {
         if context.coordinator.appliedTheme != theme {
             context.coordinator.apply(theme, to: textView, scrollView: scrollView)
         }
+        if let reveal, reveal.token != context.coordinator.lastRevealToken, reveal.file == path {
+            context.coordinator.lastRevealToken = reveal.token
+            // After this update, so a just-loaded file has its text.
+            DispatchQueue.main.async { textView.reveal(range: NSRange(location: reveal.location, length: reveal.length), focus: reveal.focus) }
+        }
     }
 
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: PlainTextEditor
         var appliedTheme: ResolvedTheme?
+        var lastRevealToken: UUID?
         private var isReplacing = false
 
         init(_ parent: PlainTextEditor) {

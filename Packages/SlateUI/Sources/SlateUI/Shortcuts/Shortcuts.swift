@@ -64,7 +64,9 @@ public enum Shortcuts {
     /// Shortcuts that belong to macOS or to one view, shown but not changeable.
     public static let fixed: [(display: String, title: String, text: String)] = [
         ("⌘Z / ⇧⌘Z", "Undo / Redo", "cmd+z"), ("⌘X ⌘C ⌘V", "Cut, Copy, Paste", "cmd+c"), ("⌘A", "Select All", "cmd+a"),
-        ("⌘F", "Find in the editor", "cmd+f"), ("⌘B ⌘I ⌘U", "Bold, Italic, Underline", "cmd+b"), ("⌘W", "Close Window", "cmd+w"),
+        ("⌘F", "Find in the open file (or filter scenes, words, cards)", "cmd+f"),
+        ("⌥⌘F", "Find and Replace", "cmd+opt+f"), ("⌘G / ⇧⌘G", "Find Next / Previous", "cmd+g"),
+        ("⌘E", "Use Selection for Find", "cmd+e"), ("⌘B ⌘I ⌘U", "Bold, Italic, Underline", "cmd+b"), ("⌘W", "Close Window", "cmd+w"),
         ("⌘,", "Settings", "cmd+,"), ("⌘Q", "Quit", "cmd+q"), ("⌃⌘F", "Full Screen", "ctrl+cmd+f"),
         ("⌘- ⌘= ⌘0", "Zoom out, in, to fit (canvas, map, timeline)", "cmd+0"),
         ("⇥ / ⇧⇥", "Script: cycle the line's element", ""), ("⌘K in a link field", "Insert Link while typing [[", ""),
@@ -72,7 +74,8 @@ public enum Shortcuts {
 
     static let reserved: [String: String] = [
         "cmd+z": "Undo", "cmd+shift+z": "Redo", "cmd+c": "Copy", "cmd+v": "Paste", "cmd+x": "Cut", "cmd+a": "Select All",
-        "cmd+f": "Find", "cmd+w": "Close", "cmd+q": "Quit", "cmd+,": "Settings", "cmd+0": "Fit", "cmd+=": "Zoom In",
+        "cmd+f": "Find", "cmd+opt+f": "Find and Replace", "cmd+g": "Find Next", "cmd+shift+g": "Find Previous",
+        "cmd+e": "Use Selection for Find", "cmd+w": "Close", "cmd+q": "Quit", "cmd+,": "Settings", "cmd+0": "Fit", "cmd+=": "Zoom In",
         "cmd+-": "Zoom Out", "cmd+b": "Bold", "cmd+i": "Italic", "cmd+u": "Underline", "ctrl+cmd+f": "Full Screen",
         "cmd+h": "Hide Slate", "cmd+m": "Minimize",
     ]

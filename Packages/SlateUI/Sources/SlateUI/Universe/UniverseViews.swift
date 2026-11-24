@@ -297,7 +297,8 @@ struct UniverseFilePane: View {
                     if isMarkdown {
                         MarkdownPane(session: session, document: document)
                     } else {
-                        DocumentEditor(store: session.store, document: document, close: { session.universeSelection = nil })
+                        DocumentEditor(store: session.store, document: document, close: { session.universeSelection = nil },
+                                       reveal: session.noteReveal)
                     }
                 } else {
                     NoteEditor(session: session, document: document)

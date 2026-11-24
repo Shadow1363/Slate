@@ -193,9 +193,6 @@ struct CommentTodoRow: View {
 extension ProjectSession {
     /// Opens the file of a `TODO:` comment with the comment selected.
     func reveal(_ todo: CommentTodo) {
-        open(todo.path, location: todo.range.location)
-        if todo.path.hasPrefix(ProjectLayout.universe + "/") {
-            noteReveal = RevealRequest(file: todo.path, location: todo.range.location, focus: true, length: todo.range.length)
-        }
+        open(todo.path, range: todo.range)
     }
 }

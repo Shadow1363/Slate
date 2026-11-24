@@ -8,13 +8,14 @@ import UniformTypeIdentifiers
 /// Left column of the Storyboard area: scenes, boards whose scene is missing, and orphans.
 struct StoryboardNavigator: View {
     let session: ProjectSession
+    @FocusState private var filterFocused: Bool
 
     var body: some View {
-        let model = session.storyboard
-        let rows = model.rows
+        @Bindable var model = session.storyboard
+        let rows = model.rows.filter(model.matchesFilter)
         let scenes = rows.filter { $0.kind == .scene }
         let missing = rows.filter { $0.kind == .missing }
-        let orphans = model.orphanRows
+        let orphans = model.orphanRows.filter(model.matchesFilter)
         List(selection: Binding(get: { model.focusedRow }, set: { model.focusedRow = $0 })) {
             Section("Scenes") {
                 ForEach(scenes) { row in
@@ -51,15 +52,18 @@ struct StoryboardNavigator: View {
             FilmBar(workspace: session.script)
         }
         .overlay {
-            if scenes.isEmpty && missing.isEmpty {
+            if !model.sceneFilter.isEmpty && scenes.isEmpty && missing.isEmpty && orphans.isEmpty {
+                ContentUnavailableView.search(text: model.sceneFilter)
+            } else if scenes.isEmpty && missing.isEmpty {
                 ContentUnavailableView("No Scenes Yet", systemImage: "rectangle.split.3x3",
                                        description: Text("Every scene heading in the script becomes a row here."))
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             HStack {
-                let framed = scenes.filter { !$0.frames.isEmpty }.count
-                Text("\(framed) of \(scenes.count) scenes boarded")
+                let all = model.rows.filter { $0.kind == .scene }
+                let framed = all.filter { !$0.frames.isEmpty }.count
+                Text("\(framed) of \(all.count) scenes boarded")
                 Spacer()
                 Button("Tidy") { model.tidyFolders(moveMissing: false) }
                     .buttonStyle(.borderless)
@@ -67,10 +71,13 @@ struct StoryboardNavigator: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, Spacing.panel)
             .padding(.vertical, 6)
             .background(.bar)
         }
+        .searchable(text: $model.sceneFilter, placement: .sidebar, prompt: "Filter scenes")
+        .searchFocused($filterFocused)
+        .onChange(of: session.filterFocusRequest) { filterFocused = true }
         .navigationTitle("Storyboard")
     }
 }
@@ -115,7 +122,7 @@ struct StoryboardBoard: View {
 
     var body: some View {
         let model = session.storyboard
-        let rows = model.rows + model.orphanRows
+        let rows = (model.rows + model.orphanRows).filter(model.matchesFilter)
         let atCaret = model.framesAtCaret
         ScrollViewReader { proxy in
             ScrollView {
@@ -127,6 +134,7 @@ struct StoryboardBoard: View {
                     }
                 }
             }
+            .contentMargins(.vertical, Spacing.contentVertical, for: .scrollContent)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { boardHeight = $0 }
             .onChange(of: model.focusedRow, initial: true) { _, id in
                 guard let id else { return }
@@ -138,7 +146,9 @@ struct StoryboardBoard: View {
         }
         .background(Color(theme.storyboard.background))
         .overlay {
-            if rows.isEmpty {
+            if rows.isEmpty, !model.sceneFilter.isEmpty {
+                ContentUnavailableView.search(text: model.sceneFilter)
+            } else if rows.isEmpty {
                 ContentUnavailableView("No Scenes Yet", systemImage: "rectangle.split.3x3",
                                        description: Text("Write scene headings in the script; each becomes a row you can fill with frames."))
             }
@@ -201,12 +211,20 @@ private struct SceneBoardRow: View {
                         addMenu
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+                .padding(.horizontal, Spacing.content)
+                .padding(.bottom, Spacing.contentVertical)
             }
             .scrollIndicators(.automatic)
+            .overlay(alignment: .trailing) {
+                if row.frames.isEmpty {
+                    DropHint(targeted: targeted)
+                        .padding(.leading, row.kind == .scene ? FrameThumb.size.width + 80 + 2 * 10 + Spacing.content : Spacing.content)
+                        .padding(.trailing, Spacing.content)
+                        .padding(.bottom, Spacing.contentVertical)
+                }
+            }
         }
-        .padding(.top, 12)
+        .padding(.top, Spacing.contentVertical)
         .background(targeted ? Color.accentColor.opacity(0.08) : .clear)
         .onDrop(of: [.fileURL, .utf8PlainText, .plainText], isTargeted: $targeted) { providers in
             StoryboardDrops.drop(providers, row: row.id, index: nil, model: model)
@@ -260,7 +278,7 @@ private struct SceneBoardRow: View {
                     .help("Go to the scene")
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Spacing.content)
     }
 
     private var addMenu: some View {
@@ -310,6 +328,23 @@ private struct ReattachMenu: View {
         }
         .fixedSize()
         .help("Give these frames to a scene that has no board yet")
+    }
+}
+
+/// Fills the rest of an empty row: where to drop images or clips.
+private struct DropHint: View {
+    let targeted: Bool
+
+    var body: some View {
+        Label("Drop images or clips here", systemImage: "tray.and.arrow.down")
+            .font(.callout)
+            .foregroundStyle(targeted ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+            .frame(maxWidth: .infinity, minHeight: FrameThumb.size.height, maxHeight: FrameThumb.size.height)
+            .background(RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(targeted ? Color.accentColor : Color.secondary.opacity(0.25),
+                              style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 
